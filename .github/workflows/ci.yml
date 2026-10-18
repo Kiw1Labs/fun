@@ -19,3 +19,5 @@ jobs:
       - run: python -m pytest -q
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+        env:
+          FUN_TEST_PYTHON: python
