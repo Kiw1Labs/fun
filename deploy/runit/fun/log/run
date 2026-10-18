@@ -1,0 +1,4 @@
+#!/data/data/com.termux/files/usr/bin/sh
+umask 077
+mkdir -p "$HOME/fun-logs"
+exec svlogd -tt "$HOME/fun-logs"

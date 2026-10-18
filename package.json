@@ -1,0 +1,12 @@
+{
+  "name": "fun-sabe-essa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build.mjs",
+    "check": "node --check frontend/app.js && node --check tools/build.mjs",
+    "test:browser": "node --test tests/browser.test.mjs"
+  },
+  "devDependencies": {"@playwright/test": "1.56.1"}
+}

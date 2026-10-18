@@ -1,0 +1,31 @@
+"""Servidor isolado de fixtures; nunca incluído no pacote de produção."""
+import os
+from pathlib import Path
+
+import uvicorn
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Route
+
+from fun.app import create_app
+from tests.fixtures import synthetic_catalog
+from tests.metrics import metrics
+
+
+def app():
+    catalog = synthetic_catalog() if os.getenv('FUN_TEST_FIXTURES') == '1' else []
+    application = create_app(catalog=catalog)
+    async def process_metrics(request):
+        return JSONResponse(metrics())
+    application.router.routes.insert(0, Route('/_fixture_metrics', process_metrics))
+    if catalog:
+        async def image(request):
+            # SVG artificial somente na rota do servidor de teste, sem arquivos em produção.
+            return Response('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240"><rect width="480" height="240" fill="#e6edde"/><text x="80" y="130" font-size="32">FIXTURE DE TESTE</text></svg>', media_type='image/svg+xml')
+        application.router.routes.insert(0, Route('/media/{name}', image))
+        Path(os.environ['FUN_TEST_ANSWERS']).write_text(__import__('json').dumps({c.id: c.answer for c in catalog}), encoding='utf-8')
+    return application
+
+
+if __name__ == '__main__':
+    uvicorn.run('tests.browser_server:app', factory=True, host='127.0.0.1', port=int(os.getenv('FUN_PORT', '15050')),
+                ws='websockets-sansio', ws_max_size=4096, access_log=False)

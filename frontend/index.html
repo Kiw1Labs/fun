@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Sabe Essa? Desafios para jogar ao vivo com a sua turma.">
+  <title>Fun · Sabe Essa?</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script type="module" src="/assets/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Pular para o conteúdo</a>
+  <header class="mobile"><button id="menu" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir navegação">☰</button><span>fun<span class="dot">.</span></span></header>
+  <aside id="sidebar" aria-label="Navegação">
+    <a class="brand" href="/" aria-label="Fun, início">fun<span class="dot">.</span></a>
+    <div class="sidebar-body"><span class="eyebrow">SEU PRÓXIMO DESAFIO</span><button class="nav-game" id="game-nav"><span aria-hidden="true">✳</span> Sabe Essa?</button><p>Conhecimento vira conversa.<br>Junte a turma e descubra.</p></div>
+    <button id="theme" class="quiet">Alternar tema</button><small>Feito para jogar junto.</small>
+  </aside>
+  <main id="main" tabindex="-1"></main>
+  <div id="notice" role="status" aria-live="polite"></div>
+  <dialog id="close-dialog"><form method="dialog"><h2>Encerrar esta sala?</h2><p>Todos sairão. Uma partida em andamento será cancelada sem vencedor.</p><div class="actions"><button value="cancel" class="secondary">Manter sala</button><button value="close" class="danger">Encerrar sala</button></div></form></dialog>
+</body>
+</html>

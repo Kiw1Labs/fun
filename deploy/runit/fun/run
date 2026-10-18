@@ -1,0 +1,12 @@
+#!/data/data/com.termux/files/usr/bin/sh
+# Serviço Termux; diretório separado, registrado apenas após revisão de capacidade.
+exec 2>&1
+sleep 5
+exec proot-distro login --minimal debian -- /bin/sh -c '
+  umask 077
+  cd /root/fun/current || exit 1
+  set -a
+  . /root/fun/shared/fun.env || exit 1
+  set +a
+  exec /root/fun/venv/bin/python -m fun
+'
