@@ -170,8 +170,7 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
                 return JSONResponse({'error': 'Muitas tentativas. Aguarde um minuto.'}, status_code=429,
                                     headers={'Cache-Control': 'no-store'})
             return JSONResponse({'error': 'Usuário ou senha incorretos.'}, status_code=401,
-                                headers={'WWW-Authenticate': 'Basic realm="Fun Godmode", charset="UTF-8"',
-                                         'Cache-Control': 'no-store'})
+                                headers={'Cache-Control': 'no-store'})
         return None
 
     async def godmode_page(request):

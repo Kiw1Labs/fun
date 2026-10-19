@@ -102,8 +102,12 @@ def test_godmode_requires_credentials_and_lists_rooms_and_all_questions(tmp_path
         assert 'Entrar no Godmode' in page.text and 'login-form' in page.text
         assert client.get('/godmode-assets/godmode.js').status_code == 200
         assert client.get('/godmode-assets/godmode.css').status_code == 200
-        assert client.get('/api/godmode/rooms').status_code == 401
-        assert client.get('/api/godmode/questions', auth=('admin-test', 'wrong')).status_code == 401
+        unauthenticated = client.get('/api/godmode/rooms')
+        assert unauthenticated.status_code == 401
+        assert 'www-authenticate' not in unauthenticated.headers
+        invalid = client.get('/api/godmode/questions', auth=('admin-test', 'wrong'))
+        assert invalid.status_code == 401
+        assert 'www-authenticate' not in invalid.headers
         auth = ('admin-test', 'local-test-secret')
         assert client.get('/api/godmode/rooms', auth=auth).status_code == 200
         assert client.get('/api/godmode/questions', auth=auth).status_code == 200
