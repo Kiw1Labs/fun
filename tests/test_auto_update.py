@@ -147,7 +147,8 @@ def test_prepare_accepts_windows_lock_line_endings_but_blocks_real_changes(updat
     monkeypatch.setattr(updater, 'current', lambda: before)
     files = {'requirements.lock': b'pinned==1.0\n', 'deploy/nginx-fun.conf': b'# existing proxy\n',
              'frontend/index.html': b'<script src="/assets/app.js"></script>', 'frontend/app.js': b'// app',
-             'frontend/style.css': b'/* style */', 'content/questions/catalog.json': b'[]'}
+             'frontend/style.css': b'/* style */', 'frontend/brand/fun-logo.png': b'logo',
+             'frontend/favicon.svg': b'<svg></svg>', 'content/questions/catalog.json': b'[]'}
     if changed_file:
         files[changed_file] += b'# actual upstream change\n'
     archive_data = io.BytesIO()
