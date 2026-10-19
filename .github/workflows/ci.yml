@@ -22,3 +22,6 @@ jobs:
       - run: npm run test:browser
         env:
           FUN_TEST_PYTHON: python
+      - run: npm run test:dev
+        env:
+          FUN_TEST_PYTHON: python

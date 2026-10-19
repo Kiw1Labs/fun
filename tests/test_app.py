@@ -36,6 +36,39 @@ def test_http_validation_origins_limits_and_headers(tmp_path):
         assert last.status_code == 429
 
 
+def test_room_metadata_validation_and_public_directory(tmp_path):
+    with make_client(tmp_path) as client:
+        assert client.get('/api/rooms').json() == {'rooms': []}
+        private = client.post('/api/rooms', headers=ORIGIN, json={'name': 'Ana', 'room_name': 'Só por convite'}).json()
+        public = client.post('/api/rooms', headers=ORIGIN, json={
+            'name': 'Bia', 'room_name': '  Turma <b>BR</b>  ', 'visibility': 'public'}).json()
+        for payload in [{'room_name': 'x' * 49}, {'room_name': 123}, {'room_name': 'a\nb'},
+                        {'visibility': 'unknown'}, {'visibility': []}, {'room_name': None}]:
+            assert client.post('/api/rooms', headers=ORIGIN, json={'name': 'Teste'} | payload).status_code == 400
+        assert client.get('/api/rooms').json() == {'rooms': []}
+        with client.websocket_connect(f"/ws/{private['code']}", headers=ORIGIN) as private_ws:
+            private_ws.send_json({'token': private['token']})
+            private_state = receive_type(private_ws, 'state')
+            assert private_state['visibility'] == 'private' and private_state['room_name'] == 'Só por convite'
+            with client.websocket_connect(f"/ws/{public['code']}", headers=ORIGIN) as ws:
+                ws.send_json({'token': public['token']})
+                state = receive_type(ws, 'state')
+                assert state['room_name'] == 'Turma <b>BR</b>' and state['visibility'] == 'public'
+                response = client.get('/api/rooms')
+                assert response.headers['cache-control'] == 'no-store'
+                assert response.json() == {'rooms': [dict(code=public['code'], room_name='Turma <b>BR</b>',
+                                                         game='sabe-essa', phase='lobby', people=1)]}
+                text = response.text
+                for secret in [private['code'], private['token'], public['token'], public['participant'], 'Bia', 'token_hash', 'challenge']:
+                    assert secret not in text
+                # Entrada segue as mesmas regras e não permite editar metadados da sala.
+                assert client.post(f"/api/rooms/{public['code']}/join", headers=ORIGIN,
+                                   json={'name': 'Caio', 'visibility': 'public'}).status_code == 400
+                ws.send_json({'id': 'close-public-room', 'action': 'close'})
+                assert receive_type(ws, 'ack')['ok']
+                assert client.get('/api/rooms').json() == {'rooms': []}
+
+
 def test_websocket_auth_sync_f5_and_multitab(tmp_path):
     with make_client(tmp_path) as client:
         a = client.post('/api/rooms', headers=ORIGIN, json={'name': 'Ana'}).json()

@@ -262,3 +262,34 @@ def test_malicious_actions(game):
         with pytest.raises(RuleError):
             engine.action(a['code'], a['participant'], event)
     assert r['people'][a['participant']]['score'] == 0
+
+
+def test_public_directory_capacity_offline_and_legacy_recovery(tmp_path):
+    path = str(tmp_path / 'directory.sqlite3')
+    store = Store(path)
+    engine = Engine(store, [], lambda: 10000)
+    a = engine.create('Ana', 'Turma da noite', 'public')
+    engine.connect(a['code'], a['token'], 'a')
+    for i in range(15):
+        engine.join(a['code'], f'Pessoa {i}')
+    assert engine.public_rooms()[0]['people'] == 16
+    with pytest.raises(RuleError, match='cheia'):
+        engine.join(a['code'], 'Extra')
+    engine.disconnect(a['code'], a['participant'], 'a')
+    assert engine.public_rooms() == []
+    store.close()
+    store = Store(path)
+    restored = Engine(store, [], lambda: 10001)
+    restored.connect(a['code'], a['token'], 'new')
+    assert restored.public_rooms()[0]['room_name'] == 'Turma da noite'
+    legacy = restored.rooms[a['code']]
+    del legacy['visibility']
+    del legacy['room_name']
+    restored.save(legacy)
+    store.close()
+    store = Store(path)
+    restored = Engine(store, [], lambda: 10002)
+    restored.connect(a['code'], a['token'], 'legacy')
+    assert restored.snapshot(a['code'], a['participant'])['visibility'] == 'private'
+    assert restored.public_rooms() == []
+    store.close()

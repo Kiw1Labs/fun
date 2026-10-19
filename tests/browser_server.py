@@ -1,5 +1,6 @@
 """Servidor isolado de fixtures; nunca incluído no pacote de produção."""
 import os
+import time
 from pathlib import Path
 
 import uvicorn
@@ -13,11 +14,21 @@ from tests.metrics import metrics
 
 def app():
     catalog = synthetic_catalog() if os.getenv('FUN_TEST_FIXTURES') == '1' else []
-    application = create_app(catalog=catalog)
+    epoch, monotonic, offset = time.time(), time.monotonic(), [0]
+    application = create_app(catalog=catalog, clock=lambda: epoch + time.monotonic() - monotonic + offset[0])
     async def process_metrics(request):
         return JSONResponse(metrics())
     application.router.routes.insert(0, Route('/_fixture_metrics', process_metrics))
     if catalog:
+        async def advance(request):
+            if request.headers.get('origin') != os.environ['FUN_ORIGINS']:
+                return JSONResponse({'error': 'Origem inválida.'}, status_code=403)
+            seconds = (await request.json()).get('seconds')
+            if not isinstance(seconds, (int, float)) or not 0 < seconds <= 3600:
+                return JSONResponse({'error': 'Intervalo inválido.'}, status_code=400)
+            offset[0] += seconds
+            return JSONResponse({'advanced': seconds})
+        application.router.routes.insert(0, Route('/_fixture/advance', advance, methods=['POST']))
         async def image(request):
             # SVG artificial somente na rota do servidor de teste, sem arquivos em produção.
             return Response('<svg xmlns="http://www.w3.org/2000/svg" width="480" height="240"><rect width="480" height="240" fill="#e6edde"/><text x="80" y="130" font-size="32">FIXTURE DE TESTE</text></svg>', media_type='image/svg+xml')

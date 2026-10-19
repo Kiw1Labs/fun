@@ -1,5 +1,8 @@
 import {mkdir, readFile, writeFile, stat} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+const syntax = spawnSync(process.execPath, ['--check', 'frontend/app.js'], {stdio:'inherit',windowsHide:true});
+if (syntax.status !== 0) throw new Error('Build interrompido: corrija o JavaScript antes de atualizar a interface.');
 await mkdir('dist/assets', {recursive: true});
 let html = await readFile('frontend/index.html', 'utf8');
 for (const file of ['app.js', 'style.css']) {

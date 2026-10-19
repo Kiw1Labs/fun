@@ -27,6 +27,8 @@ class Engine:
         self.catalog_cache = {}
         now = clock()
         for r in self.rooms.values():
+            r.setdefault('room_name', 'Sala de Sabe Essa?')
+            r.setdefault('visibility', 'private')
             # Falha/reinício encerra uma partida sem vencedor e reabre a janela de retomada.
             if r['phase'] in ('question', 'reveal'):
                 self.finish(r, 'cancelled', None, now)
@@ -58,8 +60,12 @@ class Engine:
             raise RuleError('Use um nome de 1 a 24 caracteres.')
         return name.strip()
 
-    def create(self, name):
+    def create(self, name, room_name='', visibility='private'):
         name = self.name(name)
+        if not isinstance(room_name, str) or len(room_name.strip()) > 48 or any(ord(c) < 32 or ord(c) == 127 for c in room_name):
+            raise RuleError('Use um nome de sala com até 48 caracteres.')
+        if visibility not in ('public', 'private'):
+            raise RuleError('Escolha uma sala pública ou privada.')
         if len(self.rooms) >= 1000:
             raise RuleError('Limite de salas atingido. Tente mais tarde.')
         while True:
@@ -67,12 +73,25 @@ class Engine:
             if code not in self.rooms:
                 break
         now = self.clock()
-        r = dict(code=code, game='sabe-essa', phase='lobby', people={}, host=None,
+        r = dict(code=code, game='sabe-essa', room_name=room_name.strip() or f'Sala do {name}',
+                 visibility=visibility, phase='lobby', people={}, host=None,
                  roster=[], history=[], deck=[], index=-1, round_id=None, started=None,
                  deadline=None, reveal_until=None, result=None, winner=None,
                  activity=now, warning=None, empty_since=now, closed_at=None, revision=0, join_seq=0)
         self.rooms[code] = r
         return self.join(code, name)
+
+    def public_rooms(self):
+        rooms = []
+        for r in self.rooms.values():
+            if r['visibility'] != 'public' or r['phase'] == 'closed':
+                continue
+            members = self.members(r)
+            if not any(self.online(r['code'], p['id']) for p in members):
+                continue
+            rooms.append(dict(code=r['code'], room_name=r['room_name'], game=r['game'],
+                              phase=r['phase'], people=len(members)))
+        return rooms
 
     def join(self, code, name):
         r = self.room(code)
@@ -319,6 +338,7 @@ class Engine:
                 current['answer'] = challenge['answer']
         me = r['people'].get(pid, {})
         return dict(type='state', code=code, game=r['game'], phase=r['phase'],
+                    room_name=r['room_name'], visibility=r['visibility'],
                     revision=r['revision'], you=pid, host=r['host'], people=people,
                     server_now=now, deadline=r['deadline'], warning=r['warning'],
                     round_id=r['round_id'], number=r['index'] + 1, challenge=current,

@@ -13,13 +13,18 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.lock
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 npm.cmd ci --ignore-scripts
-npm.cmd run build
-.\.venv\Scripts\python.exe -m fun
+npm.cmd run dev
 ```
 
-Abrir **http://127.0.0.1:5050**. O portal tem o botão Sabe Essa?, que abre criar/entrar sem mudar `/`. Compartilhar a URL de quatro letras para outra pessoa entrar. Backend local aceita Origin localhost/127.0.0.1 na porta 5050; para outro endereço, definir `FUN_ORIGINS` explicitamente. O frontend já construído é servido pelo backend no desenvolvimento; produção serve assets no Nginx existente. Não executar múltiplos workers.
+Abrir **http://127.0.0.1:5050**. Na página principal, escolha Sabe Essa?, preencha o nome da sala, selecione Público/Privado e clique em **Jogar**. Uma janela pede seu nome como jogador. Salas públicas aparecem abaixo dos painéis; para uma privada, use o painel de entrada com o código ou compartilhe a URL de quatro letras. A navegação do jogo permanece em `/`. Backend local aceita Origin localhost/127.0.0.1 na porta 5050; para outro endereço, definir `FUN_ORIGINS` explicitamente. O frontend já construído é servido pelo backend no desenvolvimento; produção serve assets no Nginx existente. Não executar múltiplos workers.
 
 No Linux: `.venv/bin/python` no lugar de `.\.venv\Scripts\python.exe`. As variáveis estão em `.env.example`; o supervisor as carrega, mas `python -m fun` não lê `.env` automaticamente. Dados de desenvolvimento ficam em `data/`, ignorado pelo Git.
+
+Com o ambiente já instalado, basta **`npm.cmd run dev`**. Esse comando gera o build, observa a interface e reinicia o Python local quando o código dele muda. Após editar a interface, atualize a página no navegador. Encerre com **Ctrl+C**. Uma reinicialização durante uma partida cancela a partida e preserva o estado recuperável, como definido na especificação.
+
+Se a porta 5050 estiver ocupada, pare o Fun anterior com Ctrl+C no terminal em que foi iniciado e execute o comando novamente. O launcher não encerra um servidor preexistente. A interface detecta API antiga para evitar erros como “Informe apenas o nome” após atualizar só o frontend. Para execução manual sem observação: `npm.cmd run build`, seguido de `.\.venv\Scripts\python.exe -m fun`.
+
+Nome da sala vazio ou apenas com espaços recebe **“Sala do [nome do usuário]”**. Reentrar pelo mesmo navegador retoma a sessão existente, sem gastar outra vaga. Nomes de salas já gravados são preservados.
 
 ## Testes e build
 
@@ -30,6 +35,7 @@ npm.cmd run build
 .\.venv\Scripts\python.exe -m pytest -q
 npx.cmd playwright install chromium
 npm.cmd run test:browser
+npm.cmd run test:dev
 .\.venv\Scripts\python.exe -m tools.measure
 .\.venv\Scripts\python.exe -m tools.bundle
 ```
@@ -49,5 +55,7 @@ Testes cobrem regras, distribuição simultânea dos desafios, tempo e pontuaç�
 - `deploy/`: Nginx por hostname, runit com rotação, preparação de release e plano aditivo.
 
 Leia [especificação](docs/PRODUCT_SPEC.md), [arquitetura original](docs/ARCHITECTURE.md), [decisões técnicas](docs/DECISIONS.md), [catálogo privado](docs/CATALOG.md), [deploy e rollback](docs/DEPLOY.md) e [validação executada](docs/VALIDATION.md).
+
+A auditoria funcional mais recente, com as correções da criação de sala e os testes ampliados, está em [AUDITORIA_FUNCIONAL.md](docs/AUDITORIA_FUNCIONAL.md).
 
 O celular foi inspecionado, mas Fun **não foi ativado** devido à carga elevada e ao impacto ainda não validado do reload compartilhado. Nenhum serviço existente foi alterado. DNS Fun resolve; HTTPS Fun respondeu 502, portanto não há declaração de disponibilidade pública. Portas 5050/8082 estavam livres e os serviços antigos responderam. O relatório distingue verificações locais, remotas e pendências.

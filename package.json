@@ -4,9 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "node tools/dev.mjs",
     "build": "node tools/build.mjs",
-    "check": "node --check frontend/app.js && node --check tools/build.mjs",
-    "test:browser": "node --test tests/browser.test.mjs"
+    "check": "node --check frontend/app.js && node --check tools/build.mjs && node --check tools/dev.mjs",
+    "test:browser": "node --test tests/browser.test.mjs",
+    "test:dev": "node --test tests/dev.test.mjs"
   },
   "devDependencies": {"@playwright/test": "1.56.1"}
 }

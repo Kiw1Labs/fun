@@ -3,8 +3,11 @@
 Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?” é provisório (antes PopSauce BR / Party Games BR). Não substituir essas decisões por suposições.
 
 ## Plataforma e URLs
-- Portal em `https://fun.kw1.com.br/`, inicialmente com **um botão** para o jogo **Sabe Essa?**.
-- Ao selecionar o jogo, exibir a home do jogo **na mesma URL `/`**, mudando apenas o estado da interface, antes de entrar em sala.
+- Portal em `https://fun.kw1.com.br/`, inicialmente com **Sabe Essa?** como único jogo. Revisão aprovada em 18/10/2026: título no topo, painel de criação à esquerda e painel de entrada por código à direita; no celular, painéis empilhados.
+- Criação na página principal com seleção do jogo, nome da sala e seletor **Público/Privado**, seguida da ação **Jogar**. O nome do jogador é solicitado antes de criar/entrar e é distinto do nome da sala.
+- Se o nome da sala estiver vazio ou contiver apenas espaços, criar como **Sala do [nome do usuário]**, usando o nome informado pelo criador. Regra confirmada pelo usuário em 18/10/2026.
+- Salas públicas aparecem na página principal; salas privadas ficam acessíveis por código ou link, sem listagem pública. Comportamento confirmado pelo usuário em 18/10/2026.
+- Ao selecionar o jogo na navegação, sua home permanece **na mesma URL `/`**, mudando apenas o estado da interface, antes de entrar em sala.
 - Salas têm URL `https://fun.kw1.com.br/ABCD`, com exatamente **quatro letras** no código, únicas em toda a plataforma entre salas ativas, incluindo jogos futuros. O backend resolve o código para o jogo e a sala.
 - Design minimalista inspirado na navegação do site ChatGPT, incluindo barra lateral, responsividade e visual claro/escuro; sem copiar marcas ou logotipos.
 - Preparar arquitetura para mais jogos, implementar somente Sabe Essa? agora.

@@ -18,6 +18,7 @@ from starlette.routing import Mount, Route, WebSocketRoute
 from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
+from . import API_VERSION
 from .catalog import load
 from .engine import Engine, RuleError
 from .store import Store
@@ -98,8 +99,9 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             data = json.loads(raw)
         except (ValueError, UnicodeDecodeError) as exc:
             raise RuleError('JSON inválido.') from exc
-        if not isinstance(data, dict) or set(data) != {'name'}:
-            raise RuleError('Informe apenas o nome.')
+        fields = {'name'} if request.path_params.get('code') else {'name', 'room_name', 'visibility'}
+        if not isinstance(data, dict) or 'name' not in data or set(data) - fields:
+            raise RuleError('Informe somente os campos permitidos para a sala.')
         return data
 
     async def create_or_join(request: Request):
@@ -115,14 +117,24 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
                 code = request.path_params.get('code')
                 if code and not re.fullmatch('[A-Z]{4}', code):
                     raise RuleError('O código precisa ter quatro letras.')
-                result = engine.join(code, data.get('name')) if code else engine.create(data.get('name'))
+                result = engine.join(code, data['name']) if code else engine.create(
+                    data['name'], data.get('room_name', ''), data.get('visibility', 'private'))
                 publish()
             return JSONResponse(result, status_code=201, headers={'Cache-Control': 'no-store'})
         except RuleError as exc:
             return JSONResponse({'error': str(exc)}, status_code=400)
 
     async def health(request):
-        return JSONResponse({'status': 'ok', 'game': 'sabe-essa'}, headers={'Cache-Control': 'no-store'})
+        return JSONResponse({'status': 'ok', 'game': 'sabe-essa', 'api_version': API_VERSION},
+                            headers={'Cache-Control': 'no-store'})
+
+    async def public_rooms(request):
+        ip = request.client.host if request.client else 'unknown'
+        if not limiter.allow(('directory', ip), 120, 60):
+            return JSONResponse({'error': 'Aguarde um momento para atualizar as salas.'}, status_code=429)
+        async with lock:
+            rooms = engine.public_rooms()
+        return JSONResponse({'rooms': rooms}, headers={'Cache-Control': 'no-store'})
 
     async def ws(socket):
         code = socket.path_params['code']
@@ -202,7 +214,8 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             return Response('Execute npm run build antes de iniciar.', status_code=503)
         return FileResponse(static / 'index.html', headers={'Cache-Control': 'no-cache'})
 
-    routes = [Route('/health', health), Route('/api/rooms', create_or_join, methods=['POST']),
+    routes = [Route('/health', health), Route('/api/rooms', public_rooms, methods=['GET']),
+              Route('/api/rooms', create_or_join, methods=['POST']),
               Route('/api/rooms/{code}/join', create_or_join, methods=['POST']),
               WebSocketRoute('/ws/{code}', ws)]
     if (static / 'assets').exists():
