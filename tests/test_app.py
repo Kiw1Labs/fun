@@ -36,6 +36,20 @@ def test_http_validation_origins_limits_and_headers(tmp_path):
         assert last.status_code == 429
 
 
+def test_brand_assets_fall_back_to_project_sources(tmp_path, monkeypatch):
+    static = tmp_path / 'static'
+    static.mkdir()
+    (static / 'index.html').write_text('<html></html>', encoding='utf-8')
+    monkeypatch.setenv('FUN_MEDIA', str(tmp_path / 'no-media'))
+    with TestClient(create_app(database=str(tmp_path / 'fun.db'), catalog=[], static_dir=str(static),
+                              origins=['http://testserver'])) as client:
+        favicon = client.get('/favicon.svg')
+        logo = client.get('/brand/fun-logo.png')
+        assert favicon.status_code == 200 and '<svg' in favicon.text
+        assert favicon.headers['content-type'].startswith('image/svg+xml')
+        assert logo.status_code == 200 and logo.content.startswith(b'\x89PNG\r\n\x1a\n')
+
+
 def test_room_metadata_validation_and_public_directory(tmp_path):
     with make_client(tmp_path) as client:
         assert client.get('/api/rooms').json() == {'rooms': []}

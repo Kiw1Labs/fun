@@ -43,6 +43,7 @@ Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?�
 
 ## Resultados e encerramento
 - Em resultado, o anfitrião decide **Retornar todos ao lobby** ou **Iniciar nova partida**; não retornar automaticamente. A nova partida zera a pontuação, mas mantém histórico antirrepetição.
+- Participantes que saíram ou foram removidos continuam no placar enquanto os resultados estiverem visíveis; ao retornar ao lobby, as sessões inativas e suas entradas do placar são removidas.
 - Anfitrião pode **encerrar a sala a qualquer momento** (lobby, partida, resultados), com confirmação; se houver partida, **cancelar sem vencedor**.
 - Salas completamente vazias expiram após **5 minutos**.
 - Lobby e tela de resultados: depois de **30 minutos de inatividade relevante**, mostrar aviso de presença durante **2 minutos**; se ninguém confirmar, encerrar sala. Confirmação reinicia contagem. Não encerrar jogo ativo pela mesma regra de inatividade.

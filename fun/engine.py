@@ -47,6 +47,15 @@ class Engine:
     def members(self, r):
         return [p for p in r['people'].values() if p['active']]
 
+    def prune_departed(self, r):
+        """Remove ended sessions after the room returns to the lobby."""
+        departed = {pid for pid, p in r['people'].items() if not p['active']}
+        if not departed:
+            return False
+        r['people'] = {pid: p for pid, p in r['people'].items() if pid not in departed}
+        r['roster'] = [pid for pid in r['roster'] if pid not in departed]
+        return True
+
     def competitors(self, r):
         return [r['people'][pid] for pid in r['roster'] if r['people'][pid]['active']]
 
@@ -96,10 +105,11 @@ class Engine:
     def join(self, code, name):
         r = self.room(code)
         name = self.name(name)
+        if r['phase'] == 'lobby':
+            self.prune_departed(r)
         if len(self.members(r)) >= 16:
             raise RuleError('Sala cheia: o limite é de 16 pessoas.')
         now = self.clock()
-        r['people'] = {pid: p for pid, p in r['people'].items() if p['active'] or pid in r['roster']}
         r['join_seq'] += 1
         token, pid = secrets.token_urlsafe(32), secrets.token_hex(12)
         r['people'][pid] = dict(id=pid, token_hash=token_hash(token), name=name,
@@ -278,13 +288,15 @@ class Engine:
             reply.update(ok=False, error=str(exc))
         p['events'][eid] = dict(fingerprint=fingerprint, reply=reply)
         p['events'] = dict(list(p['events'].items())[-256:])
+        if r['phase'] == 'lobby':
+            self.prune_departed(r)
         self.touch(r)
         return reply
 
     def tick(self):
         now = self.clock()
         for r in list(self.rooms.values()):
-            changed = False
+            changed = self.prune_departed(r) if r['phase'] == 'lobby' else False
             if r['phase'] == 'closed':
                 if now - r['closed_at'] >= 300:
                     self.store.delete(r['code'])
@@ -295,6 +307,8 @@ class Engine:
                 if p['offline_since'] is not None and now - p['offline_since'] >= 60:
                     self.remove(r, p['id'], 'abandoned')
                     changed = True
+            if r['phase'] == 'lobby' and self.prune_departed(r):
+                changed = True
             if r['empty_since'] is not None and now - r['empty_since'] >= 300:
                 r.update(phase='closed', result='cancelled', winner=None, closed_at=now)
                 changed = True

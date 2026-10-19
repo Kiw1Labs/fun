@@ -1,8 +1,10 @@
 const main = document.querySelector('main');
 const notice = document.querySelector('#notice');
 const dialog = document.querySelector('#close-dialog');
+const kickDialog = document.querySelector('#kick-dialog');
 const identityDialog = document.querySelector('#identity-dialog');
 let roomIntent = null;
+let kickTarget = null;
 let directoryRequest = 0;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function mediaCredits(challenge) {
@@ -171,6 +173,17 @@ function render() {
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>${state.result==='cancelled' ? 'Partida cancelada, sem vencedor.' : state.result==='automatic' ? `${esc(winner?.name)} venceu por permanência.` : '15 desafios. Muitas descobertas.'}</h2><p>Confira os pontos da partida na mesma lista ao lado.</p>${host ? `<div class="actions"><button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar nova partida</button><button data-action="lobby" class="secondary">Retornar todos ao lobby</button></div>${!state.catalog_available ? '<p class="empty-catalog">Catálogo insuficiente para outra partida sem repetir as três anteriores.</p>' : ''}` : '<p>O anfitrião decide quando voltar ao lobby ou começar outra partida.</p>'}`;
   }
   main.innerHTML = `<section class="room"><header class="room-header"><div><span class="eyebrow">SABE ESSA? · SALA ${esc(code)} · ${state.visibility==='public' ? 'Pública' : 'Privada'}</span><h1>${title}</h1></div>${status()}</header>${state.warning ? '<div class="presence" role="alert"><p>A sala ficou inativa. Confirme sua presença em até 2 minutos para mantê-la aberta.</p><button data-action="presence">Estou aqui</button></div>' : ''}<div class="room-grid"><section class="play-area" aria-label="Partida">${center}</section><section class="scoreboard" aria-label="Participantes e pontuação"><div class="board-title"><h2>${state.phase==='lobby' ? 'Na sala' : 'Pontuação'}</h2><span>${state.people.filter(p=>p.active).length}/16</span></div><ol>${state.people.map(p=>`<li class="${!p.active ? 'departed' : ''}"><span class="rank">${p.rank ?? '—'}</span><div><strong>${esc(p.name)}${p.id===state.you ? ' (você)' : ''}</strong><small>${p.host ? 'Anfitrião · ' : ''}${!p.active ? 'Saiu da partida' : !p.online ? 'Reconectando' : p.spectator ? 'Espectador' : playing&&p.answered ? 'Acertou' : 'Na sala'}</small></div><span class="score">${p.score}</span>${host&&p.active&&p.id!==state.you ? `<button class="kick quiet" data-action="kick" data-target="${esc(p.id)}" aria-label="Expulsar ${esc(p.name)}">×</button>` : ''}</li>`).join('')}</ol></section></div><footer class="room-footer"><button class="quiet" data-action="leave">Sair da sala</button>${host ? '<button class="quiet danger-text" id="close-room">Encerrar sala</button>' : ''}</footer></section>`;
+  document.querySelectorAll('.scoreboard [data-action="kick"]').forEach(removeButton=>{
+    const target=removeButton.dataset.target;
+    removeButton.removeAttribute('data-action'); removeButton.removeAttribute('data-target');
+    removeButton.dataset.kick=target;
+    removeButton.setAttribute('aria-label',removeButton.getAttribute('aria-label').replace(/^Expulsar /,'Remover '));
+    const more=document.createElement('button');
+    more.className='kick-more quiet'; more.textContent='...'; more.dataset.kick=target;
+    more.setAttribute('aria-label',removeButton.getAttribute('aria-label').replace(/^Remover /,'Mais opções para '));
+    const actions=document.createElement('span'); actions.className='kick-actions';
+    removeButton.replaceWith(actions); actions.append(removeButton,more);
+  });
   if (focus && document.getElementById(focus)) {
     const input = document.getElementById(focus);
     input.focus({preventScroll:true});
@@ -220,7 +233,7 @@ function connect() {
       const event=pending.get(msg.id); pending.delete(msg.id);
       if (!msg.ok) toast(msg.error);
       else if(event?.action==='answer') {
-        feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : 'Ainda não. Aguarde 0,5 segundo e tente outra vez.';
+        feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : '';
         const input=document.querySelector('#answer'); if(input && input.value===event.answer) input.value='';
         const el=document.querySelector('#answer-feedback'); if(el) el.textContent=feedback;
       }
@@ -286,6 +299,12 @@ document.addEventListener('click', event => {
   }
   if(button.id==='theme') { const theme=document.documentElement.dataset.theme==='dark'?'light':'dark'; applyTheme(theme); stored('fun:theme',theme); }
   if(button.id==='close-room') dialog.showModal();
+  if(button.dataset.kick) {
+    kickTarget=button.dataset.kick;
+    const player=state?.people.find(person=>person.id===kickTarget);
+    document.querySelector('#kick-description').textContent=player ? `Você está removendo ${player.name} da sala. Confirma a remoção?` : 'Confirma a remoção deste jogador?';
+    kickDialog.showModal();
+  }
   if(button.id==='refresh-rooms') loadPublicRooms();
   if(button.id==='identity-cancel') identityDialog.close();
   if(button.dataset.joinCode) requestIdentity({mode:'join',code:button.dataset.joinCode});
@@ -294,6 +313,10 @@ document.addEventListener('click', event => {
   if(button.dataset.action) send(button.dataset.action,button.dataset.target?{target:button.dataset.target}:{});
 });
 dialog.addEventListener('close',()=>{ if(dialog.returnValue==='close') send('close'); });
+kickDialog.addEventListener('close',()=>{
+  if(kickDialog.returnValue==='remove'&&kickTarget) send('kick',{target:kickTarget});
+  kickTarget=null;
+});
 identityDialog.addEventListener('close',()=>{ roomIntent=null; });
 identityDialog.addEventListener('cancel',event=>{ if(document.querySelector('#identity-submit').disabled) event.preventDefault(); });
 document.addEventListener('keydown', event => {

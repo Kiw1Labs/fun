@@ -162,6 +162,29 @@ def test_host_grace_and_abandonment_automatic_win(game):
         engine.connect(a['code'], a['token'], 'late')
 
 
+def test_departed_players_remain_in_results_but_are_removed_in_lobby(game):
+    engine, now, a, b = game
+    engine.rooms[a['code']]['people'][b['participant']]['name'] = 'Celular'
+    engine, now, a, b, r = start(game)
+    engine.disconnect(b['code'], b['participant'], 'b')
+    now[0] += 60
+    engine.tick()
+    assert r['phase'] == 'results' and r['result'] == 'automatic'
+    assert not r['people'][b['participant']]['active']
+
+    returned = engine.join(a['code'], 'Celular')
+    engine.connect(returned['code'], returned['token'], 'phone-new')
+    rows = [p for p in engine.snapshot(a['code'], a['participant'])['people'] if p['name'] == 'Celular']
+    assert {p['id'] for p in rows} == {b['participant'], returned['participant']}
+
+    assert act(engine, a, 'lobby')['ok']
+    assert b['participant'] not in r['people']
+    assert b['participant'] not in r['roster']
+    assert returned['participant'] in r['people']
+    rows = [p for p in engine.snapshot(a['code'], a['participant'])['people'] if p['name'] == 'Celular']
+    assert [p['id'] for p in rows] == [returned['participant']]
+
+
 def test_voluntary_host_transfer_oldest_online_and_kick(game):
     engine, now, a, b, r = start(game)
     c = engine.join(a['code'], 'Caio')

@@ -184,6 +184,8 @@ ol { list-style: none; margin: 0; padding: 0; }
 .rank { width: 16px; color: var(--muted); font-size: .75rem; }
 .score { font-variant-numeric: tabular-nums; }
 .kick { min-width: 36px; min-height: 36px; padding: 6px; }
+.kick-actions { display: flex; gap: 2px; }
+.kick-more { min-width: 36px; min-height: 36px; padding: 6px; font-weight: 600; }
 .departed, .departed strong, .departed .score { color: var(--muted); filter: grayscale(1); }
 .room-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; }
 .round-heading { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: .8125rem; }
@@ -260,6 +262,7 @@ dialog p { font-size: .875rem; }
   .scoreboard li { font-size: .875rem; }
   .scoreboard small { font-size: .75rem; }
   .kick { min-width: 44px; min-height: 44px; }
+  .kick-more { min-width: 44px; min-height: 44px; }
   .presence { display: block; }
   .presence button { margin-top: 12px; }
   #notice { left: 50%; max-width: calc(100vw - 32px); }

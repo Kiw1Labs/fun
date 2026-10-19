@@ -202,7 +202,7 @@ test('auditoria: resposta em edição, transição perdida e resultado com só u
   await ackArrived;
   await host.getByLabel('Sua resposta').fill('nova tentativa em edição');
   deliverAck();holdAck=false;
-  await host.getByText(/Ainda não/).waitFor();
+  await host.waitForFunction(()=>document.querySelector('#answer-feedback')?.textContent==='');
   assert.equal(await host.getByLabel('Sua resposta').inputValue(),'nova tentativa em edição');
   hideReveal=true;
   await host.request.post(`${fixtureOrigin}/_fixture/advance`,{headers:{Origin:fixtureOrigin},data:{seconds:20.1}});
@@ -288,8 +288,14 @@ test('auditoria: espectador, expulsão durante partida e encerramento nos result
   await join(viewer,'Carol');
   await viewer.getByText('Você está acompanhando',{exact:true}).waitFor();
   assert.equal(await viewer.getByLabel('Sua resposta').count(),0);
-  assert.equal(await viewer.getByRole('button',{name:'Expulsar Bia',exact:true}).count(),0);
-  await host.getByRole('button',{name:'Expulsar Bia',exact:true}).click();
+  assert.equal(await viewer.getByRole('button',{name:'Mais opções para Bia',exact:true}).count(),0);
+  await host.getByRole('button',{name:'Mais opções para Bia',exact:true}).click();
+  await host.getByRole('dialog').getByText('Você está removendo Bia da sala. Confirma a remoção?',{exact:true}).waitFor();
+  await host.getByRole('dialog').getByRole('button',{name:'Cancelar',exact:true}).click();
+  await host.locator('#kick-dialog').waitFor({state:'hidden'});
+  await host.getByText('Bia',{exact:true}).waitFor();
+  await host.getByRole('button',{name:'Remover Bia',exact:true}).click();
+  await host.getByRole('dialog').getByRole('button',{name:'Remover jogador',exact:true}).click();
   await guest.getByText('Você saiu da sala.',{exact:true}).waitFor();
   await host.getByText('Ana venceu por permanência.',{exact:true}).waitFor();
   const departed=host.locator('.scoreboard li.departed').filter({hasText:'Bia'});
@@ -338,7 +344,7 @@ test('partida sintética em navegador: resposta, cooldown, reconexão e revelaç
   assert.ok(Object.values(answers).includes(answer));
   await host.getByLabel('Sua resposta').fill('errado');
   await host.getByRole('button',{name:'Responder',exact:true}).click();
-  await host.getByText(/Ainda não/).waitFor();
+  await host.waitForFunction(()=>document.querySelector('#answer-feedback')?.textContent==='');
   await new Promise(r=>setTimeout(r,550));
   await host.getByLabel('Sua resposta').fill(answer);
   await host.getByRole('button',{name:'Responder',exact:true}).click();
@@ -360,7 +366,7 @@ test('portal, home em /, sala, F5, nova aba, entrada e controles do anfitrião',
   page.on('pageerror', error=>errors.push(error.message));
   page.on('console', msg=>{if(msg.type()==='error'&&msg.text().includes('Content Security Policy')) errors.push(msg.text());});
   await page.goto(origin);
-  assert.equal(await page.locator('link[rel=icon]').getAttribute('href'),'/favicon.svg');
+  assert.match(await page.locator('link[rel=icon]').getAttribute('href'),/^\/favicon\.svg\?v=/);
   assert.match(await page.locator('link[rel=icon]').evaluate(link=>fetch(link.href).then(response=>response.text())),/0 0 64 64/);
   assert.ok(await page.locator('.brand img').evaluateAll(images=>images.length===2&&images.every(img=>img.complete&&img.naturalWidth>0)));
   await page.screenshot({path:'artifacts/portal-desktop.png',fullPage:true});
