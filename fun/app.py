@@ -3,6 +3,7 @@ import asyncio
 import contextlib
 import json
 import logging
+import mimetypes
 import os
 import re
 import time
@@ -45,12 +46,19 @@ class Limiter:
 
 
 def create_app(database=None, catalog=None, clock=None, static_dir=None, origins=None):
+    # Alguns registros MIME do Windows não conhecem WebP; usar tipo explícito.
+    mimetypes.add_type('image/webp', '.webp')
     if clock is None:
         epoch, monotonic = time.time(), time.monotonic()
         def clock():
             return epoch + time.monotonic() - monotonic
     store = Store(database or os.getenv('FUN_DATABASE', 'data/fun.sqlite3'))
-    engine = Engine(store, load(os.getenv('FUN_CATALOG', 'data/catalog.json')) if catalog is None else catalog, clock)
+    if catalog is None:
+        stored = store.catalog()
+        # Não ressuscitar questões desativadas por um fallback JSON antigo.
+        has_rows = store.db.execute('SELECT EXISTS(SELECT 1 FROM questions)').fetchone()[0]
+        catalog = stored if has_rows else load(os.getenv('FUN_CATALOG', 'data/catalog.json'))
+    engine = Engine(store, catalog, clock)
     lock, limiter, clients = asyncio.Lock(), Limiter(), {}
     allowed = set(origins or os.getenv('FUN_ORIGINS', 'http://127.0.0.1:5050,http://localhost:5050').split(','))
     static = Path(static_dir or os.getenv('FUN_STATIC', 'dist'))
@@ -125,7 +133,7 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             return JSONResponse({'error': str(exc)}, status_code=400)
 
     async def health(request):
-        return JSONResponse({'status': 'ok', 'game': 'sabe-essa', 'api_version': API_VERSION},
+        return JSONResponse({'status': 'ok', 'game': 'sabe-essa', 'api_version': API_VERSION, 'catalog_count': len(engine.catalog)},
                             headers={'Cache-Control': 'no-store'})
 
     async def public_rooms(request):

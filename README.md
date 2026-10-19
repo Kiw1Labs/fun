@@ -2,7 +2,7 @@
 
 Portal de jogos multiplayer em pt-BR. Primeiro jogo: **Sabe Essa?**. O portal e a home do jogo usam `/`; salas usam exatamente quatro letras, por exemplo `/ABCD`.
 
-Implementação com motor autoritativo, HTTP/WebSocket, frontend responsivo claro/escuro e persistência privada. **Produção começa sem desafios.** A interface impede iniciar quando o catálogo não satisfaz composição e histórico. Fixtures artificiais existem somente nos testes, fora do pacote de produção.
+Implementação com motor autoritativo, HTTP/WebSocket, frontend responsivo claro/escuro e persistência privada. **Acervo inicial real: 90 perguntas, 48 imagens WebP locais e 42 textos.** Ver [banco de perguntas](docs/BANCO_DE_PERGUNTAS.md) para importação, fontes e licenças. A interface impede iniciar quando o catálogo não satisfaz composição e histórico. Fixtures artificiais existem somente nos testes, fora do pacote de produção.
 
 ## Desenvolvimento no Windows
 
@@ -58,4 +58,4 @@ Leia [especificação](docs/PRODUCT_SPEC.md), [arquitetura original](docs/ARCHIT
 
 A auditoria funcional mais recente, com as correções da criação de sala e os testes ampliados, está em [AUDITORIA_FUNCIONAL.md](docs/AUDITORIA_FUNCIONAL.md).
 
-O celular foi inspecionado, mas Fun **não foi ativado** devido à carga elevada e ao impacto ainda não validado do reload compartilhado. Nenhum serviço existente foi alterado. DNS Fun resolve; HTTPS Fun respondeu 502, portanto não há declaração de disponibilidade pública. Portas 5050/8082 estavam livres e os serviços antigos responderam. O relatório distingue verificações locais, remotas e pendências.
+Fun foi ativado no Kiwiki Lab em 18/10/2026, com backend 5050 e rota no Nginx existente em 8082; HTTPS e WSS foram verificados. A atualização automática integra o worker existente, com intervalo de espera de 5 minutos, validação de CI, backup e rollback. O banco e as imagens persistem em `/root/fun/shared`. Consulte [banco e operação](docs/BANCO_DE_PERGUNTAS.md) e o relatório administrativo de implantação para evidências de cada publicação.

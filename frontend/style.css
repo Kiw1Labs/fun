@@ -264,3 +264,7 @@ dialog p { font-size: .875rem; }
 @media (prefers-reduced-motion: no-preference) {
   button, a { transition: background .15s, color .15s, opacity .15s; }
 }
+.media-credits { margin-top: 20px; font-size: .78rem; line-height: 1.6; overflow-wrap: anywhere; }
+.media-credits summary { cursor: pointer; }
+#credits-dialog { max-width: 620px; max-height: 85dvh; overflow-y: auto; }
+#credits-content article { border-bottom: 1px solid var(--border); padding: 12px 0; }

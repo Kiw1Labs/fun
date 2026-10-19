@@ -6,7 +6,7 @@ import secrets
 import string
 import time
 
-from .catalog import export
+from .catalog import Challenge, export
 from .games import GAMES
 from .games.sabe_essa import points as points
 
@@ -333,9 +333,7 @@ class Engine:
         current = None
         if r['index'] >= 0 and r['phase'] in ('question', 'reveal', 'results'):
             challenge = r['deck'][r['index']]
-            current = {key: challenge[key] for key in ('id', 'kind', 'prompt', 'image')}
-            if r['phase'] in ('reveal', 'results'):
-                current['answer'] = challenge['answer']
+            current = Challenge(**challenge).public(reveal=r['phase'] in ('reveal', 'results'))
         me = r['people'].get(pid, {})
         return dict(type='state', code=code, game=r['game'], phase=r['phase'],
                     room_name=r['room_name'], visibility=r['visibility'],

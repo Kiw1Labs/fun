@@ -1,5 +1,7 @@
 # Implantação aditiva no Kiwiki Lab
 
+**Atualização:** Fun foi ativado em 18/10/2026, com HTTP/HTTPS/WSS verificados. As seções abaixo preservam o inventário e o plano da primeira implantação, não o estado atual. O worker compartilhado agora inclui Fun, com espera de 300 segundos, gate de CI, backup e rollback; ver [operação do catálogo e atualizador](BANCO_DE_PERGUNTAS.md).
+
 Estado em 18/10/2026: **preparado, não ativado**. Portas 5050/8082 livres no inventário; reconfirmar imediatamente antes da ativação. O celular estava com load average aproximadamente 25 para a máquina toda. Não se comprovou margem segura de CPU; nenhum pacote foi instalado, serviço iniciado, configuração ativa alterada ou reload executado no celular.
 
 O master confirmado é `nginx -c /kiwiki-infra/nginx-local.conf -g 'daemon off;'` dentro do Debian, com o bind Termux `$HOME/kiwiki-infra:/kiwiki-infra`. Os arquivos `/etc/nginx/sites-enabled/*` são informativos e **não** são o ponto de ativação deste master. Há cloudflared e PostgreSQL já em execução. Os scripts administrativos existentes mostram supervisão Python (`infra_controller.py` e supervisor de túnel com PID+nascimento); o diretório runit existe, mas `sv status` não comprovou runit ativo. Não criar outro túnel, proxy ou banco global.

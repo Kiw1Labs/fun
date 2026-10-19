@@ -1,0 +1,2 @@
+# Somente preparação/auditoria de mídia no PC. Não instalar em produção.
+Pillow==13.0.0

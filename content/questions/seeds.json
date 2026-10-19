@@ -1,0 +1,1236 @@
+[
+  {
+    "id": "se_0001",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadores",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este apresentador?",
+    "answer": "Silvio Santos",
+    "aliases": [
+      "Sílvio Santos",
+      "Senor Abravanel"
+    ],
+    "wiki": "Silvio Santos",
+    "search": "Silvio Santos portrait"
+  },
+  {
+    "id": "se_0002",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadoras",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é esta apresentadora?",
+    "answer": "Xuxa",
+    "aliases": [
+      "Xuxa Meneghel",
+      "Maria da Graça Meneghel"
+    ],
+    "wiki": "Xuxa",
+    "search": "Xuxa Meneghel portrait"
+  },
+  {
+    "id": "se_0003",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadores",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este apresentador?",
+    "answer": "Faustão",
+    "aliases": [
+      "Fausto Silva"
+    ],
+    "wiki": "Fausto Silva",
+    "search": "Fausto Silva"
+  },
+  {
+    "id": "se_0004",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadoras",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é esta apresentadora?",
+    "answer": "Hebe Camargo",
+    "aliases": [
+      "Hebe"
+    ],
+    "wiki": "Hebe Camargo",
+    "search": "Hebe Camargo portrait"
+  },
+  {
+    "id": "se_0005",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadores",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é este apresentador?",
+    "answer": "Luciano Huck",
+    "aliases": [],
+    "wiki": "Luciano Huck",
+    "search": "Luciano Huck portrait"
+  },
+  {
+    "id": "se_0006",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadoras",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é esta apresentadora?",
+    "answer": "Eliana",
+    "aliases": [
+      "Eliana Michaelichen"
+    ],
+    "wiki": "Eliana",
+    "search": "Eliana Michaelichen"
+  },
+  {
+    "id": "se_0007",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadoras",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é esta apresentadora?",
+    "answer": "Ana Maria Braga",
+    "aliases": [],
+    "wiki": "Ana Maria Braga",
+    "search": "Ana Maria Braga"
+  },
+  {
+    "id": "se_0008",
+    "category": "TV e entretenimento",
+    "subcategory": "apresentadores",
+    "kind": "image",
+    "difficulty": "hard",
+    "prompt": "Quem é este apresentador?",
+    "answer": "Serginho Groisman",
+    "aliases": [
+      "Sérgio Groisman"
+    ],
+    "wiki": "Serginho Groisman",
+    "search": "Serginho Groisman"
+  },
+  {
+    "id": "se_0009",
+    "category": "TV e entretenimento",
+    "subcategory": "programas infantis",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual programa infantil da Globo mostrava a cadela Priscila trabalhando em uma emissora de TV?",
+    "answer": "TV Colosso",
+    "aliases": [
+      "Tevê Colosso"
+    ],
+    "wiki": "TV Colosso"
+  },
+  {
+    "id": "se_0010",
+    "category": "TV e entretenimento",
+    "subcategory": "personagens",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual menino da TV mexicana mora em uma vila e costuma se esconder em um barril?",
+    "answer": "Chaves",
+    "aliases": [
+      "El Chavo",
+      "El Chavo del Ocho",
+      "Chavo"
+    ],
+    "wiki": "Chaves (personagem)"
+  },
+  {
+    "id": "se_0011",
+    "category": "TV e entretenimento",
+    "subcategory": "humor",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual programa de humor do SBT tem um banco de praça como cenário principal?",
+    "answer": "A Praça É Nossa",
+    "aliases": [
+      "Praça É Nossa"
+    ],
+    "wiki": "A Praça É Nossa"
+  },
+  {
+    "id": "se_0012",
+    "category": "TV e entretenimento",
+    "subcategory": "novelas",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual novela brasileira de 2012 tem Carminha como grande vilã?",
+    "answer": "Avenida Brasil",
+    "aliases": [],
+    "wiki": "Avenida Brasil (telenovela)"
+  },
+  {
+    "id": "se_0013",
+    "category": "TV e entretenimento",
+    "subcategory": "programas educativos",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual programa de ciências tinha o rato Lester e um cientista de jaleco verde?",
+    "answer": "O Mundo de Beakman",
+    "aliases": [
+      "Mundo de Beakman",
+      "Beakman's World",
+      "Beakman"
+    ],
+    "wiki": "O Mundo de Beakman"
+  },
+  {
+    "id": "se_0014",
+    "category": "TV e entretenimento",
+    "subcategory": "programas infantis",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual programa infantil da TV Cultura tinha o Professor Tibúrcio?",
+    "answer": "Rá-Tim-Bum",
+    "aliases": [
+      "Ratimbum"
+    ],
+    "wiki": "Rá-Tim-Bum"
+  },
+  {
+    "id": "se_0015",
+    "category": "TV e entretenimento",
+    "subcategory": "séries infantis",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual série brasileira acompanhava Lucas Silva e Silva e seu gravador?",
+    "answer": "Mundo da Lua",
+    "aliases": [],
+    "wiki": "Mundo da Lua"
+  },
+  {
+    "id": "se_0016",
+    "category": "Memes e internet",
+    "subcategory": "humoristas na internet",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este humorista?",
+    "answer": "Whindersson Nunes",
+    "aliases": [
+      "Whindersson"
+    ],
+    "wiki": "Whindersson Nunes",
+    "search": "Whindersson Nunes"
+  },
+  {
+    "id": "se_0017",
+    "category": "Memes e internet",
+    "subcategory": "criadores de conteúdo",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este criador de conteúdo?",
+    "answer": "Felipe Neto",
+    "aliases": [],
+    "wiki": "Felipe Neto",
+    "search": "Felipe Neto"
+  },
+  {
+    "id": "se_0018",
+    "category": "Memes e internet",
+    "subcategory": "símbolos da internet",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Qual enciclopédia on-line é representada por este símbolo?",
+    "answer": "Wikipédia",
+    "aliases": [
+      "Wikipedia"
+    ],
+    "wiki": "Wikipédia",
+    "search": "Wikipedia logo"
+  },
+  {
+    "id": "se_0019",
+    "category": "Memes e internet",
+    "subcategory": "personalidades de memes",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é esta cantora, muito presente em memes brasileiros?",
+    "answer": "Gretchen",
+    "aliases": [
+      "Maria Odete Brito de Miranda"
+    ],
+    "wiki": "Gretchen",
+    "search": "Gretchen Brazilian singer"
+  },
+  {
+    "id": "se_0020",
+    "category": "Memes e internet",
+    "subcategory": "personalidades de memes",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é esta cantora e personalidade da internet?",
+    "answer": "Inês Brasil",
+    "aliases": [
+      "Ines Brasil",
+      "Inês Tânia Lima"
+    ],
+    "wiki": "Inês Brasil",
+    "search": "Inês Brasil"
+  },
+  {
+    "id": "se_0021",
+    "category": "Memes e internet",
+    "subcategory": "personalidades de memes",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é esta socialite e personalidade da TV?",
+    "answer": "Narcisa Tamborindeguy",
+    "aliases": [],
+    "wiki": "Narcisa Tamborindeguy",
+    "search": "Narcisa Tamborindeguy"
+  },
+  {
+    "id": "se_0022",
+    "category": "Memes e internet",
+    "subcategory": "personalidades da internet",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é este ex-BBB e personalidade da internet?",
+    "answer": "Gil do Vigor",
+    "aliases": [
+      "Gilberto Nogueira",
+      "Gilberto José Nogueira Junior"
+    ],
+    "wiki": "Gil do Vigor",
+    "search": "Gil do Vigor"
+  },
+  {
+    "id": "se_0023",
+    "category": "Memes e internet",
+    "subcategory": "personalidades de memes",
+    "kind": "image",
+    "difficulty": "hard",
+    "prompt": "Quem é este treinador de futebol?",
+    "answer": "Joel Santana",
+    "aliases": [],
+    "wiki": "Joel Santana",
+    "search": "Joel Santana"
+  },
+  {
+    "id": "se_0024",
+    "category": "Memes e internet",
+    "subcategory": "memes de animais",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual é a raça do cachorro que aparece no meme Doge?",
+    "answer": "Shiba Inu",
+    "aliases": [
+      "Shiba"
+    ],
+    "wiki": "Doge (meme)"
+  },
+  {
+    "id": "se_0025",
+    "category": "Memes e internet",
+    "subcategory": "vídeos virais brasileiros",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Como ficou conhecido o vídeo brasileiro em que um rapaz surpreende a família cantando um hino muito alto?",
+    "answer": "Para Nossa Alegria",
+    "aliases": [
+      "Pra Nossa Alegria"
+    ],
+    "wiki": "Para Nossa Alegria"
+  },
+  {
+    "id": "se_0026",
+    "category": "Memes e internet",
+    "subcategory": "memes clássicos",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Como ficou conhecido o meme do bebê de camiseta verde que fecha o punho na praia?",
+    "answer": "Success Kid",
+    "aliases": [
+      "Bebê Sucesso",
+      "Menino Sucesso"
+    ],
+    "wiki": "Success Kid",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0027",
+    "category": "Memes e internet",
+    "subcategory": "memes animados",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual meme mostra um gato com corpo de torrada voando e deixando um arco-íris?",
+    "answer": "Nyan Cat",
+    "aliases": [],
+    "wiki": "Nyan Cat"
+  },
+  {
+    "id": "se_0028",
+    "category": "Memes e internet",
+    "subcategory": "memes de desenhos",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "De qual desenho vem o meme do punho fechado com a manga de um suéter amarelo?",
+    "answer": "Arthur",
+    "aliases": [],
+    "wiki": "Arthur (TV series)",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0029",
+    "category": "Memes e internet",
+    "subcategory": "memes de animais",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual é o nome do gato branco sentado diante de uma salada no meme da mulher gritando com um gato?",
+    "answer": "Smudge",
+    "aliases": [
+      "Smudge the Cat"
+    ],
+    "wiki": "Woman yelling at a cat",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0030",
+    "category": "Memes e internet",
+    "subcategory": "memes de animais",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual era o nome do gato do vídeo original conhecido como Keyboard Cat?",
+    "answer": "Fatso",
+    "aliases": [],
+    "wiki": "Keyboard Cat"
+  },
+  {
+    "id": "se_0031",
+    "category": "Games",
+    "subcategory": "controles de videogame",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "A qual família de consoles pertence este controle?",
+    "answer": "PlayStation",
+    "aliases": [
+      "Play Station",
+      "Sony PlayStation"
+    ],
+    "wiki": "DualShock",
+    "search": "DualShock controller",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0032",
+    "category": "Games",
+    "subcategory": "controles de videogame",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "A qual família de consoles pertence este controle?",
+    "answer": "Xbox",
+    "aliases": [
+      "X Box",
+      "Microsoft Xbox"
+    ],
+    "wiki": "Controle do Xbox 360",
+    "search": "Xbox 360 controller white isolated"
+  },
+  {
+    "id": "se_0033",
+    "category": "Games",
+    "subcategory": "controles de videogame",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Para qual console foi criado este controle com sensor de movimento?",
+    "answer": "Wii",
+    "aliases": [
+      "Nintendo Wii"
+    ],
+    "wiki": "Wii Remote",
+    "search": "Wii Remote front no strap"
+  },
+  {
+    "id": "se_0034",
+    "category": "Games",
+    "subcategory": "consoles portáteis",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Para qual console clássico foi criado este controle?",
+    "answer": "Nintendinho",
+    "aliases": [
+      "NES",
+      "Nintendo Entertainment System",
+      "Nintendo NES"
+    ],
+    "wiki": "Nintendo Entertainment System",
+    "search": "NES controller"
+  },
+  {
+    "id": "se_0035",
+    "category": "Games",
+    "subcategory": "controles de videogame",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Para qual console foi criado este controle de três pontas?",
+    "answer": "Nintendo 64",
+    "aliases": [
+      "N64",
+      "Nintendo64"
+    ],
+    "wiki": "Controle do Nintendo 64",
+    "search": "Nintendo 64 controller gray"
+  },
+  {
+    "id": "se_0036",
+    "category": "Games",
+    "subcategory": "controles de videogame",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "De qual console são estes controles removíveis?",
+    "answer": "Nintendo Switch",
+    "aliases": [
+      "Switch"
+    ],
+    "wiki": "Joy-Con",
+    "search": "Joy-Con pair"
+  },
+  {
+    "id": "se_0037",
+    "category": "Games",
+    "subcategory": "consoles clássicos",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Qual é este console clássico?",
+    "answer": "Atari 2600",
+    "aliases": [
+      "Atari VCS",
+      "Atari Video Computer System"
+    ],
+    "wiki": "Atari 2600",
+    "search": "Atari 2600 wood console"
+  },
+  {
+    "id": "se_0038",
+    "category": "Games",
+    "subcategory": "controles de videogame",
+    "kind": "image",
+    "difficulty": "hard",
+    "prompt": "Para qual console foi criado este controle?",
+    "answer": "Mega Drive",
+    "aliases": [
+      "Megadrive",
+      "Sega Mega Drive",
+      "Sega Genesis",
+      "Genesis"
+    ],
+    "wiki": "Mega Drive",
+    "search": "Sega Genesis 3 button controller"
+  },
+  {
+    "id": "se_0039",
+    "category": "Games",
+    "subcategory": "personagens da Nintendo",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual encanador da Nintendo é irmão do Luigi?",
+    "answer": "Mario",
+    "aliases": [
+      "Super Mario",
+      "Mário"
+    ],
+    "wiki": "Mario (personagem)"
+  },
+  {
+    "id": "se_0040",
+    "category": "Games",
+    "subcategory": "jogos de construção",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual jogo de blocos permite construir mundos e enfrentar Creepers?",
+    "answer": "Minecraft",
+    "aliases": [
+      "Mine Craft"
+    ],
+    "wiki": "Minecraft"
+  },
+  {
+    "id": "se_0041",
+    "category": "Games",
+    "subcategory": "personagens da Sega",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual personagem azul da Sega é conhecido por correr muito rápido?",
+    "answer": "Sonic",
+    "aliases": [
+      "Sonic the Hedgehog"
+    ],
+    "wiki": "Sonic the Hedgehog (personagem)"
+  },
+  {
+    "id": "se_0042",
+    "category": "Games",
+    "subcategory": "personagens de aventura",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual heroína é a protagonista da série Tomb Raider?",
+    "answer": "Lara Croft",
+    "aliases": [],
+    "wiki": "Lara Croft"
+  },
+  {
+    "id": "se_0043",
+    "category": "Games",
+    "subcategory": "jogos de luta",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual série de jogos de luta popularizou o golpe Hadouken?",
+    "answer": "Street Fighter",
+    "aliases": [],
+    "wiki": "Hadouken"
+  },
+  {
+    "id": "se_0044",
+    "category": "Games",
+    "subcategory": "personagens da Nintendo",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual é o nome da protagonista da série de jogos Metroid?",
+    "answer": "Samus Aran",
+    "aliases": [
+      "Samus"
+    ],
+    "wiki": "Samus Aran"
+  },
+  {
+    "id": "se_0045",
+    "category": "Games",
+    "subcategory": "games brasileiros",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual estúdio brasileiro desenvolveu o primeiro Horizon Chase?",
+    "answer": "Aquiris",
+    "aliases": [
+      "Aquiris Game Studio"
+    ],
+    "wiki": "Horizon Chase"
+  },
+  {
+    "id": "se_0046",
+    "category": "Música",
+    "subcategory": "cantores brasileiros",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este cantor?",
+    "answer": "Roberto Carlos",
+    "aliases": [
+      "Roberto Carlos Braga"
+    ],
+    "wiki": "Roberto Carlos",
+    "search": "Roberto Carlos singer portrait"
+  },
+  {
+    "id": "se_0047",
+    "category": "Música",
+    "subcategory": "cantoras brasileiras",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é esta cantora?",
+    "answer": "Anitta",
+    "aliases": [
+      "Larissa de Macedo Machado"
+    ],
+    "wiki": "Anitta",
+    "search": "Anitta singer portrait"
+  },
+  {
+    "id": "se_0048",
+    "category": "Música",
+    "subcategory": "cantoras brasileiras",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é esta cantora?",
+    "answer": "Ivete Sangalo",
+    "aliases": [
+      "Ivete"
+    ],
+    "wiki": "Ivete Sangalo",
+    "search": "Ivete Sangalo portrait"
+  },
+  {
+    "id": "se_0049",
+    "category": "Música",
+    "subcategory": "cantores brasileiros",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este cantor e compositor?",
+    "answer": "Caetano Veloso",
+    "aliases": [],
+    "wiki": "Caetano Veloso",
+    "search": "Caetano Veloso portrait"
+  },
+  {
+    "id": "se_0050",
+    "category": "Música",
+    "subcategory": "cantores brasileiros",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é este cantor e compositor?",
+    "answer": "Gilberto Gil",
+    "aliases": [],
+    "wiki": "Gilberto Gil",
+    "search": "Gilberto Gil portrait"
+  },
+  {
+    "id": "se_0051",
+    "category": "Música",
+    "subcategory": "cantoras brasileiras",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é esta cantora?",
+    "answer": "Marisa Monte",
+    "aliases": [],
+    "wiki": "Marisa Monte",
+    "search": "Marisa Monte"
+  },
+  {
+    "id": "se_0052",
+    "category": "Música",
+    "subcategory": "cantoras brasileiras",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Quem é esta cantora?",
+    "answer": "Rita Lee",
+    "aliases": [
+      "Rita Lee Jones",
+      "Rita Lee Jones de Carvalho"
+    ],
+    "wiki": "Rita Lee",
+    "search": "Rita Lee portrait"
+  },
+  {
+    "id": "se_0053",
+    "category": "Música",
+    "subcategory": "cantores brasileiros",
+    "kind": "image",
+    "difficulty": "hard",
+    "prompt": "Quem é este cantor e compositor?",
+    "answer": "Alceu Valença",
+    "aliases": [],
+    "wiki": "Alceu Valença",
+    "search": "Alceu Valença portrait"
+  },
+  {
+    "id": "se_0054",
+    "category": "Música",
+    "subcategory": "bandas internacionais",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual banda britânica reuniu John, Paul, George e Ringo?",
+    "answer": "The Beatles",
+    "aliases": [
+      "Beatles",
+      "Os Beatles"
+    ],
+    "wiki": "The Beatles"
+  },
+  {
+    "id": "se_0055",
+    "category": "Música",
+    "subcategory": "sertanejo",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual cantora brasileira ficou conhecida como a Rainha da Sofrência?",
+    "answer": "Marília Mendonça",
+    "aliases": [
+      "Marilia Mendonça"
+    ],
+    "wiki": "Marília Mendonça"
+  },
+  {
+    "id": "se_0056",
+    "category": "Música",
+    "subcategory": "sertanejo",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual dupla sertaneja lançou a gravação de Evidências que virou sucesso em 1990?",
+    "answer": "Chitãozinho e Xororó",
+    "aliases": [
+      "Chitãozinho & Xororó",
+      "Xororó e Chitãozinho"
+    ],
+    "wiki": "Evidências (canção)"
+  },
+  {
+    "id": "se_0057",
+    "category": "Música",
+    "subcategory": "música popular brasileira",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual grupo brasileiro lançou o álbum Acabou Chorare?",
+    "answer": "Novos Baianos",
+    "aliases": [
+      "Os Novos Baianos"
+    ],
+    "wiki": "Acabou Chorare"
+  },
+  {
+    "id": "se_0058",
+    "category": "Música",
+    "subcategory": "manguebeat",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual banda pernambucana lançou Da Lama ao Caos, com Chico Science nos vocais?",
+    "answer": "Nação Zumbi",
+    "aliases": [
+      "Chico Science e Nação Zumbi",
+      "Chico Science & Nação Zumbi"
+    ],
+    "wiki": "Da Lama ao Caos"
+  },
+  {
+    "id": "se_0059",
+    "category": "Música",
+    "subcategory": "rock brasileiro",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual grupo revelou Ney Matogrosso ao grande público nos anos 1970?",
+    "answer": "Secos & Molhados",
+    "aliases": [
+      "Secos e Molhados"
+    ],
+    "wiki": "Secos & Molhados"
+  },
+  {
+    "id": "se_0060",
+    "category": "Música",
+    "subcategory": "compositores brasileiros",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual compositor brasileiro criou Aquarela do Brasil?",
+    "answer": "Ary Barroso",
+    "aliases": [
+      "Ari Barroso"
+    ],
+    "wiki": "Aquarela do Brasil"
+  },
+  {
+    "id": "se_0061",
+    "category": "Cinema e séries",
+    "subcategory": "atrizes brasileiras",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é esta atriz?",
+    "answer": "Fernanda Montenegro",
+    "aliases": [
+      "Arlette Pinheiro Esteves da Silva"
+    ],
+    "wiki": "Fernanda Montenegro",
+    "search": "Fernanda Montenegro"
+  },
+  {
+    "id": "se_0062",
+    "category": "Cinema e séries",
+    "subcategory": "atores brasileiros",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este ator?",
+    "answer": "Wagner Moura",
+    "aliases": [],
+    "wiki": "Wagner Moura",
+    "search": "Wagner Moura portrait"
+  },
+  {
+    "id": "se_0063",
+    "category": "Cinema e séries",
+    "subcategory": "atores internacionais",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este ator?",
+    "answer": "Will Smith",
+    "aliases": [
+      "Willard Carroll Smith Jr"
+    ],
+    "wiki": "Will Smith",
+    "search": "Will Smith portrait"
+  },
+  {
+    "id": "se_0064",
+    "category": "Cinema e séries",
+    "subcategory": "atrizes internacionais",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é esta atriz?",
+    "answer": "Viola Davis",
+    "aliases": [],
+    "wiki": "Viola Davis",
+    "search": "Viola Davis portrait"
+  },
+  {
+    "id": "se_0065",
+    "category": "Cinema e séries",
+    "subcategory": "personagens clássicos",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Qual detetive é representado nesta ilustração clássica?",
+    "answer": "Sherlock Holmes",
+    "aliases": [
+      "Sherlock"
+    ],
+    "wiki": "Sherlock Holmes",
+    "search": "Sherlock Holmes Paget"
+  },
+  {
+    "id": "se_0066",
+    "category": "Cinema e séries",
+    "subcategory": "personagens clássicos",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Qual personagem de madeira aparece nesta ilustração clássica?",
+    "answer": "Pinóquio",
+    "aliases": [
+      "Pinocchio"
+    ],
+    "wiki": "Pinóquio",
+    "search": "Pinocchio Chiostri"
+  },
+  {
+    "id": "se_0067",
+    "category": "Cinema e séries",
+    "subcategory": "cinema clássico",
+    "kind": "image",
+    "difficulty": "hard",
+    "prompt": "Quem é este comediante do cinema mudo?",
+    "answer": "Charlie Chaplin",
+    "aliases": [
+      "Charles Chaplin",
+      "Charles Spencer Chaplin",
+      "Chaplin"
+    ],
+    "wiki": "Charlie Chaplin",
+    "search": "Charlie Chaplin portrait 1920"
+  },
+  {
+    "id": "se_0068",
+    "category": "Cinema e séries",
+    "subcategory": "personagens clássicos",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Qual personagem de um clássico literário aparece nesta ilustração?",
+    "answer": "Alice",
+    "aliases": [
+      "Alice no País das Maravilhas",
+      "Alice in Wonderland"
+    ],
+    "wiki": "Alice (Alice's Adventures in Wonderland)",
+    "search": "Alice Tenniel",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0069",
+    "category": "Cinema e séries",
+    "subcategory": "animação",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual personagem de Toy Story é o patrulheiro espacial amigo do caubói Woody?",
+    "answer": "Buzz Lightyear",
+    "aliases": [
+      "Buzz"
+    ],
+    "wiki": "Buzz Lightyear"
+  },
+  {
+    "id": "se_0070",
+    "category": "Cinema e séries",
+    "subcategory": "animação",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual ogro verde mora em um pântano e é amigo de um Burro falante?",
+    "answer": "Shrek",
+    "aliases": [],
+    "wiki": "Shrek (personagem)"
+  },
+  {
+    "id": "se_0071",
+    "category": "Cinema e séries",
+    "subcategory": "fantasia",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual escola de magia é frequentada por Harry Potter?",
+    "answer": "Hogwarts",
+    "aliases": [
+      "Escola de Magia e Bruxaria de Hogwarts",
+      "Hogwarts School of Witchcraft and Wizardry"
+    ],
+    "wiki": "Hogwarts"
+  },
+  {
+    "id": "se_0072",
+    "category": "Cinema e séries",
+    "subcategory": "cinema brasileiro",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual filme brasileiro acompanha Buscapé e Zé Pequeno em uma comunidade do Rio?",
+    "answer": "Cidade de Deus",
+    "aliases": [
+      "City of God"
+    ],
+    "wiki": "Cidade de Deus (filme)"
+  },
+  {
+    "id": "se_0073",
+    "category": "Cinema e séries",
+    "subcategory": "ficção científica",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual personagem de Star Wars pilota a Millennium Falcon ao lado de Chewbacca?",
+    "answer": "Han Solo",
+    "aliases": [],
+    "wiki": "Han Solo"
+  },
+  {
+    "id": "se_0074",
+    "category": "Cinema e séries",
+    "subcategory": "terror",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual é o nome do hotel do filme O Iluminado, de Stanley Kubrick?",
+    "answer": "Overlook",
+    "aliases": [
+      "Hotel Overlook",
+      "Overlook Hotel"
+    ],
+    "wiki": "The Shining (film)",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0075",
+    "category": "Cinema e séries",
+    "subcategory": "animação japonesa",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual estúdio japonês produziu Meu Amigo Totoro e A Viagem de Chihiro?",
+    "answer": "Studio Ghibli",
+    "aliases": [
+      "Estúdio Ghibli",
+      "Ghibli"
+    ],
+    "wiki": "Studio Ghibli"
+  },
+  {
+    "id": "se_0076",
+    "category": "Cultura e nostalgia",
+    "subcategory": "ícones do esporte",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este jogador de futebol?",
+    "answer": "Pelé",
+    "aliases": [
+      "Edson Arantes do Nascimento"
+    ],
+    "wiki": "Pelé",
+    "search": "Pelé football Brazil"
+  },
+  {
+    "id": "se_0077",
+    "category": "Cultura e nostalgia",
+    "subcategory": "ícones do esporte",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Quem é este piloto brasileiro?",
+    "answer": "Ayrton Senna",
+    "aliases": [
+      "Ayrton Senna da Silva"
+    ],
+    "wiki": "Ayrton Senna",
+    "search": "Ayrton Senna portrait"
+  },
+  {
+    "id": "se_0078",
+    "category": "Cultura e nostalgia",
+    "subcategory": "brinquedos clássicos",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Qual é este quebra-cabeça?",
+    "answer": "Cubo mágico",
+    "aliases": [
+      "Cubo de Rubik",
+      "Rubik's Cube"
+    ],
+    "wiki": "Cubo de Rubik",
+    "search": "Rubiks cube scrambled isolated"
+  },
+  {
+    "id": "se_0079",
+    "category": "Cultura e nostalgia",
+    "subcategory": "brinquedos clássicos",
+    "kind": "image",
+    "difficulty": "easy",
+    "prompt": "Qual é este brinquedo?",
+    "answer": "Ioiô",
+    "aliases": [
+      "Ioio",
+      "Yo-yo",
+      "Yoyo"
+    ],
+    "wiki": "Ioiô",
+    "search": "yo-yo toy"
+  },
+  {
+    "id": "se_0080",
+    "category": "Cultura e nostalgia",
+    "subcategory": "objetos brasileiros",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Como é conhecido este tipo de telefone público no Brasil?",
+    "answer": "Orelhão",
+    "aliases": [
+      "Orelhao"
+    ],
+    "wiki": "Orelhão",
+    "search": "Brazil orelhao public telephone"
+  },
+  {
+    "id": "se_0081",
+    "category": "Cultura e nostalgia",
+    "subcategory": "tecnologia nostálgica",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Qual é este antigo dispositivo de armazenamento de computador?",
+    "answer": "Disquete",
+    "aliases": [
+      "Disco flexível",
+      "Floppy disk",
+      "Floppy"
+    ],
+    "wiki": "Disquete",
+    "search": "3.5 inch floppy disk blank"
+  },
+  {
+    "id": "se_0082",
+    "category": "Cultura e nostalgia",
+    "subcategory": "tecnologia nostálgica",
+    "kind": "image",
+    "difficulty": "medium",
+    "prompt": "Qual é este formato de mídia usado para ouvir música?",
+    "answer": "Fita cassete",
+    "aliases": [
+      "Cassete",
+      "Cassette",
+      "Fita K7",
+      "K7"
+    ],
+    "wiki": "Fita cassete",
+    "search": "compact cassette"
+  },
+  {
+    "id": "se_0083",
+    "category": "Cultura e nostalgia",
+    "subcategory": "brinquedos clássicos",
+    "kind": "image",
+    "difficulty": "hard",
+    "prompt": "Qual é este brinquedo feito de uma mola?",
+    "answer": "Mola maluca",
+    "aliases": [
+      "Slinky",
+      "Mola mágica"
+    ],
+    "wiki": "Slinky",
+    "search": "Slinky spring toy",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0084",
+    "category": "Cultura e nostalgia",
+    "subcategory": "festas populares",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual festa popular brasileira reúne quadrilhas, fogueira e comidas de milho em junho?",
+    "answer": "Festa junina",
+    "aliases": [
+      "Festas juninas",
+      "São João",
+      "Festa de São João",
+      "Arraial"
+    ],
+    "wiki": "Festa junina"
+  },
+  {
+    "id": "se_0085",
+    "category": "Cultura e nostalgia",
+    "subcategory": "folclore",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual personagem do folclore brasileiro tem uma perna só e usa gorro vermelho?",
+    "answer": "Saci",
+    "aliases": [
+      "Saci-pererê",
+      "Saci Pererê"
+    ],
+    "wiki": "Saci"
+  },
+  {
+    "id": "se_0086",
+    "category": "Cultura e nostalgia",
+    "subcategory": "brincadeiras",
+    "kind": "text",
+    "difficulty": "easy",
+    "prompt": "Qual brinquedo colorido voa preso a uma linha e também é chamado de papagaio?",
+    "answer": "Pipa",
+    "aliases": [
+      "Papagaio",
+      "Pandorga",
+      "Raia"
+    ],
+    "wiki": "Pipa (brinquedo)"
+  },
+  {
+    "id": "se_0087",
+    "category": "Cultura e nostalgia",
+    "subcategory": "literatura infantil",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual escritor brasileiro criou a turma do Sítio do Picapau Amarelo?",
+    "answer": "Monteiro Lobato",
+    "aliases": [
+      "José Bento Monteiro Lobato"
+    ],
+    "wiki": "Monteiro Lobato"
+  },
+  {
+    "id": "se_0088",
+    "category": "Cultura e nostalgia",
+    "subcategory": "internet dos anos 2000",
+    "kind": "text",
+    "difficulty": "medium",
+    "prompt": "Qual mensageiro de computador ficou famoso por permitir enviar uma tremida na janela?",
+    "answer": "MSN Messenger",
+    "aliases": [
+      "MSN",
+      "Windows Live Messenger",
+      "Live Messenger"
+    ],
+    "wiki": "MSN Messenger",
+    "wiki_language": "en"
+  },
+  {
+    "id": "se_0089",
+    "category": "Cultura e nostalgia",
+    "subcategory": "brinquedos eletrônicos",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual brinquedo eletrônico da Tectoy, lançado em 1988, fazia perguntas com livros de atividades?",
+    "answer": "Pense Bem",
+    "aliases": [
+      "Pensebem"
+    ],
+    "wiki": "Pense Bem",
+    "source_override": "https://www.loja.tectoy.com.br/quem-somos/"
+  },
+  {
+    "id": "se_0090",
+    "category": "Cultura e nostalgia",
+    "subcategory": "tecnologia nostálgica",
+    "kind": "text",
+    "difficulty": "hard",
+    "prompt": "Qual aparelho de mensagens dos anos 1990 também era chamado de bip?",
+    "answer": "Pager",
+    "aliases": [
+      "Bip",
+      "Beeper"
+    ],
+    "wiki": "Pager"
+  }
+]

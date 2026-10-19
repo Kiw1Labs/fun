@@ -1,4 +1,4 @@
-"""Catálogo privado; nenhum desafio de demonstração é carregado em produção."""
+"""Catálogo editorial privado, seleção exata e projeção pública sem respostas antecipadas."""
 import json
 import random
 import re
@@ -24,11 +24,29 @@ class Challenge:
     classification: list[str]
     rights: str
     image: str | None = None
+    category: str = ''
+    subcategory: str = ''
+    source_url: str = ''
+    media_source_url: str = ''
+    license: str = ''
+    license_url: str = ''
+    attribution: str = ''
+    author: str = ''
+    status: str = 'active'
+    media_type: str = ''
+    media_sha256: str = ''
+    verified_at: str = ''
+    set_id: str = ''
+    verification_note: str = ''
+    rights_note: str = ''
 
     def public(self, reveal=False):
         data = {k: getattr(self, k) for k in ('id', 'kind', 'prompt', 'image')}
         if reveal:
             data['answer'] = self.answer
+            if self.attribution:
+                data['credits'] = {k: getattr(self, k) for k in
+                                   ('attribution', 'author', 'license', 'license_url', 'media_source_url', 'source_url')}
         return data
 
 
@@ -38,7 +56,12 @@ def validate(rows):
     result = []
     ids = set()
     for row in rows:
-        c = Challenge(**row)
+        if not isinstance(row, dict):
+            raise ValueError('Cada desafio deve ser um objeto.')
+        try:
+            c = Challenge(**row)
+        except TypeError as exc:
+            raise ValueError('Campos de desafio ausentes ou desconhecidos.') from exc
         if not re.fullmatch(r'[a-zA-Z0-9_-]{1,80}', c.id) or c.id in ids:
             raise ValueError('Identificador inválido ou duplicado.')
         if c.kind not in ('image', 'text') or c.difficulty not in ('easy', 'medium', 'hard'):
@@ -55,20 +78,30 @@ def validate(rows):
             raise ValueError('Imagem deve ser um arquivo local em /media/.')
         if c.kind == 'text' and c.image is not None:
             raise ValueError('Desafio de texto não usa imagem.')
+        if c.status not in ('active', 'draft', 'review', 'inactive'):
+            raise ValueError('Status editorial inválido.')
+        categories = ('TV e entretenimento', 'Memes e internet', 'Games', 'Música', 'Cinema e séries', 'Cultura e nostalgia')
+        if c.category and c.category not in categories:
+            raise ValueError('Categoria editorial inválida.')
+        for value in (c.source_url, c.media_source_url, c.license_url):
+            if value and (not isinstance(value, str) or len(value) > 2000 or not re.fullmatch(r'https://[^\s<>"\x00-\x1f]+', value)):
+                raise ValueError('Fonte/licença deve usar uma URL HTTPS válida.')
+        if c.media_sha256 and not re.fullmatch('[0-9a-f]{64}', c.media_sha256):
+            raise ValueError('Hash da mídia inválido.')
         ids.add(c.id)
         result.append(c)
     return result
 
 
 def load(path):
-    return validate(json.loads(Path(path).read_text(encoding='utf-8'))) if Path(path).exists() else []
+    return [c for c in validate(json.loads(Path(path).read_text(encoding='utf-8'))) if c.status == 'active'] if Path(path).exists() else []
 
 
 def select(catalog, excluded):
     """Busca exata dos dois balanços simultâneos, sem seleção gulosa incompleta."""
     groups = {(k, d): [] for k in ('image', 'text') for d in ('easy', 'medium', 'hard')}
     for c in catalog:
-        if c.id not in excluded:
+        if c.status == 'active' and c.id not in excluded:
             groups[c.kind, c.difficulty].append(c)
     options = []
     for easy in range(8):
@@ -80,7 +113,10 @@ def select(catalog, excluded):
                 options.append((image_counts, text_counts))
     if not options:
         raise ValueError('Catálogo insuficiente: são necessários 15 desafios inéditos com 8 imagens, 7 textos e dificuldades 7/5/3, excluindo as três partidas anteriores.')
-    counts = random.choice(options)
+    # Mantém quatro partidas consecutivas viáveis no acervo inicial balanceado.
+    # Catálogos diferentes continuam usando as demais composições exatas.
+    preferred = ((4, 3, 1), (3, 2, 2))
+    counts = preferred if preferred in options else random.choice(options)
     picked = {}
     for k, ns in zip(('image', 'text'), counts):
         picked[k] = [c for d, n in zip(('easy', 'medium', 'hard'), ns) for c in random.sample(groups[k, d], n)]

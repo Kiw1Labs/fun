@@ -19,7 +19,7 @@ Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?�
 - **8 desafios de imagem e 7 de texto**, intercalados; **7 fáceis, 5 médios e 3 difíceis** por partida. Os dois balanços devem coexistir.
 - Tipos de texto: pergunta objetiva curta, falas de personagens e filmes, trechos musicais apresentados como texto, bordões e memes escritos.
 - Sem repetição de desafio na mesma partida e nas **três partidas anteriores** da sala.
-- **Não cadastrar perguntas/desafios definitivos agora**. Criar estrutura de cadastro e importação com validação e fixtures isoladas para testes. Sem catálogo suficiente, impedir iniciar partida com uma mensagem clara. Evitar uso não autorizado de conteúdo protegido.
+- Revisão expressamente solicitada em 18/10/2026: cadastrar acervo real, pesquisado, licenciado e persistido. O banco inicial contém 90 questões e 48 imagens locais; ver [banco de perguntas](BANCO_DE_PERGUNTAS.md). Manter fixtures isoladas e impedir partida sem composição suficiente. Não usar conteúdo protegido sem autorização adequada.
 
 ## Respostas e pontos
 - Participantes podem tentar ilimitadamente até acertar ou acabar o tempo. **Resposta incorreta:** espera individual de **0,5 s** antes de nova tentativa, sem multa de pontos.

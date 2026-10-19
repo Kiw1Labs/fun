@@ -9,6 +9,7 @@ root = Path(__file__).resolve().parents[1]
 files = [p for directory in ('fun', 'dist', 'deploy') for p in (root / directory).rglob('*')
          if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc']
 files += [root / 'requirements.lock', root / '.env.example']
+files += [root / 'tools' / name for name in ('import_catalog.py','validate_catalog.py','backup.py')]
 manifest = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
 (root / 'artifacts').mkdir(exist_ok=True)
 with tarfile.open(root / 'artifacts/fun-release.tar.gz', 'w:gz') as archive:
@@ -18,4 +19,4 @@ with tarfile.open(root / 'artifacts/fun-release.tar.gz', 'w:gz') as archive:
     info = tarfile.TarInfo('MANIFEST.json')
     info.size = len(data)
     archive.addfile(info, io.BytesIO(data))
-print('artifacts/fun-release.tar.gz pronto; catálogo de produção ausente por projeto.')
+print('artifacts/fun-release.tar.gz pronto; conteúdo privado é empacotado separadamente por tools.bundle_content.')

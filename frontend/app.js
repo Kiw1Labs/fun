@@ -5,6 +5,18 @@ const identityDialog = document.querySelector('#identity-dialog');
 let roomIntent = null;
 let directoryRequest = 0;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function mediaCredits(challenge) {
+  const credits=challenge?.credits;
+  if(!credits) return '';
+  const link=(url,label)=>/^https:\/\/[^\s<>"\u0000-\u001f]+$/.test(url||'') ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
+  return `<details class="media-credits"><summary>Fontes e créditos</summary><p>${esc(credits.attribution)}</p><p>${link(credits.media_source_url,'Arquivo original')} · ${link(credits.license_url,credits.license)} · ${link(credits.source_url,'Referência')}</p></details>`;
+}
+const revealedCredits=new Map();
+function showCredits() {
+  const content=document.querySelector('#credits-content');
+  content.innerHTML=revealedCredits.size ? [...revealedCredits.values()].map(c=>`<article><h3>${esc(c.answer)}</h3>${mediaCredits(c)}</article>`).join('') : '<p>Os créditos aparecem aqui depois da revelação de cada desafio.</p>';
+  document.querySelector('#credits-dialog').showModal();
+}
 const codeFromPath = () => /^\/[A-Z]{4}$/.test(location.pathname) ? location.pathname.slice(1) : null;
 let code = codeFromPath(), state = null, ws = null, online = false, stopped = false;
 let reconnect = 0, ping = null, serverAt = 0, receivedAt = 0, feedback = '';
@@ -153,6 +165,7 @@ function render() {
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>Todo mundo pronto?</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${!state.catalog_available ? '<div class="empty-catalog"><strong>O catálogo ainda está sendo preparado.</strong><p>Não há desafios suficientes para esta composição e o histórico da sala. A partida fica disponível após a publicação de conteúdo.</p></div>' : '<p>Imagens e textos intercalados. Sem dicas. Vale tentar até acertar.</p>'}${host ? `<button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar partida</button><p class="fine">É preciso ter pelo menos dois competidores conectados.</p>` : '<p class="fine">O anfitrião inicia a partida.</p>'}`;
   } else if (playing) {
     center = `<div class="round-heading"><span>${me.spectator ? 'Você está acompanhando' : 'Mostre que sabe'}</span><strong id="timer" aria-label="Tempo restante">20s</strong></div><div class="timer-track"><div id="timer-progress"></div></div><h2 class="prompt">${esc(challenge.prompt)}</h2>${challenge.image ? `<img class="challenge-image" src="${esc(challenge.image)}" alt="Imagem do desafio: ${esc(challenge.prompt)}">` : ''}${state.phase === 'reveal' ? `<div class="reveal"><span>A resposta é</span><strong>${esc(challenge.answer)}</strong></div><p class="fine">${state.number===15 ? 'Resultado a seguir.' : 'Próximo desafio em instantes.'}</p>` : me.spectator ? '<p>Você poderá competir na próxima partida.</p>' : me.answered ? '<div class="correct">Você acertou! Aguarde os demais.</div>' : `<form id="answer-form"><label for="answer">Sua resposta</label><div class="answer-row"><input id="answer" maxlength="200" autocomplete="off" required placeholder="Essa eu sei…" value="${esc(previousAnswer)}" ${!online ? 'disabled' : ''}><button ${!online ? 'disabled' : ''}>Responder</button></div></form><p id="answer-feedback" role="status">${esc(feedback)}</p>`}`;
+    if(state.phase==='reveal') center+=mediaCredits(challenge);
   } else {
     const winner = state.people.find(p=>p.id===state.winner);
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>${state.result==='cancelled' ? 'Partida cancelada, sem vencedor.' : state.result==='automatic' ? `${esc(winner?.name)} venceu por permanência.` : '15 desafios. Muitas descobertas.'}</h2><p>Confira os pontos da partida na mesma lista ao lado.</p>${host ? `<div class="actions"><button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar nova partida</button><button data-action="lobby" class="secondary">Retornar todos ao lobby</button></div>${!state.catalog_available ? '<p class="empty-catalog">Catálogo insuficiente para outra partida sem repetir as três anteriores.</p>' : ''}` : '<p>O anfitrião decide quando voltar ao lobby ou começar outra partida.</p>'}`;
@@ -197,6 +210,7 @@ function connect() {
         if(input) input.value='';
       }
       state=msg; online=true; serverAt=msg.server_now; receivedAt=performance.now();
+      if(msg.challenge?.credits) revealedCredits.set(msg.challenge.id,msg.challenge);
       if (!wasOnline) {
         for(const event of pending.values()) ws.send(JSON.stringify(event));
         clearInterval(ping); ping=setInterval(()=>{ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'})); },10000);
@@ -254,6 +268,7 @@ document.addEventListener('submit', async event => {
 });
 document.addEventListener('click', event => {
   const button=event.target.closest('button'); if(!button) return;
+  if(button.id==='credits-open') { showCredits(); return; }
   if(['game-nav','portal-nav'].includes(button.id)) {
     if(code) { location.assign('/'); return; }
     menu(false);
