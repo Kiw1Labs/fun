@@ -249,7 +249,7 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
                     message = await queue.get()
                     await asyncio.wait_for(socket.send_json(message), timeout=5)
                     if message.get('type') == 'state' and (message['phase'] == 'closed' or not any(p['id'] == pid and p['active'] for p in message['people'])):
-                        await socket.close(code=1000)
+                        await socket.close(code=4001, reason='participant_removed')
                         return
 
             sender = asyncio.create_task(send())

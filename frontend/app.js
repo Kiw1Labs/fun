@@ -294,6 +294,13 @@ function connect() {
   };
   ws.onclose = event => {
     online=false; clearInterval(ping);
+    if (event.code===4001) {
+      stopped=true; pending.clear(); stored(`fun:${code}`,null);
+      const player=state?.people.find(person=>person.id===state.you);
+      if(player) player.active=false;
+      render();
+      return;
+    }
     if (event.code===1008) {
       stopped=true; pending.clear();
       toast('Conexão recusada. Feche abas extras ou tente retomar sua sessão.');
