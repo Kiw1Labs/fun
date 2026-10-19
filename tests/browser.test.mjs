@@ -367,7 +367,8 @@ test('portal, home em /, sala, F5, nova aba, entrada e controles do anfitrião',
   page.on('console', msg=>{if(msg.type()==='error'&&msg.text().includes('Content Security Policy')) errors.push(msg.text());});
   await page.goto(origin);
   assert.equal(await page.title(),'Fun');
-  assert.match(await page.locator('link[rel=icon]').getAttribute('href'),/^\/brand\/fun-logo\.png\?v=/);
+  assert.equal(await page.locator('#credits-open').count(),0);
+  assert.match(await page.locator('link[rel=icon]').getAttribute('href'),/^\/brand\/fun-favicon\.png\?v=/);
   assert.deepEqual(await page.locator('link[rel=icon]').evaluate(async link=>{
     const response=await fetch(link.href);
     return {type:response.headers.get('content-type'),signature:Array.from(new Uint8Array(await response.arrayBuffer()).slice(0,8))};

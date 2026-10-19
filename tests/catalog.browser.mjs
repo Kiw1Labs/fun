@@ -72,16 +72,11 @@ try {
     await host.getByText('A resposta é',{exact:true}).waitFor();
     assert.equal(await host.locator('.reveal strong').textContent(),challenge.answer);
     await host.getByText('Fontes e créditos',{exact:true}).waitFor();
+    assert.ok(await host.locator('.media-credits a').count()>=3);
     if(round===1)await host.screenshot({path:'artifacts/real-reveal-desktop.png',fullPage:true});
     await host.request.post(`${origin}/_catalog_test/advance`,{headers:{Origin:origin},data:{seconds:4.1}});
   }
   await host.getByText('15 desafios. Muitas descobertas.',{exact:true}).waitFor();
-  await host.getByRole('button',{name:'Créditos',exact:true}).click();
-  const dialog=host.locator('#credits-dialog');
-  assert.equal(await dialog.locator('article').count(),15);
-  await dialog.locator('article').first().getByText('Fontes e créditos',{exact:true}).click();
-  assert.ok(await dialog.locator('a').count()>=15);
-  await host.screenshot({path:'artifacts/real-credits-desktop.png',fullPage:true});
   assert.equal(new Set(used).size,15);
   assert.ok(mediaResponses.length>=16&&mediaResponses.every(s=>s===200));
   assert.deepEqual(errors,[]);

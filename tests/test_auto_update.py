@@ -52,8 +52,10 @@ def test_build_matches_existing_asset_hashes(updater, tmp_path):
     brand.mkdir(parents=True)
     (frontend/'index.html').write_text('<script src="/assets/app.js"></script><link href="/assets/style.css">')
     logo = b'logo bytes'
+    favicon_png = b'favicon png bytes'
     favicon = b'<svg></svg>'
     (brand/'fun-logo.png').write_bytes(logo)
+    (brand/'fun-favicon.png').write_bytes(favicon_png)
     (frontend/'favicon.svg').write_bytes(favicon)
     for name in ('app.js', 'style.css'):
         (frontend/name).write_bytes(b'known source')
@@ -63,6 +65,7 @@ def test_build_matches_existing_asset_hashes(updater, tmp_path):
     assert f'app.{digest}.js' in html and f'style.{digest}.css' in html
     assert (tmp_path/f'dist/assets/app.{digest}.js').read_bytes() == b'known source'
     assert (tmp_path/'dist/brand/fun-logo.png').read_bytes() == logo
+    assert (tmp_path/'dist/brand/fun-favicon.png').read_bytes() == favicon_png
     assert (tmp_path/'dist/favicon.svg').read_bytes() == favicon
 
 
@@ -148,6 +151,7 @@ def test_prepare_accepts_windows_lock_line_endings_but_blocks_real_changes(updat
     files = {'requirements.lock': b'pinned==1.0\n', 'deploy/nginx-fun.conf': b'# existing proxy\n',
              'frontend/index.html': b'<script src="/assets/app.js"></script>', 'frontend/app.js': b'// app',
              'frontend/style.css': b'/* style */', 'frontend/brand/fun-logo.png': b'logo',
+             'frontend/brand/fun-favicon.png': b'favicon png',
              'frontend/favicon.svg': b'<svg></svg>', 'content/questions/catalog.json': b'[]'}
     if changed_file:
         files[changed_file] += b'# actual upstream change\n'

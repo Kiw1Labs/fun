@@ -104,6 +104,7 @@ def build_frontend(path):
         (assets/target).write_bytes(data)
         html = html.replace('/assets/'+name,'/assets/'+target)
     shutil.copy2(path/'frontend/brand/fun-logo.png', brand/'fun-logo.png')
+    shutil.copy2(path/'frontend/brand/fun-favicon.png', brand/'fun-favicon.png')
     shutil.copy2(path/'frontend/favicon.svg', path/'dist/favicon.svg')
     (path/'dist/index.html').write_text(html,encoding='utf-8')
 

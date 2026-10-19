@@ -1,10 +1,8 @@
 const main = document.querySelector('main');
 const notice = document.querySelector('#notice');
 const dialog = document.querySelector('#close-dialog');
-const kickDialog = document.querySelector('#kick-dialog');
 const identityDialog = document.querySelector('#identity-dialog');
 let roomIntent = null;
-let kickTarget = null;
 let directoryRequest = 0;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function mediaCredits(challenge) {
@@ -12,12 +10,6 @@ function mediaCredits(challenge) {
   if(!credits) return '';
   const link=(url,label)=>/^https:\/\/[^\s<>"\u0000-\u001f]+$/.test(url||'') ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}</a>` : esc(label);
   return `<details class="media-credits"><summary>Fontes e créditos</summary><p>${esc(credits.attribution)}</p><p>${link(credits.media_source_url,'Arquivo original')} · ${link(credits.license_url,credits.license)} · ${link(credits.source_url,'Referência')}</p></details>`;
-}
-const revealedCredits=new Map();
-function showCredits() {
-  const content=document.querySelector('#credits-content');
-  content.innerHTML=revealedCredits.size ? [...revealedCredits.values()].map(c=>`<article><h3>${esc(c.answer)}</h3>${mediaCredits(c)}</article>`).join('') : '<p>Os créditos aparecem aqui depois da revelação de cada desafio.</p>';
-  document.querySelector('#credits-dialog').showModal();
 }
 const codeFromPath = () => /^\/[A-Z]{4}$/.test(location.pathname) ? location.pathname.slice(1) : null;
 let code = codeFromPath(), state = null, ws = null, online = false, stopped = false;
@@ -83,7 +75,7 @@ const session = () => sessionFor(code);
 function status() { return `<span class="connection ${online ? 'connected' : ''}">${online ? 'Ao vivo' : 'Reconectando…'}</span>`; }
 function portal(gameSelected = false) {
   activeNav(gameSelected ? 'game-nav' : 'portal-nav');
-  main.innerHTML = `<section class="portal workspace"><header class="portal-heading"><h1>${gameSelected ? 'Sabe Essa?' : 'Vamos jogar?'}</h1><p>Escolha um jogo e junte a turma.</p></header><div class="portal-panels"><section class="portal-panel create-panel" aria-labelledby="create-title"><h2 id="create-title">Criar uma nova sala</h2><form id="create-room-form"><label class="game-tile"><input type="radio" name="game" value="sabe-essa" checked><span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span></label><div class="create-controls"><div class="room-name-field"><label class="sr-only" for="room-name">Nome da sala</label><input id="room-name" name="room_name" maxlength="48" autocomplete="off" placeholder="Nome da sala"></div><fieldset class="visibility"><legend class="sr-only">Visibilidade da sala</legend><label><input type="radio" name="visibility" value="public"><span>Público</span></label><label><input type="radio" name="visibility" value="private" checked><span>Privado</span></label></fieldset><button type="submit">Jogar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><p class="panel-note">Públicas aparecem abaixo. Privadas entram por código ou link.</p></form></section><section class="portal-panel join-panel" aria-labelledby="join-title"><h2 id="join-title">Entrar em sala privada</h2><p>Já tem um convite?</p><form id="join-code-form"><label for="join-code">Código da sala</label><div class="code-entry"><input id="join-code" name="code" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-describedby="join-help" required><button type="submit">Entrar</button></div><p id="join-help" class="panel-note">Use as quatro letras do código.</p></form></section></div><section class="public-rooms" aria-labelledby="public-title"><header><div><h2 id="public-title">Salas públicas</h2><p>Encontre uma turma para jogar.</p></div><button id="refresh-rooms" class="quiet" aria-label="Atualizar salas públicas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18A8 8 0 0 1 5 15"/></svg><span>Atualizar</span></button></header><div id="public-room-list" aria-live="polite"><p class="directory-message" role="status">Buscando salas…</p></div></section></section>`;
+  main.innerHTML = `<section class="portal workspace"><header class="portal-heading"><h1>${gameSelected ? 'Sabe Essa?' : 'Vamos jogar?'}</h1><p>Escolha um jogo e junte a turma.</p></header><div class="portal-panels"><section class="portal-panel create-panel" aria-labelledby="create-title"><h2 id="create-title">Criar uma nova sala</h2><form id="create-room-form"><label class="game-tile"><input type="radio" name="game" value="sabe-essa" checked><span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span></label><div class="create-controls"><div class="room-name-field"><label class="sr-only" for="room-name">Nome da sala</label><input id="room-name" name="room_name" maxlength="48" autocomplete="off" placeholder="Nome da sala"></div><fieldset class="visibility"><legend class="sr-only">Visibilidade da sala</legend><label><input type="radio" name="visibility" value="public"><span>Público</span></label><label><input type="radio" name="visibility" value="private" checked><span>Privado</span></label></fieldset><button type="submit">Jogar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><p class="panel-note"></p></form></section><section class="portal-panel join-panel" aria-labelledby="join-title"><h2 id="join-title">Entrar em sala privada</h2><p>Já tem um convite?</p><form id="join-code-form"><label for="join-code">Código da sala</label><div class="code-entry"><input id="join-code" name="code" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-describedby="join-help" required><button type="submit">Entrar</button></div><p id="join-help" class="panel-note">Use as quatro letras do código.</p></form></section></div><section class="public-rooms" aria-labelledby="public-title"><header><div><h2 id="public-title">Salas públicas</h2><p>Encontre uma turma para jogar.</p></div><button id="refresh-rooms" class="quiet" aria-label="Atualizar salas públicas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18A8 8 0 0 1 5 15"/></svg><span>Atualizar</span></button></header><div id="public-room-list" aria-live="polite"><p class="directory-message" role="status">Buscando salas…</p></div></section></section>`;
   loadPublicRooms();
 }
 function home(joinCode = '') {
@@ -173,17 +165,6 @@ function render() {
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>${state.result==='cancelled' ? 'Partida cancelada, sem vencedor.' : state.result==='automatic' ? `${esc(winner?.name)} venceu por permanência.` : '15 desafios. Muitas descobertas.'}</h2><p>Confira os pontos da partida na mesma lista ao lado.</p>${host ? `<div class="actions"><button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar nova partida</button><button data-action="lobby" class="secondary">Retornar todos ao lobby</button></div>${!state.catalog_available ? '<p class="empty-catalog">Catálogo insuficiente para outra partida sem repetir as três anteriores.</p>' : ''}` : '<p>O anfitrião decide quando voltar ao lobby ou começar outra partida.</p>'}`;
   }
   main.innerHTML = `<section class="room"><header class="room-header"><div><span class="eyebrow">SABE ESSA? · SALA ${esc(code)} · ${state.visibility==='public' ? 'Pública' : 'Privada'}</span><h1>${title}</h1></div>${status()}</header>${state.warning ? '<div class="presence" role="alert"><p>A sala ficou inativa. Confirme sua presença em até 2 minutos para mantê-la aberta.</p><button data-action="presence">Estou aqui</button></div>' : ''}<div class="room-grid"><section class="play-area" aria-label="Partida">${center}</section><section class="scoreboard" aria-label="Participantes e pontuação"><div class="board-title"><h2>${state.phase==='lobby' ? 'Na sala' : 'Pontuação'}</h2><span>${state.people.filter(p=>p.active).length}/16</span></div><ol>${state.people.map(p=>`<li class="${!p.active ? 'departed' : ''}"><span class="rank">${p.rank ?? '—'}</span><div><strong>${esc(p.name)}${p.id===state.you ? ' (você)' : ''}</strong><small>${p.host ? 'Anfitrião · ' : ''}${!p.active ? 'Saiu da partida' : !p.online ? 'Reconectando' : p.spectator ? 'Espectador' : playing&&p.answered ? 'Acertou' : 'Na sala'}</small></div><span class="score">${p.score}</span>${host&&p.active&&p.id!==state.you ? `<button class="kick quiet" data-action="kick" data-target="${esc(p.id)}" aria-label="Expulsar ${esc(p.name)}">×</button>` : ''}</li>`).join('')}</ol></section></div><footer class="room-footer"><button class="quiet" data-action="leave">Sair da sala</button>${host ? '<button class="quiet danger-text" id="close-room">Encerrar sala</button>' : ''}</footer></section>`;
-  document.querySelectorAll('.scoreboard [data-action="kick"]').forEach(removeButton=>{
-    const target=removeButton.dataset.target;
-    removeButton.removeAttribute('data-action'); removeButton.removeAttribute('data-target');
-    removeButton.dataset.kick=target;
-    removeButton.setAttribute('aria-label',removeButton.getAttribute('aria-label').replace(/^Expulsar /,'Remover '));
-    const more=document.createElement('button');
-    more.className='kick-more quiet'; more.textContent='...'; more.dataset.kick=target;
-    more.setAttribute('aria-label',removeButton.getAttribute('aria-label').replace(/^Remover /,'Mais opções para '));
-    const actions=document.createElement('span'); actions.className='kick-actions';
-    removeButton.replaceWith(actions); actions.append(removeButton,more);
-  });
   if (focus && document.getElementById(focus)) {
     const input = document.getElementById(focus);
     input.focus({preventScroll:true});
@@ -223,7 +204,6 @@ function connect() {
         if(input) input.value='';
       }
       state=msg; online=true; serverAt=msg.server_now; receivedAt=performance.now();
-      if(msg.challenge?.credits) revealedCredits.set(msg.challenge.id,msg.challenge);
       if (!wasOnline) {
         for(const event of pending.values()) ws.send(JSON.stringify(event));
         clearInterval(ping); ping=setInterval(()=>{ if(ws.readyState===WebSocket.OPEN) ws.send(JSON.stringify({type:'ping'})); },10000);
@@ -233,7 +213,7 @@ function connect() {
       const event=pending.get(msg.id); pending.delete(msg.id);
       if (!msg.ok) toast(msg.error);
       else if(event?.action==='answer') {
-        feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : '';
+        feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : 'Ainda não. Aguarde 0,5 segundo e tente outra vez.';
         const input=document.querySelector('#answer'); if(input && input.value===event.answer) input.value='';
         const el=document.querySelector('#answer-feedback'); if(el) el.textContent=feedback;
       }
@@ -281,7 +261,6 @@ document.addEventListener('submit', async event => {
 });
 document.addEventListener('click', event => {
   const button=event.target.closest('button'); if(!button) return;
-  if(button.id==='credits-open') { showCredits(); return; }
   if(['game-nav','portal-nav'].includes(button.id)) {
     if(code) { location.assign('/'); return; }
     menu(false);
@@ -299,12 +278,6 @@ document.addEventListener('click', event => {
   }
   if(button.id==='theme') { const theme=document.documentElement.dataset.theme==='dark'?'light':'dark'; applyTheme(theme); stored('fun:theme',theme); }
   if(button.id==='close-room') dialog.showModal();
-  if(button.dataset.kick) {
-    kickTarget=button.dataset.kick;
-    const player=state?.people.find(person=>person.id===kickTarget);
-    document.querySelector('#kick-description').textContent=player ? `Você está removendo ${player.name} da sala. Confirma a remoção?` : 'Confirma a remoção deste jogador?';
-    kickDialog.showModal();
-  }
   if(button.id==='refresh-rooms') loadPublicRooms();
   if(button.id==='identity-cancel') identityDialog.close();
   if(button.dataset.joinCode) requestIdentity({mode:'join',code:button.dataset.joinCode});
@@ -313,10 +286,6 @@ document.addEventListener('click', event => {
   if(button.dataset.action) send(button.dataset.action,button.dataset.target?{target:button.dataset.target}:{});
 });
 dialog.addEventListener('close',()=>{ if(dialog.returnValue==='close') send('close'); });
-kickDialog.addEventListener('close',()=>{
-  if(kickDialog.returnValue==='remove'&&kickTarget) send('kick',{target:kickTarget});
-  kickTarget=null;
-});
 identityDialog.addEventListener('close',()=>{ roomIntent=null; });
 identityDialog.addEventListener('cancel',event=>{ if(document.querySelector('#identity-submit').disabled) event.preventDefault(); });
 document.addEventListener('keydown', event => {

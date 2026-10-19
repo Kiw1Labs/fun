@@ -45,9 +45,11 @@ def test_brand_assets_fall_back_to_project_sources(tmp_path, monkeypatch):
                               origins=['http://testserver'])) as client:
         favicon = client.get('/favicon.svg')
         logo = client.get('/brand/fun-logo.png')
+        favicon_png = client.get('/brand/fun-favicon.png')
         assert favicon.status_code == 200 and '<svg' in favicon.text
         assert favicon.headers['content-type'].startswith('image/svg+xml')
         assert logo.status_code == 200 and logo.content.startswith(b'\x89PNG\r\n\x1a\n')
+        assert favicon_png.status_code == 200 and favicon_png.content.startswith(b'\x89PNG\r\n\x1a\n')
 
 
 def test_room_metadata_validation_and_public_directory(tmp_path):

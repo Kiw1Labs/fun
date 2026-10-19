@@ -14,7 +14,8 @@ for (const file of ['app.js', 'style.css']) {
   html = html.replace(`/assets/${file}`, `/assets/${target}`);
 }
 await writeFile('dist/brand/fun-logo.png', await readFile('frontend/brand/fun-logo.png'));
+await writeFile('dist/brand/fun-favicon.png', await readFile('frontend/brand/fun-favicon.png'));
 await writeFile('dist/favicon.svg', await readFile('frontend/favicon.svg'));
 await writeFile('dist/index.html', html);
-const bytes = (await Promise.all(['frontend/app.js','frontend/style.css','dist/index.html','dist/brand/fun-logo.png','dist/favicon.svg'].map(async p => (await stat(p)).size))).reduce((a,b)=>a+b,0);
+const bytes = (await Promise.all(['frontend/app.js','frontend/style.css','dist/index.html','dist/brand/fun-logo.png','dist/brand/fun-favicon.png','dist/favicon.svg'].map(async p => (await stat(p)).size))).reduce((a,b)=>a+b,0);
 console.log(`Build estático concluído: ${bytes} bytes sem compressão. Nenhuma dependência de frontend em produção.`);
