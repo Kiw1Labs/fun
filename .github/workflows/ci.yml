@@ -1,30 +1,75 @@
-name: validar
+name: Testes do Fun (pt-BR)
+run-name: "Validação do Fun · ${{ github.ref_name }}"
 on: [push, pull_request]
 jobs:
   testes:
+    name: Testes automatizados (pt-BR)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Baixar o código
+        id: checkout
+        uses: actions/checkout@v4
+      - name: Preparar Python 3.11
+        id: python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - uses: actions/setup-node@v4
+      - name: Preparar Node.js 22
+        id: node
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-      - run: python -m pip install -r requirements.lock
-      - run: python -m pip install -r requirements-dev.txt
-      - run: npm ci --ignore-scripts
-      - run: npm run check && npm run build
-      - run: python -m ruff check fun tests tools deploy
-      - run: python -m pytest -q
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:browser
+      - name: Instalar dependências do servidor
+        id: deps_prod
+        run: python -m pip install -r requirements.lock
+      - name: Instalar ferramentas de teste
+        id: deps_dev
+        run: python -m pip install -r requirements-dev.txt
+      - name: Instalar dependências da interface
+        id: npm_ci
+        run: npm ci --ignore-scripts
+      - name: Conferir e compilar a interface
+        id: frontend
+        run: npm run check && npm run build
+      - name: Verificar qualidade do Python
+        id: ruff
+        run: python -m ruff check fun tests tools deploy
+      - name: Executar testes Python
+        id: pytest
+        run: python -m pytest -q --tb=short
+      - name: Instalar Chromium para os testes
+        id: chromium
+        run: npx playwright install --with-deps chromium
+      - name: Testar o jogo em navegadores
+        id: browser
+        run: npm run test:browser
         env:
           FUN_TEST_PYTHON: python
-      - run: npm run test:dev
+      - name: Testar o servidor de desenvolvimento
+        id: dev
+        run: npm run test:dev
         env:
           FUN_TEST_PYTHON: python
-      - run: npm run test:catalog
+      - name: Testar o catálogo
+        id: catalog
+        run: npm run test:catalog
         env:
           FUN_TEST_PYTHON: python
+      - name: Publicar resumo dos testes em português
+        if: always()
+        env:
+          OUTCOME_CHECKOUT: ${{ steps.checkout.outcome }}
+          OUTCOME_PYTHON: ${{ steps.python.outcome }}
+          OUTCOME_NODE: ${{ steps.node.outcome }}
+          OUTCOME_DEPS_PROD: ${{ steps.deps_prod.outcome }}
+          OUTCOME_DEPS_DEV: ${{ steps.deps_dev.outcome }}
+          OUTCOME_NPM_CI: ${{ steps.npm_ci.outcome }}
+          OUTCOME_FRONTEND: ${{ steps.frontend.outcome }}
+          OUTCOME_RUFF: ${{ steps.ruff.outcome }}
+          OUTCOME_PYTEST: ${{ steps.pytest.outcome }}
+          OUTCOME_CHROMIUM: ${{ steps.chromium.outcome }}
+          OUTCOME_BROWSER: ${{ steps.browser.outcome }}
+          OUTCOME_DEV: ${{ steps.dev.outcome }}
+          OUTCOME_CATALOG: ${{ steps.catalog.outcome }}
+        run: python -m tools.ci_summary
