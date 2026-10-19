@@ -106,3 +106,18 @@ def test_initial_catalog_cannot_overwrite_preexisting_same_id(updater, tmp_path)
         db.execute('INSERT INTO questions VALUES (?,?)', ('q1', json.dumps({'id': 'q1', 'answer': 'Existing'})))
     with pytest.raises(RuntimeError, match='id_collision_preserved'):
         updater.catalog_conflicts(candidate, tmp_path/'release-without-catalog')
+
+
+def test_first_catalog_supports_legacy_database_without_migration(updater, tmp_path):
+    candidate = tmp_path/'new'
+    (candidate/'content/questions').mkdir(parents=True)
+    (candidate/'content/questions/catalog.json').write_text(json.dumps([{'id': 'q1', 'answer': 'New'}]))
+    (tmp_path/'shared').mkdir()
+    database = tmp_path/'shared/fun.sqlite3'
+    with sqlite3.connect(database) as db:
+        db.execute('CREATE TABLE rooms(code TEXT PRIMARY KEY, data TEXT NOT NULL)')
+        db.execute('INSERT INTO rooms VALUES (?,?)', ('ABCD', '{"preserve": true}'))
+    updater.catalog_conflicts(candidate, tmp_path/'legacy-release')
+    with sqlite3.connect(database) as db:
+        assert db.execute('SELECT code,data FROM rooms').fetchall() == [('ABCD', '{"preserve": true}')]
+        assert db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall() == [('rooms',)]

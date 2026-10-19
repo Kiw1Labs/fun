@@ -134,7 +134,8 @@ def catalog_conflicts(release, before):
     previous = ({r['id']: r for r in json.loads(old.read_text(encoding='utf-8'))} if old.exists() else {})
     incoming = json.loads((release/'content/questions/catalog.json').read_text(encoding='utf-8'))
     with sqlite3.connect((BASE/'shared/fun.sqlite3').resolve().as_uri()+'?mode=ro',uri=True) as db:
-        stored = {row[0]:json.loads(row[1]) for row in db.execute('SELECT id,data FROM questions')}
+        has_questions = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='questions'").fetchone()
+        stored = {row[0]:json.loads(row[1]) for row in db.execute('SELECT id,data FROM questions')} if has_questions else {}
     for row in incoming:
         if row['id'] in stored and row['id'] not in previous:
             raise RuntimeError('fun_catalog_id_collision_preserved')
