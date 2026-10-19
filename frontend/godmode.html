@@ -3,28 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
+  <meta name="color-scheme" content="dark">
   <meta name="robots" content="noindex, nofollow">
-  <title>Administração · Fun</title>
+  <title>Godmode · Fun</title>
   <link rel="stylesheet" href="/godmode-assets/godmode.css">
   <script type="module" src="/godmode-assets/godmode.js"></script>
   <link rel="icon" href="/brand/fun-favicon.png" type="image/png">
 </head>
 <body>
-  <main>
-    <header class="top"><div><a href="/" class="brand">fun.</a><span>· Administração</span></div><button id="refresh" type="button">Atualizar listas</button></header>
-    <h1>Godmode</h1>
-    <p class="intro">Visão administrativa das salas abertas e das perguntas cadastradas. Os códigos são informativos; esta página não oferece entrada nas salas.</p>
-    <p id="notice" role="status" aria-live="polite">Carregando dados…</p>
-    <section aria-labelledby="rooms-title">
-      <div class="section-heading"><h2 id="rooms-title">Salas abertas</h2><span id="room-count" class="count">—</span></div>
-      <div class="table-wrap"><table><thead><tr><th>Código</th><th>Sala</th><th>Acesso</th><th>Estado</th><th>Jogadores</th></tr></thead><tbody id="rooms"><tr><td colspan="5">Carregando…</td></tr></tbody></table></div>
+  <main id="login-view" class="login-shell">
+    <section class="login-card" aria-labelledby="login-title">
+      <a class="brand" href="/" aria-label="Voltar para Fun"><span class="brand-mark">f</span><span>fun<span class="brand-dot">.</span></span></a>
+      <div class="lock-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 1 1 8 0v3"></path><path d="M12 14v3"></path></svg></div>
+      <p class="eyebrow">ÁREA RESTRITA</p>
+      <h1 id="login-title">Entrar no Godmode</h1>
+      <p class="login-copy">Acesse a visão administrativa das salas e perguntas do Fun.</p>
+      <form id="login-form" autocomplete="on">
+        <label for="login-username">Usuário</label>
+        <input id="login-username" name="username" type="text" autocomplete="username" required>
+        <label for="login-password">Senha</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <p id="login-error" class="login-error" role="alert" aria-live="assertive" hidden></p>
+        <button class="primary" type="submit"><span>Entrar</span><span aria-hidden="true">→</span></button>
+      </form>
+      <a class="back-link" href="/">← Voltar para o Fun</a>
+      <p class="secure-note"><span aria-hidden="true">●</span> Conexão protegida · Seus dados não ficam salvos neste navegador</p>
     </section>
-    <section aria-labelledby="questions-title">
-      <div class="section-heading"><h2 id="questions-title">Perguntas registradas</h2><span id="question-count" class="count">—</span></div>
-      <label class="search">Filtrar perguntas <input id="question-filter" type="search" placeholder="Buscar por enunciado, resposta ou categoria"></label>
-      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Categoria</th><th>Dificuldade</th><th>Formato</th><th>Enunciado</th><th>Resposta</th><th>Alternativas</th><th>Mídia</th><th>Status</th></tr></thead><tbody id="questions"><tr><td colspan="9">Carregando…</td></tr></tbody></table></div>
-    </section>
+    <footer>FUN · PAINEL ADMINISTRATIVO</footer>
   </main>
+
+  <div id="dashboard" hidden>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Voltar para Fun"><span class="brand-mark">f</span><span>fun<span class="brand-dot">.</span></span></a>
+      <div class="top-actions"><span class="admin-chip"><span></span> Administração</span><button id="logout" class="quiet-button" type="button">Sair</button></div>
+    </header>
+    <main class="dashboard-main">
+      <div class="page-heading"><div><p class="eyebrow">VISÃO GERAL</p><h1>Godmode</h1><p class="intro">Acompanhe as salas abertas e o acervo de perguntas.</p></div><button id="refresh" class="refresh-button" type="button"><span aria-hidden="true">↻</span> Atualizar</button></div>
+      <p id="notice" class="notice" role="status" aria-live="polite">Entre para carregar os dados.</p>
+      <section class="panel" aria-labelledby="rooms-title">
+        <div class="section-heading"><div><p class="eyebrow">AGORA</p><h2 id="rooms-title">Salas abertas</h2></div><span id="room-count" class="count">—</span></div>
+        <p class="section-copy">Salas públicas e privadas ativas. Os códigos são apenas informativos.</p>
+        <div class="table-wrap"><table><thead><tr><th>Código</th><th>Sala</th><th>Acesso</th><th>Estado</th><th>Jogadores</th></tr></thead><tbody id="rooms"><tr><td colspan="5">Aguardando autenticação…</td></tr></tbody></table></div>
+      </section>
+      <section class="panel" aria-labelledby="questions-title">
+        <div class="section-heading"><div><p class="eyebrow">ACERVO</p><h2 id="questions-title">Perguntas registradas</h2></div><span id="question-count" class="count">—</span></div>
+        <label class="search">Buscar no acervo<input id="question-filter" type="search" placeholder="Enunciado, resposta ou categoria"></label>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Categoria</th><th>Dificuldade</th><th>Formato</th><th>Enunciado</th><th>Resposta</th><th>Alternativas</th><th>Mídia</th><th>Status</th></tr></thead><tbody id="questions"><tr><td colspan="9">Aguardando autenticação…</td></tr></tbody></table></div>
+      </section>
+      <footer class="dashboard-footer"><a href="/">← Voltar para o Fun</a><span>Dados administrativos protegidos</span></footer>
+    </main>
+  </div>
 </body>
 </html>

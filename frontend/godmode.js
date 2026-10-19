@@ -1,6 +1,7 @@
 const byId = id => document.getElementById(id);
 const labels = {lobby:'Lobby', question:'Em partida', reveal:'Revelação', results:'Resultados', public:'Pública', private:'Privada', easy:'Fácil', medium:'Médio', hard:'Difícil', image:'Imagem', text:'Texto', active:'Ativa', draft:'Rascunho', review:'Em revisão', inactive:'Inativa'};
 let questions = [];
+let authorization = '';
 
 function cell(row, value) {
   const td = document.createElement('td');
@@ -40,13 +41,29 @@ function renderQuestions() {
   }
 }
 
+function showLogin(message = '') {
+  authorization = '';
+  questions = [];
+  byId('dashboard').hidden = true;
+  byId('login-view').hidden = false;
+  byId('login-error').textContent = message;
+  byId('login-error').hidden = !message;
+  byId('login-password').value = '';
+  byId('login-username').focus();
+}
+
+async function request(path) {
+  return fetch(path, {cache:'no-store', headers:{Authorization:authorization}});
+}
+
 async function refresh() {
-  byId('notice').textContent = 'Atualizando…';
+  byId('notice').textContent = 'Atualizando dados…';
   try {
     const [roomResponse, questionResponse] = await Promise.all([
-      fetch('/api/godmode/rooms', {cache:'no-store'}), fetch('/api/godmode/questions', {cache:'no-store'})
+      request('/api/godmode/rooms'), request('/api/godmode/questions')
     ]);
-    if (roomResponse.status === 401 || questionResponse.status === 401) { byId('notice').textContent = 'Autenticação necessária. Recarregue a página e informe usuário e senha.'; return; }
+    if (roomResponse.status === 401 || questionResponse.status === 401) { showLogin('Sua sessão expirou. Entre novamente.'); return; }
+    if (roomResponse.status === 429 || questionResponse.status === 429) throw new Error('Muitas tentativas. Aguarde um minuto e tente novamente.');
     if (!roomResponse.ok || !questionResponse.ok) throw new Error('Não foi possível consultar os dados administrativos.');
     const roomData = await roomResponse.json();
     const questionData = await questionResponse.json();
@@ -56,6 +73,31 @@ async function refresh() {
   } catch (error) { byId('notice').textContent = error.message || 'Falha ao carregar os dados.'; }
 }
 
+byId('login-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const username = byId('login-username').value;
+  const password = byId('login-password').value;
+  const bytes = new TextEncoder().encode(`${username}:${password}`);
+  authorization = `Basic ${btoa(String.fromCharCode(...bytes))}`;
+  byId('login-error').hidden = true;
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true;
+  try {
+    const response = await request('/api/godmode/rooms');
+    if (response.status === 401) { showLogin('Usuário ou senha incorretos. Confira os dados e tente novamente.'); return; }
+    if (response.status === 429) { showLogin('Muitas tentativas. Aguarde um minuto e tente novamente.'); return; }
+    if (!response.ok) throw new Error('Não foi possível entrar. Tente novamente em instantes.');
+    byId('login-password').value = '';
+    byId('login-view').hidden = true;
+    byId('dashboard').hidden = false;
+    await refresh();
+  } catch (error) {
+    authorization = '';
+    byId('login-error').textContent = error.message || 'Falha de conexão. Tente novamente.';
+    byId('login-error').hidden = false;
+  } finally { button.disabled = false; }
+});
+
+byId('logout').addEventListener('click', () => showLogin());
 byId('refresh').addEventListener('click', refresh);
 byId('question-filter').addEventListener('input', renderQuestions);
-refresh();

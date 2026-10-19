@@ -96,17 +96,17 @@ def test_godmode_requires_credentials_and_lists_rooms_and_all_questions(tmp_path
                               json={'name': 'Ana', 'room_name': 'Privada'}).json()
         public = client.post('/api/rooms', headers=ORIGIN,
                              json={'name': 'Bia', 'room_name': 'Pública', 'visibility': 'public'}).json()
-        assert client.get('/godmode').status_code == 401
-        assert 'Basic' in client.get('/godmode').headers['www-authenticate']
+        page = client.get('/godmode')
+        assert page.status_code == 200
+        assert page.headers['x-robots-tag'] == 'noindex, nofollow'
+        assert 'Entrar no Godmode' in page.text and 'login-form' in page.text
+        assert client.get('/godmode-assets/godmode.js').status_code == 200
+        assert client.get('/godmode-assets/godmode.css').status_code == 200
         assert client.get('/api/godmode/rooms').status_code == 401
         assert client.get('/api/godmode/questions', auth=('admin-test', 'wrong')).status_code == 401
         auth = ('admin-test', 'local-test-secret')
-        page = client.get('/godmode', auth=auth)
-        assert page.status_code == 200
-        assert page.headers['x-robots-tag'] == 'noindex, nofollow'
-        assert 'Godmode' in page.text and '/godmode-assets/godmode.js' in page.text
-        assert client.get('/godmode-assets/godmode.js', auth=auth).status_code == 200
-        assert client.get('/godmode-assets/godmode.css', auth=auth).status_code == 200
+        assert client.get('/api/godmode/rooms', auth=auth).status_code == 200
+        assert client.get('/api/godmode/questions', auth=auth).status_code == 200
         assert f'/{private["code"]}' not in page.text and f'/{public["code"]}' not in page.text
         rooms = client.get('/api/godmode/rooms', auth=auth).json()['rooms']
         assert {room['code'] for room in rooms} == {private['code'], public['code']}

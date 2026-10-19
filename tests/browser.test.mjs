@@ -354,17 +354,26 @@ after(async()=>{
   if(temp) { assert.equal(dirname(temp),tmpdir()); await rm(temp,{recursive:true,force:true,maxRetries:10,retryDelay:200}); }
 });
 
-test('godmode exige autenticação e lista perguntas sem links para salas',async()=>{
+test('godmode mostra login próprio e protege dados sem links para salas',async()=>{
   assert.equal((await fetch(`${fixtureOrigin}/api/godmode/rooms`)).status,401);
-  const context=await browser.newContext({httpCredentials:{username:'browser-admin',password:'browser-admin-password'}});
+  const context=await browser.newContext();
   const page=await context.newPage();
   await page.goto(`${fixtureOrigin}/godmode`);
+  await page.getByRole('heading',{name:'Entrar no Godmode'}).waitFor();
+  assert.equal(await page.locator('#dashboard').isVisible(),false);
+  await page.locator('#login-username').fill('browser-admin');
+  await page.locator('#login-password').fill('senha-incorreta');
+  await page.getByRole('button',{name:'Entrar'}).click();
+  await page.getByRole('alert').getByText(/Usuário ou senha incorretos/).waitFor();
+  await page.locator('#login-password').fill('browser-admin-password');
+  await page.getByRole('button',{name:'Entrar'}).click();
   await page.getByRole('heading',{name:'Godmode',exact:true}).waitFor();
   await page.getByText(/^Atualizado às/).waitFor();
   assert.ok(await page.locator('#rooms tr').count()>=1);
   assert.ok(await page.locator('#questions tr').count()>1);
   assert.equal(await page.locator('#rooms a, #rooms button').count(),0);
-  assert.equal(await page.locator('a[href^="/"]').count(),1);
+  await page.getByRole('button',{name:'Sair'}).click();
+  await page.getByRole('heading',{name:'Entrar no Godmode'}).waitFor();
   await context.close();
 });
 

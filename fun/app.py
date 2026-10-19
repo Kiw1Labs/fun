@@ -175,9 +175,9 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         return None
 
     async def godmode_page(request):
-        denied = admin_auth(request)
-        if denied:
-            return denied
+        if not os.getenv('FUN_ADMIN_USERNAME', '') or not os.getenv('FUN_ADMIN_PASSWORD', ''):
+            return JSONResponse({'error': 'Painel administrativo indisponível.'}, status_code=404,
+                                headers={'Cache-Control': 'no-store'})
         page = static / 'godmode.html'
         if not page.exists():
             page = Path(__file__).resolve().parent.parent / 'frontend' / 'godmode.html'
@@ -187,9 +187,9 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         return FileResponse(page, headers={'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow'})
 
     async def godmode_asset(request):
-        denied = admin_auth(request)
-        if denied:
-            return denied
+        if not os.getenv('FUN_ADMIN_USERNAME', '') or not os.getenv('FUN_ADMIN_PASSWORD', ''):
+            return JSONResponse({'error': 'Painel administrativo indisponível.'}, status_code=404,
+                                headers={'Cache-Control': 'no-store'})
         name = request.path_params['name']
         if name not in ('godmode.js', 'godmode.css'):
             return Response('Arquivo não encontrado.', status_code=404,
