@@ -95,12 +95,16 @@ def build_frontend(path):
     html = (path/'frontend/index.html').read_text(encoding='utf-8')
     assets = path/'dist/assets'
     assets.mkdir(parents=True,exist_ok=True)
+    brand = path/'dist/brand'
+    brand.mkdir(parents=True,exist_ok=True)
     for name in ('app.js','style.css'):
         data = (path/'frontend'/name).read_bytes()
         stem, suffix = name.rsplit('.',1)
         target = f'{stem}.{hashlib.sha256(data).hexdigest()[:12]}.{suffix}'
         (assets/target).write_bytes(data)
         html = html.replace('/assets/'+name,'/assets/'+target)
+    shutil.copy2(path/'frontend/brand/fun-logo.png', brand/'fun-logo.png')
+    shutil.copy2(path/'frontend/favicon.svg', path/'dist/favicon.svg')
     (path/'dist/index.html').write_text(html,encoding='utf-8')
 
 

@@ -48,8 +48,13 @@ def test_archive_rejects_traversal_and_symlinks(updater, tmp_path):
 
 def test_build_matches_existing_asset_hashes(updater, tmp_path):
     frontend = tmp_path/'frontend'
-    frontend.mkdir()
+    brand = frontend/'brand'
+    brand.mkdir(parents=True)
     (frontend/'index.html').write_text('<script src="/assets/app.js"></script><link href="/assets/style.css">')
+    logo = b'logo bytes'
+    favicon = b'<svg></svg>'
+    (brand/'fun-logo.png').write_bytes(logo)
+    (frontend/'favicon.svg').write_bytes(favicon)
     for name in ('app.js', 'style.css'):
         (frontend/name).write_bytes(b'known source')
     updater.build_frontend(tmp_path)
@@ -57,6 +62,8 @@ def test_build_matches_existing_asset_hashes(updater, tmp_path):
     html = (tmp_path/'dist/index.html').read_text()
     assert f'app.{digest}.js' in html and f'style.{digest}.css' in html
     assert (tmp_path/f'dist/assets/app.{digest}.js').read_bytes() == b'known source'
+    assert (tmp_path/'dist/brand/fun-logo.png').read_bytes() == logo
+    assert (tmp_path/'dist/favicon.svg').read_bytes() == favicon
 
 
 def test_consistent_backup_and_modified_release_are_preserved(updater, tmp_path):
