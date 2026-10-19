@@ -4,6 +4,8 @@ Portal de jogos multiplayer em pt-BR. Primeiro jogo: **Sabe Essa?**. O portal e 
 
 Implementação com motor autoritativo, HTTP/WebSocket, frontend responsivo claro/escuro e persistência privada. **Acervo inicial real: 90 perguntas, 48 imagens WebP locais e 42 textos.** Ver [banco de perguntas](docs/BANCO_DE_PERGUNTAS.md) para importação, fontes e licenças. A interface impede iniciar quando o catálogo não satisfaz composição e histórico. Fixtures artificiais existem somente nos testes, fora do pacote de produção.
 
+**Produção verificada em 19/10/2026:** catálogo ativo em [fun.kw1.com.br](https://fun.kw1.com.br/), com partida pública completa de 15 rodadas em desktop/celular. Atualização automática integrada ao worker existente, exigindo CI verde e preservando o intervalo de 300 segundos entre ciclos. Detalhes e backups em [DEPLOY.md](docs/DEPLOY.md).
+
 ## Desenvolvimento no Windows
 
 Checkout confirmado: `C:\Users\eduar\Documents\github\fun`. Requer Python 3.11+ e Node 20+. Os comandos abaixo são PowerShell; usar `npm.cmd` evita depender de mudança da política de scripts do Windows. Se `python` for um alias da Store sem acesso, usar o executável real exibido por `py -0p` para criar o venv. Não modificar credenciais.

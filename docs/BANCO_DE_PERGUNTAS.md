@@ -156,12 +156,12 @@ para preparação. O relatório do auditor e da importação vai para `artifacts
 ## Atualização automática no Kiwiki Lab
 
 `deploy/auto_update.py` implementa o helper para o atualizador compartilhado,
-sem criar outro daemon. No estado verificado em 19/10/2026, **o worker ativo
-ainda não inclui Fun**: ele verifica Codex e Kiwiki com 300 segundos de espera
-após cada ciclo. O código de integração já está no GitHub, mas a conexão com o
-Android expirou e impediu instalar o helper e incluir Fun no `PROJECTS`.
+sem criar outro daemon. **Instalado e verificado em 19/10/2026:** o worker ativo
+inclui Codex, Kiwiki e Fun, com 300 segundos de espera após cada ciclo. O acesso
+ao Android foi restabelecido, e a release funcional `4a4f72b` foi ativada às
+12:13:51 UTC, após CI verde e ensaio isolado no aparelho.
 
-Depois de instalado, o perfil consulta `main` no GitHub e só prepara um SHA que
+O perfil consulta `main` no GitHub e só prepara um SHA que
 tenha execução **push** bem-sucedida de `.github/workflows/ci.yml`.
 
 O helper usa release imutável e build estático por hash sem Node, valida catálogo
@@ -172,18 +172,28 @@ reinicia Fun e verifica backend5050 e Nginx8082. Falha retorna à release anteri
 preservando banco e mídias; o SHA que falhou fica bloqueado para revisão. Não
 altera SSH, túneis, credenciais ou configuração compartilhada de Nginx.
 
-Esses passos são o comportamento projetado no código publicado; **ainda não
-foram executados no Android**. Não há helper instalado em
-`/root/fun/auto_update.py`, backup de ativação nem questão importada no SQLite
-de produção. A verificação pública em 19/10 às 03:23 UTC retornou Cloudflare
-HTTP 530 / erro 1033; o SSH pela Tailscale também expirou. O relatório histórico
-da ativação anterior não comprova disponibilidade atual.
+O fluxo foi executado no Android: helper instalado em `/root/fun/auto_update.py`,
+backup SQLite/ambiente em
+`~/kiwiki-infra/backups/deployment-fun-20261019T121335Z/` e 90 questões ativas no
+SQLite real, com integridade `ok` e conteúdo igual ao catálogo da release.
+As 48 mídias copiadas conferem com os hashes. A conferência pública terminou
+às 12:17:55 UTC: 15 rodadas completas, duas pessoas em desktop/celular, 8 imagens,
+7 textos, 7/5/3 dificuldades, quatro conexões WSS, reconexão por F5, pontos e
+créditos aprovados. Nenhum erro JavaScript da aplicação. A sala privada de teste
+foi encerrada. Backend e proxy informam `api_version=2` e `catalog_count=90`.
+Os processos de PostgreSQL, Agent, Django, Flask e Nginx foram preservados;
+LARP público retornou 200 e Serv manteve o redirecionamento 302 do Access.
+
+A primeira instalação exigiu duas correções cobertas por dez testes do helper:
+aceitar banco legado ainda sem a tabela `questions`, sem migrá-lo durante a
+checagem de conflitos, e aceitar somente a diferença CRLF/LF do lockfile da
+release inicial Windows. Mudanças reais de dependências continuam bloqueadas.
 
 Mudanças de `requirements.lock`, configuração Nginx, esquema do catálogo ou
 edições locais conflitantes são bloqueadas para revisão. Não há instalação
 automática de novas dependências nem limpeza de releases/backups. Após
-instalação, o estado estará em `~/kiwiki-infra/run/fun-autoupdate.json`;
+instalação, o estado fica em `~/kiwiki-infra/run/fun-autoupdate.json`;
 heartbeat/intervalo em `~/kiwiki-infra/run/auto-update-heartbeat.json`; log
-rotativo em `~/kiwiki-infra/logs/auto-update.log`. Aplicar a integração somente
-depois de o Android voltar a estar acessível; executar backup e verificar o CI
-verde antes de reiniciar o worker. Ver `docs/DEPLOY.md` para a infraestrutura.
+rotativo em `~/kiwiki-infra/logs/auto-update.log`. Estado final conferido:
+`current`, sem erro, journal `complete`, sem flags de manutenção/pausa. Ver
+`docs/DEPLOY.md` para a infraestrutura.
