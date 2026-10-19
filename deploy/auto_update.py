@@ -202,7 +202,7 @@ def prepare(skip_upstream=None):
         return {'project':'fun','state':'checking','upstream':sha,'reason':'awaiting_successful_github_ci','error':None}
     # No Nginx configuration or dependency changes are applied automatically.
     requirements = git('show',sha+':requirements.lock')
-    if requirements != (before/'requirements.lock').read_bytes():
+    if requirements.replace(b'\r\n', b'\n') != (before/'requirements.lock').read_bytes().replace(b'\r\n', b'\n'):
         raise RuntimeError('fun_dependency_change_requires_review')
     proxy = git('show',sha+':deploy/nginx-fun.conf')
     if proxy != (before/'deploy/nginx-fun.conf').read_bytes():

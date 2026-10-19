@@ -121,3 +121,55 @@ def test_first_catalog_supports_legacy_database_without_migration(updater, tmp_p
     with sqlite3.connect(database) as db:
         assert db.execute('SELECT code,data FROM rooms').fetchall() == [('ABCD', '{"preserve": true}')]
         assert db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall() == [('rooms',)]
+
+
+@pytest.mark.parametrize('changed_file', [None, 'requirements.lock', 'deploy/nginx-fun.conf'])
+def test_prepare_accepts_windows_lock_line_endings_but_blocks_real_changes(updater, tmp_path, monkeypatch, changed_file):
+    before = tmp_path/'releases/legacy'
+    (before/'deploy').mkdir(parents=True)
+    (before/'requirements.lock').write_bytes(b'pinned==1.0\r\n')
+    (before/'deploy/nginx-fun.conf').write_bytes(b'# existing proxy\n')
+    (before/'MANIFEST.json').write_text(json.dumps({
+        name: hashlib.sha256((before/name).read_bytes()).hexdigest()
+        for name in ['requirements.lock', 'deploy/nginx-fun.conf']
+    }))
+    (tmp_path/'shared').mkdir()
+    with sqlite3.connect(tmp_path/'shared/fun.sqlite3') as db:
+        db.execute('CREATE TABLE rooms(code TEXT PRIMARY KEY, data TEXT)')
+    (tmp_path/'upstream.git').mkdir()
+    monkeypatch.setattr(updater, 'current', lambda: before)
+    files = {'requirements.lock': b'pinned==1.0\n', 'deploy/nginx-fun.conf': b'# existing proxy\n',
+             'frontend/index.html': b'<script src="/assets/app.js"></script>', 'frontend/app.js': b'// app',
+             'frontend/style.css': b'/* style */', 'content/questions/catalog.json': b'[]'}
+    if changed_file:
+        files[changed_file] += b'# actual upstream change\n'
+    archive_data = io.BytesIO()
+    with tarfile.open(fileobj=archive_data, mode='w') as archive:
+        for name, data in files.items():
+            member = tarfile.TarInfo(name)
+            member.size = len(data)
+            archive.addfile(member, io.BytesIO(data))
+    sha = 'b'*40
+
+    def git(*args):
+        if args[0] == 'remote':
+            return updater.ORIGIN.encode()
+        if args[0] == 'show':
+            return files[args[1].split(':', 1)[1]]
+        if args[0] == 'archive':
+            return archive_data.getvalue()
+        return sha.encode()
+
+    monkeypatch.setattr(updater, 'git', git)
+    monkeypatch.setattr(updater, 'ci_success', lambda _: True)
+    validated = []
+    monkeypatch.setattr(updater, 'validate_candidate', validated.append)
+    if changed_file:
+        error = 'dependency_change_requires_review' if changed_file == 'requirements.lock' else 'shared_nginx_change_requires_review'
+        with pytest.raises(RuntimeError, match=error):
+            updater.prepare()
+        assert not (tmp_path/'releases'/sha).exists()
+    else:
+        plan = updater.prepare()
+        assert plan['state'] == 'prepared' and validated == [tmp_path/'releases'/sha]
+        updater.verify_manifest(Path(plan['candidate']))
