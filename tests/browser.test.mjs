@@ -360,6 +360,9 @@ test('portal, home em /, sala, F5, nova aba, entrada e controles do anfitrião',
   page.on('pageerror', error=>errors.push(error.message));
   page.on('console', msg=>{if(msg.type()==='error'&&msg.text().includes('Content Security Policy')) errors.push(msg.text());});
   await page.goto(origin);
+  assert.equal(await page.locator('link[rel=icon]').getAttribute('href'),'/favicon.svg');
+  assert.match(await page.locator('link[rel=icon]').evaluate(link=>fetch(link.href).then(response=>response.text())),/0 0 64 64/);
+  assert.ok(await page.locator('.brand img').evaluateAll(images=>images.length===2&&images.every(img=>img.complete&&img.naturalWidth>0)));
   await page.screenshot({path:'artifacts/portal-desktop.png',fullPage:true});
   await page.locator('#game-nav').click();
   assert.equal(new URL(page.url()).pathname,'/');

@@ -228,6 +228,10 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
               WebSocketRoute('/ws/{code}', ws)]
     if (static / 'assets').exists():
         routes.append(Mount('/assets', app=StaticFiles(directory=static / 'assets')))
+    if (static / 'brand').exists():
+        routes.append(Mount('/brand', app=StaticFiles(directory=static / 'brand')))
+    if (static / 'favicon.svg').exists():
+        routes.append(Route('/favicon.svg', lambda request: FileResponse(static / 'favicon.svg', media_type='image/svg+xml', headers={'Cache-Control': 'public, max-age=86400'})))
     media = Path(os.getenv('FUN_MEDIA', 'data/media'))
     if media.exists():
         routes.append(Mount('/media', app=StaticFiles(directory=media)))
