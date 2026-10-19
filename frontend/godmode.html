@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Administração · Fun</title>
+  <link rel="stylesheet" href="/godmode-assets/godmode.css">
+  <script type="module" src="/godmode-assets/godmode.js"></script>
+  <link rel="icon" href="/brand/fun-favicon.png" type="image/png">
+</head>
+<body>
+  <main>
+    <header class="top"><div><a href="/" class="brand">fun.</a><span>· Administração</span></div><button id="refresh" type="button">Atualizar listas</button></header>
+    <h1>Godmode</h1>
+    <p class="intro">Visão administrativa das salas abertas e das perguntas cadastradas. Os códigos são informativos; esta página não oferece entrada nas salas.</p>
+    <p id="notice" role="status" aria-live="polite">Carregando dados…</p>
+    <section aria-labelledby="rooms-title">
+      <div class="section-heading"><h2 id="rooms-title">Salas abertas</h2><span id="room-count" class="count">—</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Código</th><th>Sala</th><th>Acesso</th><th>Estado</th><th>Jogadores</th></tr></thead><tbody id="rooms"><tr><td colspan="5">Carregando…</td></tr></tbody></table></div>
+    </section>
+    <section aria-labelledby="questions-title">
+      <div class="section-heading"><h2 id="questions-title">Perguntas registradas</h2><span id="question-count" class="count">—</span></div>
+      <label class="search">Filtrar perguntas <input id="question-filter" type="search" placeholder="Buscar por enunciado, resposta ou categoria"></label>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Categoria</th><th>Dificuldade</th><th>Formato</th><th>Enunciado</th><th>Resposta</th><th>Alternativas</th><th>Mídia</th><th>Status</th></tr></thead><tbody id="questions"><tr><td colspan="9">Carregando…</td></tr></tbody></table></div>
+    </section>
+  </main>
+</body>
+</html>

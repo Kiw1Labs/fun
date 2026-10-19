@@ -1,10 +1,12 @@
 import json
+from dataclasses import replace
 
 import pytest
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from fun.app import create_app
+from fun.store import Store
 
 ORIGIN = {'Origin': 'http://testserver'}
 
@@ -83,6 +85,60 @@ def test_room_metadata_validation_and_public_directory(tmp_path):
                 ws.send_json({'id': 'close-public-room', 'action': 'close'})
                 assert receive_type(ws, 'ack')['ok']
                 assert client.get('/api/rooms').json() == {'rooms': []}
+
+
+def test_godmode_requires_credentials_and_lists_rooms_and_all_questions(tmp_path, monkeypatch, catalog):
+    monkeypatch.setenv('FUN_ADMIN_USERNAME', 'admin-test')
+    monkeypatch.setenv('FUN_ADMIN_PASSWORD', 'local-test-secret')
+    app = create_app(database=str(tmp_path / 'fun.db'), catalog=catalog, origins=['http://testserver'])
+    with TestClient(app) as client:
+        private = client.post('/api/rooms', headers=ORIGIN,
+                              json={'name': 'Ana', 'room_name': 'Privada'}).json()
+        public = client.post('/api/rooms', headers=ORIGIN,
+                             json={'name': 'Bia', 'room_name': 'Pública', 'visibility': 'public'}).json()
+        assert client.get('/godmode').status_code == 401
+        assert 'Basic' in client.get('/godmode').headers['www-authenticate']
+        assert client.get('/api/godmode/rooms').status_code == 401
+        assert client.get('/api/godmode/questions', auth=('admin-test', 'wrong')).status_code == 401
+        auth = ('admin-test', 'local-test-secret')
+        page = client.get('/godmode', auth=auth)
+        assert page.status_code == 200
+        assert page.headers['x-robots-tag'] == 'noindex, nofollow'
+        assert 'Godmode' in page.text and '/godmode-assets/godmode.js' in page.text
+        assert client.get('/godmode-assets/godmode.js', auth=auth).status_code == 200
+        assert client.get('/godmode-assets/godmode.css', auth=auth).status_code == 200
+        assert f'/{private["code"]}' not in page.text and f'/{public["code"]}' not in page.text
+        rooms = client.get('/api/godmode/rooms', auth=auth).json()['rooms']
+        assert {room['code'] for room in rooms} == {private['code'], public['code']}
+        assert {room['visibility'] for room in rooms} == {'private', 'public'}
+        assert all('url' not in room and 'link' not in room for room in rooms)
+        listed = client.get('/api/godmode/questions', auth=auth).json()['questions']
+        assert len(listed) == len(catalog)
+        assert listed[0]['answer'] == catalog[0].answer
+
+
+def test_godmode_is_disabled_without_configured_credentials(tmp_path, monkeypatch):
+    monkeypatch.delenv('FUN_ADMIN_USERNAME', raising=False)
+    monkeypatch.delenv('FUN_ADMIN_PASSWORD', raising=False)
+    with TestClient(create_app(database=str(tmp_path / 'fun.db'), catalog=[], origins=['http://testserver'])) as client:
+        assert client.get('/godmode').status_code == 404
+        assert client.get('/api/godmode/rooms').status_code == 404
+
+
+def test_godmode_includes_inactive_questions_stored_in_database(tmp_path, monkeypatch, catalog):
+    monkeypatch.setenv('FUN_ADMIN_USERNAME', 'admin-test')
+    monkeypatch.setenv('FUN_ADMIN_PASSWORD', 'local-test-secret')
+    database = tmp_path / 'fun.db'
+    store = Store(str(database))
+    inactive = replace(catalog[0], status='inactive')
+    store.import_catalog([inactive])
+    store.close()
+    with TestClient(create_app(database=str(database), catalog=[], origins=['http://testserver'])) as client:
+        questions = client.get('/api/godmode/questions', auth=('admin-test', 'local-test-secret')).json()['questions']
+        assert questions == [dict(id=inactive.id, category=inactive.category,
+                                  subcategory=inactive.subcategory, difficulty=inactive.difficulty,
+                                  kind=inactive.kind, prompt=inactive.prompt, answer=inactive.answer,
+                                  aliases=inactive.aliases, status='inactive', image=inactive.image)]
 
 
 def test_websocket_auth_sync_f5_and_multitab(tmp_path):

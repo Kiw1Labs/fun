@@ -56,6 +56,18 @@ def test_empty_catalog_and_minimum(game):
     assert 'dois' in act(engine, a, 'start')['error']
 
 
+def test_host_can_rename_room_only_in_lobby(game):
+    engine, now, host, guest = game
+    assert act(engine, host, 'rename', room_name='  Noite de jogos  ')['ok']
+    assert engine.snapshot(host['code'], host['participant'])['room_name'] == 'Noite de jogos'
+    assert engine.snapshot(guest['code'], guest['participant'])['room_name'] == 'Noite de jogos'
+    assert not act(engine, guest, 'rename', room_name='Outro nome')['ok']
+    assert not act(engine, host, 'rename', room_name='')['ok']
+    assert not act(engine, host, 'rename', room_name='x' * 49)['ok']
+    assert act(engine, host, 'start')['ok']
+    assert not act(engine, host, 'rename', room_name='Fora do lobby')['ok']
+
+
 def test_privacy_alias_cooldown_duplicate(game):
     engine, now, a, b, r = start(game)
     view = engine.snapshot(a['code'], a['participant'])
@@ -63,6 +75,10 @@ def test_privacy_alias_cooldown_duplicate(game):
     assert 'token' not in str(view) and 'aliases' not in str(view)
     round_id = r['round_id']
     assert not act(engine, a, 'answer', round_id=round_id, answer='errado')['correct']
+    for session in (a, b):
+        snapshot = engine.snapshot(session['code'], session['participant'])
+        host_row = next(p for p in snapshot['people'] if p['id'] == a['participant'])
+        assert host_row['last_wrong_answer'] == 'errado'
     now[0] += .499
     assert not act(engine, a, 'answer', round_id=round_id, answer=r['deck'][0]['answer'])['ok']
     now[0] += .001
@@ -82,12 +98,17 @@ def test_privacy_alias_cooldown_duplicate(game):
 def test_exact_deadline_and_stale_events(game):
     engine, now, a, b, r = start(game)
     old = r['round_id']
+    assert not act(engine, a, 'answer', round_id=old, answer='resposta errada')['correct']
+    host_row = next(p for p in engine.snapshot(a['code'], a['participant'])['people']
+                    if p['id'] == a['participant'])
+    assert host_row['last_wrong_answer'] == 'resposta errada'
     now[0] += 20
     assert not act(engine, a, 'answer', round_id=old, answer=r['deck'][0]['answer'])['ok']
     assert r['people'][a['participant']]['score'] == 0
     now[0] += 4
     engine.tick()
     assert r['index'] == 1
+    assert all(p['last_wrong_answer'] is None for p in r['people'].values())
     assert not act(engine, a, 'answer', round_id=old, answer=r['deck'][1]['answer'])['ok']
 
 
@@ -96,6 +117,10 @@ def test_all_15_results_manual_lobby_score_reset_history(game):
     for i in range(15):
         assert r['index'] == i
         for who in (a, b):
+            if i == 0 and who is a:
+                assert not act(engine, who, 'answer', round_id=r['round_id'],
+                               answer='resposta errada')['correct']
+                now[0] += .5
             assert act(engine, who, 'answer', round_id=r['round_id'], answer=r['deck'][i]['answer'])['correct']
         now[0] += 4
         engine.tick()
@@ -106,6 +131,9 @@ def test_all_15_results_manual_lobby_score_reset_history(game):
     assert r['phase'] == 'results'
     assert not act(engine, b, 'lobby')['ok']
     assert act(engine, a, 'lobby')['ok']
+    assert all(p['last_wrong_answer'] is None for p in r['people'].values())
+    assert all(p['last_wrong_answer'] is None
+               for p in engine.snapshot(a['code'], a['participant'])['people'])
     old = set(r['history'][0])
     assert act(engine, a, 'start')['ok']
     assert not old & {x['id'] for x in r['deck']}

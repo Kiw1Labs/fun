@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node tools/dev.mjs",
     "build": "node tools/build.mjs",
-    "check": "node --check frontend/app.js && node --check tools/build.mjs && node --check tools/dev.mjs",
+    "check": "node --check frontend/app.js && node --check frontend/godmode.js && node --check tools/build.mjs && node --check tools/dev.mjs",
     "test:browser": "node --test tests/browser.test.mjs",
     "test:catalog": "node tests/catalog.browser.mjs",
     "test:dev": "node --test tests/dev.test.mjs"

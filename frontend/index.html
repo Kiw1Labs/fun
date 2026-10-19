@@ -21,12 +21,13 @@
       <span class="nav-heading">Jogos</span>
       <button class="nav-item" id="game-nav" aria-label="Sabe Essa?" title="Sabe Essa?"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.5 1-1.5 1-1.5 2M12 16h.01"/></svg><span class="nav-label">Sabe Essa?</span></button>
     </nav>
-    <div class="sidebar-footer"><button id="theme" class="nav-item" aria-label="Alternar tema" title="Alternar tema"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/></svg><span class="nav-label">Tema <span id="theme-label">escuro</span></span></button><small>.</small></div>
+    <div class="sidebar-footer"><button id="theme" class="nav-item" aria-label="Alternar tema" title="Alternar tema"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/></svg><span class="nav-label">Tema <span id="theme-label">escuro</span></span></button></div>
   </aside>
   <main id="main" tabindex="-1"></main>
   <div id="notice" role="status" aria-live="polite"></div>
   <dialog id="identity-dialog" aria-labelledby="identity-title"><form id="identity-form"><h2 id="identity-title">Como podemos chamar você?</h2><p id="identity-description"></p><label for="player-name">Seu nome</label><input id="player-name" name="name" maxlength="24" autocomplete="nickname" required placeholder="Seu nome"><p id="identity-error" role="alert"></p><div class="actions"><button type="button" id="identity-cancel" class="secondary">Cancelar</button><button type="submit" id="identity-submit">Jogar</button></div></form></dialog>
   <dialog id="close-dialog"><form method="dialog"><h2>Encerrar esta sala?</h2><p>Todos sairão. Uma partida em andamento será cancelada sem vencedor.</p><div class="actions"><button value="cancel" class="secondary">Manter sala</button><button value="close" class="danger">Encerrar sala</button></div></form></dialog>
   <dialog id="kick-dialog" aria-labelledby="kick-title"><form method="dialog"><h2 id="kick-title">Remover jogador?</h2><p id="kick-description"></p><div class="actions"><button value="cancel" class="secondary">Cancelar</button><button value="remove" class="danger">Remover jogador</button></div></form></dialog>
+  <dialog id="rename-room-dialog" aria-labelledby="rename-room-title"><form id="rename-room-form"><h2 id="rename-room-title">Alterar nome da sala</h2><label for="new-room-name">Novo nome da sala</label><input id="new-room-name" name="room_name" maxlength="48" autocomplete="off" required><p>O novo nome aparecerá para todos na sala.</p><div class="actions"><button type="button" id="rename-room-cancel" class="secondary">Cancelar</button><button type="submit">Salvar nome</button></div></form></dialog>
 </body>
 </html>

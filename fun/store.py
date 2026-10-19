@@ -39,6 +39,12 @@ class Store:
         rows = [json.loads(row[0]) for row in self.db.execute('SELECT data FROM questions ORDER BY id')]
         return [c for c in validate(rows) if c.status == 'active']
 
+    def all_questions(self):
+        """Return every persisted editorial record, including inactive drafts."""
+        from .catalog import validate
+        rows = [json.loads(row[0]) for row in self.db.execute('SELECT data FROM questions ORDER BY id')]
+        return [c.__dict__ for c in validate(rows)]
+
     def import_catalog(self, challenges):
         from .catalog import export
         counts = {'inserted': 0, 'updated': 0, 'unchanged': 0}

@@ -2,6 +2,9 @@ const main = document.querySelector('main');
 const notice = document.querySelector('#notice');
 const dialog = document.querySelector('#close-dialog');
 const identityDialog = document.querySelector('#identity-dialog');
+const renameDialog = document.querySelector('#rename-room-dialog');
+const kickDialog = document.querySelector('#kick-dialog');
+let kickTarget = null;
 let roomIntent = null;
 let directoryRequest = 0;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -59,6 +62,16 @@ function menu(open, restoreFocus = false) {
   main.inert = open;
   if (restoreFocus) document.querySelector('#menu').focus();
 }
+function setSidebarCollapsed(collapsed) {
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  const button=document.querySelector('#sidebar-toggle');
+  button.setAttribute('aria-expanded',String(!collapsed));
+  button.setAttribute('aria-label',collapsed?'Expandir navegação':'Recolher navegação');
+  button.title=button.getAttribute('aria-label');
+}
+document.querySelector('#sidebar').addEventListener('click',()=>{
+  if(document.body.classList.contains('sidebar-collapsed')) setSidebarCollapsed(false);
+});
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
   document.querySelector('#theme-label').textContent = theme === 'light' ? 'claro' : 'escuro';
@@ -81,7 +94,7 @@ function portal(gameSelected = false) {
 function home(joinCode = '') {
   if (!joinCode) { portal(true); return; }
   activeNav('game-nav');
-  main.innerHTML = `<section class="welcome game-home"><span class="eyebrow">${joinCode ? `Sala ${esc(joinCode)}` : 'Fun / Jogos'}</span><h1>Sabe Essa?</h1><p>15 desafios. 20 segundos para cada resposta.</p><form id="room-form"><label for="name">Como podemos chamar você?</label><input id="name" name="name" maxlength="24" autocomplete="nickname" required placeholder="Seu nome"><div class="join-fields"><label for="code">Código da sala${joinCode ? '' : ' <span class="optional">· para entrar</span>'}</label><input id="code" name="code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-describedby="code-help" placeholder="ABCD" value="${esc(joinCode)}" ${joinCode ? 'required' : ''}></div><p id="code-help" class="fine">${joinCode ? 'Você vai entrar nesta sala.' : 'Para criar uma sala, basta preencher seu nome.'}</p><div class="actions">${joinCode ? '' : '<button type="submit" name="mode" value="create">Criar sala</button>'}<button type="submit" name="mode" value="join" class="secondary">Entrar na sala</button></div></form><p class="fine">Mínimo de 2 competidores, até 16 pessoas na sala.<br>Chegou durante a partida? Acompanhe como espectador.</p></section>`;
+  main.innerHTML = `<section class="welcome game-home"><span class="eyebrow">${joinCode ? `Sala ${esc(joinCode)}` : 'Fun / Jogos'}</span><h1>Sabe Essa?</h1><p>15 desafios. 20 segundos para cada resposta.</p><form id="room-form"><label for="name">Como podemos chamar você?</label><input id="name" name="name" maxlength="24" autocomplete="nickname" required placeholder="Seu nome"><div class="join-fields"><label for="code">Código da sala${joinCode ? '' : ' <span class="optional">· para entrar</span>'}</label><input id="code" name="code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-describedby="code-help" placeholder="ABCD" value="${esc(joinCode)}" ${joinCode ? 'required' : ''}></div><p id="code-help" class="fine">${joinCode ? '' : 'Para criar uma sala, basta preencher seu nome.'}</p><div class="actions">${joinCode ? '' : '<button type="submit" name="mode" value="create">Criar sala</button>'}<button type="submit" name="mode" value="join" class="secondary">Entrar na sala</button></div></form><p class="fine"><br></p></section>`;
 }
 async function loadPublicRooms() {
   const list = document.querySelector('#public-room-list');
@@ -164,7 +177,40 @@ function render() {
     const winner = state.people.find(p=>p.id===state.winner);
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>${state.result==='cancelled' ? 'Partida cancelada, sem vencedor.' : state.result==='automatic' ? `${esc(winner?.name)} venceu por permanência.` : '15 desafios. Muitas descobertas.'}</h2><p>Confira os pontos da partida na mesma lista ao lado.</p>${host ? `<div class="actions"><button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar nova partida</button><button data-action="lobby" class="secondary">Retornar todos ao lobby</button></div>${!state.catalog_available ? '<p class="empty-catalog">Catálogo insuficiente para outra partida sem repetir as três anteriores.</p>' : ''}` : '<p>O anfitrião decide quando voltar ao lobby ou começar outra partida.</p>'}`;
   }
+  center = center.replace(/<p>Imagens e textos intercalados\.[^<]+<\/p>/, '');
   main.innerHTML = `<section class="room"><header class="room-header"><div><span class="eyebrow">SABE ESSA? · SALA ${esc(code)} · ${state.visibility==='public' ? 'Pública' : 'Privada'}</span><h1>${title}</h1></div>${status()}</header>${state.warning ? '<div class="presence" role="alert"><p>A sala ficou inativa. Confirme sua presença em até 2 minutos para mantê-la aberta.</p><button data-action="presence">Estou aqui</button></div>' : ''}<div class="room-grid"><section class="play-area" aria-label="Partida">${center}</section><section class="scoreboard" aria-label="Participantes e pontuação"><div class="board-title"><h2>${state.phase==='lobby' ? 'Na sala' : 'Pontuação'}</h2><span>${state.people.filter(p=>p.active).length}/16</span></div><ol>${state.people.map(p=>`<li class="${!p.active ? 'departed' : ''}"><span class="rank">${p.rank ?? '—'}</span><div><strong>${esc(p.name)}${p.id===state.you ? ' (você)' : ''}</strong><small>${p.host ? 'Anfitrião · ' : ''}${!p.active ? 'Saiu da partida' : !p.online ? 'Reconectando' : p.spectator ? 'Espectador' : playing&&p.answered ? 'Acertou' : 'Na sala'}</small></div><span class="score">${p.score}</span>${host&&p.active&&p.id!==state.you ? `<button class="kick quiet" data-action="kick" data-target="${esc(p.id)}" aria-label="Expulsar ${esc(p.name)}">×</button>` : ''}</li>`).join('')}</ol></section></div><footer class="room-footer"><button class="quiet" data-action="leave">Sair da sala</button>${host ? '<button class="quiet danger-text" id="close-room">Encerrar sala</button>' : ''}</footer></section>`;
+  const rows = main.querySelectorAll('.scoreboard li');
+  rows.forEach((row, index) => {
+    row.querySelector('button.kick')?.remove();
+    const player = state.people[index];
+    row.querySelector('.rank').textContent = player?.rank ?? '';
+    const subtitle = row.querySelector('small');
+    if (subtitle && player) {
+      subtitle.textContent = !player.active ? 'Saiu da partida'
+        : !player.online ? 'Reconectando'
+        : player.spectator ? 'Espectador'
+        : player.last_wrong_answer || (playing && player.answered ? 'Acertou' : '');
+      subtitle.title = player.last_wrong_answer || '';
+    }
+    if (host && player?.active && player.id !== state.you) {
+      row.dataset.kickTarget = player.id;
+      row.tabIndex = 0; row.setAttribute('role', 'button');
+      row.setAttribute('aria-label', `Abrir confirmação para remover ${player.name}`);
+    }
+  });
+  const heading = main.querySelector('.room-header h1');
+  const titleLine = document.createElement('div'); titleLine.className = 'room-title-line';
+  const share = document.createElement('button'); share.id = 'copy-room-link';
+  share.className = 'quiet icon-button room-share'; share.type = 'button';
+  share.setAttribute('aria-label', 'Copiar link da sala'); share.title = 'Copiar link da sala';
+  share.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 13 2.93l-1.72 1.71M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71"/></svg>';
+  heading.before(titleLine); titleLine.append(heading, share);
+  if (host && state.phase === 'lobby') {
+    const edit = document.createElement('button');
+    edit.id = 'edit-room-name'; edit.className = 'quiet room-name-edit';
+    edit.type = 'button'; edit.textContent = 'Alterar nome'; edit.setAttribute('aria-label', 'Alterar nome da sala');
+    titleLine.after(edit);
+  }
   if (focus && document.getElementById(focus)) {
     const input = document.getElementById(focus);
     input.focus({preventScroll:true});
@@ -187,6 +233,32 @@ function send(action, extras={}) {
   const event = {id:crypto.randomUUID(), action, ...extras};
   pending.set(event.id,event);
   ws.send(JSON.stringify(event));
+}
+async function copyRoomLink() {
+  const link = `${location.origin}/${code}`;
+  try {
+    if (navigator.clipboard?.writeText) {
+      try { await navigator.clipboard.writeText(link); toast('Link copiado para compartilhar.'); return; }
+      catch { /* Use the browser fallback when clipboard permission is unavailable. */ }
+    }
+    const input = document.createElement('textarea');
+    input.value = link; input.setAttribute('readonly', '');
+    input.style.position = 'fixed'; input.style.opacity = '0';
+    document.body.append(input); input.select();
+    const copied = document.execCommand('copy'); input.remove();
+    if (!copied) throw new Error('copy failed');
+    toast('Link copiado para compartilhar.');
+  } catch {
+    toast('Não foi possível copiar o link. Copie o endereço da barra do navegador.');
+  }
+}
+function openKickConfirmation(target) {
+  if (!state || state.host !== state.you) return;
+  const player = state.people.find(person => person.id === target && person.active && person.id !== state.you);
+  if (!player) return;
+  kickTarget = player.id;
+  document.querySelector('#kick-description').textContent = `Você está removendo ${player.name} da sala. Confirma a remoção?`;
+  kickDialog.showModal();
 }
 function connect() {
   const identity = session();
@@ -212,8 +284,9 @@ function connect() {
     } else if (msg.type==='ack') {
       const event=pending.get(msg.id); pending.delete(msg.id);
       if (!msg.ok) toast(msg.error);
+      else if(event?.action==='rename') renameDialog.close();
       else if(event?.action==='answer') {
-        feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : 'Ainda não. Aguarde 0,5 segundo e tente outra vez.';
+        feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : '';
         const input=document.querySelector('#answer'); if(input && input.value===event.answer) input.value='';
         const el=document.querySelector('#answer-feedback'); if(el) el.textContent=feedback;
       }
@@ -252,6 +325,11 @@ document.addEventListener('submit', async event => {
     if(roomIntent && !document.querySelector('#identity-submit').disabled) await enterRoom(roomIntent,event.target.elements.name.value.trim(),document.querySelector('#identity-submit'));
     return;
   }
+  if(event.target.id==='rename-room-form') {
+    event.preventDefault();
+    send('rename',{room_name:event.target.elements.room_name.value});
+    return;
+  }
   if(event.target.id!=='room-form') return;
   event.preventDefault();
   const form=event.target, mode=event.submitter?.value || 'join';
@@ -260,6 +338,8 @@ document.addEventListener('submit', async event => {
   await enterRoom({mode,code:inputCode},name,event.submitter || form.querySelector('button[type="submit"]'));
 });
 document.addEventListener('click', event => {
+  const row=event.target.closest('li[data-kick-target]');
+  if(row && main.contains(row)) { openKickConfirmation(row.dataset.kickTarget); return; }
   const button=event.target.closest('button'); if(!button) return;
   if(['game-nav','portal-nav'].includes(button.id)) {
     if(code) { location.assign('/'); return; }
@@ -271,13 +351,17 @@ document.addEventListener('click', event => {
   if(button.id==='menu') menu(button.getAttribute('aria-expanded')!=='true');
   if(button.id==='menu-backdrop') menu(false,true);
   if(button.id==='sidebar-toggle') {
-    const collapsed=document.body.classList.toggle('sidebar-collapsed');
-    button.setAttribute('aria-expanded',String(!collapsed));
-    button.setAttribute('aria-label',collapsed?'Expandir navegação':'Recolher navegação');
-    button.title=button.getAttribute('aria-label');
+    setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
   }
   if(button.id==='theme') { const theme=document.documentElement.dataset.theme==='dark'?'light':'dark'; applyTheme(theme); stored('fun:theme',theme); }
   if(button.id==='close-room') dialog.showModal();
+  if(button.id==='copy-room-link') copyRoomLink();
+  if(button.id==='edit-room-name' && state?.phase==='lobby' && state.host===state.you) {
+    const input=document.querySelector('#new-room-name');
+    input.value=state.room_name || '';
+    renameDialog.showModal(); input.focus(); input.select();
+  }
+  if(button.id==='rename-room-cancel') renameDialog.close();
   if(button.id==='refresh-rooms') loadPublicRooms();
   if(button.id==='identity-cancel') identityDialog.close();
   if(button.dataset.joinCode) requestIdentity({mode:'join',code:button.dataset.joinCode});
@@ -286,8 +370,18 @@ document.addEventListener('click', event => {
   if(button.dataset.action) send(button.dataset.action,button.dataset.target?{target:button.dataset.target}:{});
 });
 dialog.addEventListener('close',()=>{ if(dialog.returnValue==='close') send('close'); });
+kickDialog.addEventListener('close',()=>{
+  if(kickDialog.returnValue==='remove' && kickTarget) send('kick',{target:kickTarget});
+  kickTarget = null;
+});
 identityDialog.addEventListener('close',()=>{ roomIntent=null; });
 identityDialog.addEventListener('cancel',event=>{ if(document.querySelector('#identity-submit').disabled) event.preventDefault(); });
+document.addEventListener('keydown', event => {
+  const row=event.target.closest?.('li[data-kick-target]');
+  if(row && (event.key==='Enter'||event.key===' ')) {
+    event.preventDefault(); openKickConfirmation(row.dataset.kickTarget); return;
+  }
+});
 document.addEventListener('keydown', event => {
   if (!document.body.classList.contains('menu-open')) return;
   if (event.key==='Escape') { event.preventDefault(); menu(false,true); }

@@ -1,6 +1,8 @@
 """Adaptador HTTP/WebSocket; um worker é requisito de consistência."""
 import asyncio
+import base64
 import contextlib
+import hmac
 import json
 import logging
 import mimetypes
@@ -20,7 +22,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from . import API_VERSION
-from .catalog import load
+from .catalog import export, load
 from .engine import Engine, RuleError
 from .store import Store
 
@@ -144,6 +146,84 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             rooms = engine.public_rooms()
         return JSONResponse({'rooms': rooms}, headers={'Cache-Control': 'no-store'})
 
+    def admin_auth(request):
+        username = os.getenv('FUN_ADMIN_USERNAME', '')
+        password = os.getenv('FUN_ADMIN_PASSWORD', '')
+        if not username or not password:
+            return JSONResponse({'error': 'Painel administrativo indisponível.'}, status_code=404,
+                                headers={'Cache-Control': 'no-store'})
+        header = request.headers.get('authorization', '')
+        try:
+            scheme, encoded = header.split(' ', 1)
+            if scheme.lower() != 'basic':
+                raise ValueError('scheme')
+            decoded = base64.b64decode(encoded, validate=True).decode('utf-8')
+            supplied_user, supplied_password = decoded.split(':', 1)
+        except (ValueError, UnicodeDecodeError):
+            supplied_user, supplied_password = '', ''
+        user_ok = hmac.compare_digest(supplied_user.encode(), username.encode())
+        password_ok = hmac.compare_digest(supplied_password.encode(), password.encode())
+        valid = user_ok & password_ok
+        if not valid:
+            ip = request.client.host if request.client else 'unknown'
+            if not limiter.allow(('godmode-auth', ip), 10, 60):
+                return JSONResponse({'error': 'Muitas tentativas. Aguarde um minuto.'}, status_code=429,
+                                    headers={'Cache-Control': 'no-store'})
+            return JSONResponse({'error': 'Usuário ou senha incorretos.'}, status_code=401,
+                                headers={'WWW-Authenticate': 'Basic realm="Fun Godmode", charset="UTF-8"',
+                                         'Cache-Control': 'no-store'})
+        return None
+
+    async def godmode_page(request):
+        denied = admin_auth(request)
+        if denied:
+            return denied
+        page = static / 'godmode.html'
+        if not page.exists():
+            page = Path(__file__).resolve().parent.parent / 'frontend' / 'godmode.html'
+        if not page.exists():
+            return Response('Execute npm run build antes de iniciar.', status_code=503,
+                            headers={'Cache-Control': 'no-store'})
+        return FileResponse(page, headers={'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow'})
+
+    async def godmode_asset(request):
+        denied = admin_auth(request)
+        if denied:
+            return denied
+        name = request.path_params['name']
+        if name not in ('godmode.js', 'godmode.css'):
+            return Response('Arquivo não encontrado.', status_code=404,
+                            headers={'Cache-Control': 'no-store'})
+        asset = Path(__file__).resolve().parent.parent / 'frontend' / name
+        if not asset.is_file():
+            return Response('Arquivo não encontrado.', status_code=404,
+                            headers={'Cache-Control': 'no-store'})
+        return FileResponse(asset, headers={'Cache-Control': 'no-store'})
+
+    async def godmode_rooms(request):
+        denied = admin_auth(request)
+        if denied:
+            return denied
+        async with lock:
+            rooms = [dict(code=r['code'], name=r['room_name'], visibility=r['visibility'],
+                          phase=r['phase'], players=len(engine.members(r)))
+                     for r in engine.rooms.values() if r['phase'] != 'closed']
+        rooms.sort(key=lambda room: (room['visibility'], room['name'].casefold(), room['code']))
+        return JSONResponse({'rooms': rooms}, headers={'Cache-Control': 'no-store'})
+
+    async def godmode_questions(request):
+        denied = admin_auth(request)
+        if denied:
+            return denied
+        questions = store.all_questions()
+        if not questions:
+            questions = export(engine.catalog)
+        safe = [dict(id=q['id'], category=q['category'], subcategory=q['subcategory'],
+                     difficulty=q['difficulty'], kind=q['kind'], prompt=q['prompt'],
+                     answer=q['answer'], aliases=q['aliases'], status=q['status'], image=q['image'])
+                for q in questions]
+        return JSONResponse({'questions': safe}, headers={'Cache-Control': 'no-store'})
+
     async def ws(socket):
         code = socket.path_params['code']
         ip = socket.client.host if socket.client else 'unknown'
@@ -222,7 +302,11 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             return Response('Execute npm run build antes de iniciar.', status_code=503)
         return FileResponse(static / 'index.html', headers={'Cache-Control': 'no-cache'})
 
-    routes = [Route('/health', health), Route('/api/rooms', public_rooms, methods=['GET']),
+    routes = [Route('/health', health), Route('/godmode', godmode_page),
+              Route('/godmode-assets/{name}', godmode_asset),
+              Route('/api/godmode/rooms', godmode_rooms),
+              Route('/api/godmode/questions', godmode_questions),
+              Route('/api/rooms', public_rooms, methods=['GET']),
               Route('/api/rooms', create_or_join, methods=['POST']),
               Route('/api/rooms/{code}/join', create_or_join, methods=['POST']),
               WebSocketRoute('/ws/{code}', ws)]

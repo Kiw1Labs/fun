@@ -72,7 +72,8 @@ try {
     await host.getByText('A resposta é',{exact:true}).waitFor();
     assert.equal(await host.locator('.reveal strong').textContent(),challenge.answer);
     await host.getByText('Fontes e créditos',{exact:true}).waitFor();
-    assert.ok(await host.locator('.media-credits a').count()>=3);
+    const creditLinks=await host.locator('.media-credits a').count();
+    assert.ok(creditLinks >= (challenge.kind==='image' ? 3 : 1));
     if(round===1)await host.screenshot({path:'artifacts/real-reveal-desktop.png',fullPage:true});
     await host.request.post(`${origin}/_catalog_test/advance`,{headers:{Origin:origin},data:{seconds:4.1}});
   }

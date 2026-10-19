@@ -34,6 +34,7 @@ class Engine:
                 self.finish(r, 'cancelled', None, now)
             r['empty_since'] = now
             for p in r['people'].values():
+                p.setdefault('last_wrong_answer', None)
                 if p['active']:
                     p['offline_since'] = now
             self.save(r)
@@ -114,7 +115,8 @@ class Engine:
         token, pid = secrets.token_urlsafe(32), secrets.token_hex(12)
         r['people'][pid] = dict(id=pid, token_hash=token_hash(token), name=name,
                                joined=r['join_seq'], active=True, offline_since=now, score=0,
-                               answered=False, cooldown=0, events={}, departure=None)
+                               answered=False, cooldown=0, last_wrong_answer=None,
+                               events={}, departure=None)
         if r['host'] is None:
             r['host'] = pid
         r['activity'], r['warning'] = now, None
@@ -198,7 +200,7 @@ class Engine:
         r['index'] += 1
         r.update(phase='question', round_id=secrets.token_hex(12), started=now, deadline=now + 20)
         for pid in r['roster']:
-            r['people'][pid].update(answered=False, cooldown=0)
+            r['people'][pid].update(answered=False, cooldown=0, last_wrong_answer=None)
 
     def start(self, r, now):
         online = [p for p in self.members(r) if self.online(r['code'], p['id'])]
@@ -223,7 +225,7 @@ class Engine:
         p = r['people'].get(pid)
         if not p or not p['active'] or not self.online(code, pid):
             raise RuleError('Sua sessão não está ativa.')
-        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target'}:
+        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target', 'room_name'}:
             raise RuleError('Mensagem inválida.')
         eid = event.get('id')
         if not isinstance(eid, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,80}', eid):
@@ -237,9 +239,16 @@ class Engine:
         now, action = self.clock(), event.get('action')
         reply = dict(type='ack', id=eid, ok=True)
         try:
-            if action in ('start', 'lobby', 'kick', 'close') and r['host'] != pid:
+            if action in ('start', 'lobby', 'kick', 'close', 'rename') and r['host'] != pid:
                 raise RuleError('Somente o anfitrião pode realizar esta ação.')
-            if action == 'start':
+            if action == 'rename':
+                if r['phase'] != 'lobby':
+                    raise RuleError('O nome da sala só pode ser alterado no lobby.')
+                room_name = event.get('room_name')
+                if not isinstance(room_name, str) or not 1 <= len(room_name.strip()) <= 48 or any(ord(c) < 32 or ord(c) == 127 for c in room_name):
+                    raise RuleError('Use um nome de sala de 1 a 48 caracteres.')
+                r['room_name'] = room_name.strip()
+            elif action == 'start':
                 if r['phase'] not in ('lobby', 'results'):
                     raise RuleError('Já existe uma partida em andamento.')
                 self.start(r, now)
@@ -262,6 +271,7 @@ class Engine:
                     p['score'] += reply['points']
                     self.check_outcome(r, now)
                 else:
+                    p['last_wrong_answer'] = answer
                     p['cooldown'] = now + .5
                     reply['retry_at'] = p['cooldown']
             elif action == 'leave':
@@ -276,6 +286,8 @@ class Engine:
             elif action == 'lobby':
                 if r['phase'] != 'results':
                     raise RuleError('Aguarde o resultado.')
+                for player in r['people'].values():
+                    player['last_wrong_answer'] = None
                 r.update(phase='lobby', activity=now, warning=None)
             elif action == 'presence':
                 if r['phase'] not in ('lobby', 'results'):
@@ -341,6 +353,8 @@ class Engine:
             people.append(dict(id=p['id'], name=p['name'], score=p['score'],
                                active=p['active'], online=self.online(code, p['id']),
                                host=p['id'] == r['host'], answered=p['answered'],
+                               last_wrong_answer=(p.get('last_wrong_answer')
+                                                  if r['phase'] != 'lobby' else None),
                                spectator=r['phase'] in ('question', 'reveal', 'results') and not competitor,
                                rank=(scores.index(p['score']) + 1) if competitor and p['active'] else None))
         people.sort(key=lambda p: (-p['score'], p['name'].casefold()))
