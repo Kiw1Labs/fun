@@ -155,11 +155,14 @@ para preparação. O relatório do auditor e da importação vai para `artifacts
 
 ## Atualização automática no Kiwiki Lab
 
-`deploy/auto_update.py` é helper do atualizador compartilhado já existente,
-não um segundo daemon. O worker Termux inclui Fun e mantém **300 segundos de
-espera após cada ciclo**, além do tempo de consulta/validação dos projetos.
-Portanto não é um cron de horário exato. Consulta `main` no GitHub e só prepara
-o SHA com execução **push** bem-sucedida de `.github/workflows/ci.yml`.
+`deploy/auto_update.py` implementa o helper para o atualizador compartilhado,
+sem criar outro daemon. No estado verificado em 19/10/2026, **o worker ativo
+ainda não inclui Fun**: ele verifica Codex e Kiwiki com 300 segundos de espera
+após cada ciclo. O código de integração já está no GitHub, mas a conexão com o
+Android expirou e impediu instalar o helper e incluir Fun no `PROJECTS`.
+
+Depois de instalado, o perfil consulta `main` no GitHub e só prepara um SHA que
+tenha execução **push** bem-sucedida de `.github/workflows/ci.yml`.
 
 O helper usa release imutável e build estático por hash sem Node, valida catálogo
 e mídia offline, testa importação em cópia consistente do banco e inicia um
@@ -169,11 +172,18 @@ reinicia Fun e verifica backend5050 e Nginx8082. Falha retorna à release anteri
 preservando banco e mídias; o SHA que falhou fica bloqueado para revisão. Não
 altera SSH, túneis, credenciais ou configuração compartilhada de Nginx.
 
+Esses passos são o comportamento projetado no código publicado; **ainda não
+foram executados no Android**. Não há helper instalado em
+`/root/fun/auto_update.py`, backup de ativação nem questão importada no SQLite
+de produção. A verificação pública em 19/10 às 03:23 UTC retornou Cloudflare
+HTTP 530 / erro 1033; o SSH pela Tailscale também expirou. O relatório histórico
+da ativação anterior não comprova disponibilidade atual.
+
 Mudanças de `requirements.lock`, configuração Nginx, esquema do catálogo ou
 edições locais conflitantes são bloqueadas para revisão. Não há instalação
-automática de novas dependências nem limpeza de releases/backups. Estado real:
-`~/kiwiki-infra/run/fun-autoupdate.json`; heartbeat/intervalo:
-`~/kiwiki-infra/run/auto-update-heartbeat.json`; log rotativo:
-`~/kiwiki-infra/logs/auto-update.log`. Helper instalado no Debian:
-`/root/fun/auto_update.py`. Não chamar ativação manual sem o procedimento de
-backup/manutenção do worker. Ver `docs/DEPLOY.md` para a infraestrutura existente.
+automática de novas dependências nem limpeza de releases/backups. Após
+instalação, o estado estará em `~/kiwiki-infra/run/fun-autoupdate.json`;
+heartbeat/intervalo em `~/kiwiki-infra/run/auto-update-heartbeat.json`; log
+rotativo em `~/kiwiki-infra/logs/auto-update.log`. Aplicar a integração somente
+depois de o Android voltar a estar acessível; executar backup e verificar o CI
+verde antes de reiniciar o worker. Ver `docs/DEPLOY.md` para a infraestrutura.
