@@ -366,8 +366,12 @@ test('portal, home em /, sala, F5, nova aba, entrada e controles do anfitrião',
   page.on('pageerror', error=>errors.push(error.message));
   page.on('console', msg=>{if(msg.type()==='error'&&msg.text().includes('Content Security Policy')) errors.push(msg.text());});
   await page.goto(origin);
-  assert.match(await page.locator('link[rel=icon]').getAttribute('href'),/^\/favicon\.svg\?v=/);
-  assert.match(await page.locator('link[rel=icon]').evaluate(link=>fetch(link.href).then(response=>response.text())),/0 0 64 64/);
+  assert.equal(await page.title(),'Fun');
+  assert.match(await page.locator('link[rel=icon]').getAttribute('href'),/^\/brand\/fun-logo\.png\?v=/);
+  assert.deepEqual(await page.locator('link[rel=icon]').evaluate(async link=>{
+    const response=await fetch(link.href);
+    return {type:response.headers.get('content-type'),signature:Array.from(new Uint8Array(await response.arrayBuffer()).slice(0,8))};
+  }),{type:'image/png',signature:[137,80,78,71,13,10,26,10]});
   assert.ok(await page.locator('.brand img').evaluateAll(images=>images.length===2&&images.every(img=>img.complete&&img.naturalWidth>0)));
   await page.screenshot({path:'artifacts/portal-desktop.png',fullPage:true});
   await page.locator('#game-nav').click();
