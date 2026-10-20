@@ -94,6 +94,31 @@ p { line-height: 1.65; color: var(--muted); }
 .page-actions { display: flex; align-items: center; gap: 8px; }
 .page-actions svg { width: 18px; height: 18px; }
 .notice { min-height: 22px; margin: 24px 0; color: var(--muted); font-size: .75rem; }
+.dashboard-options { display: grid; grid-template-columns: repeat(2, minmax(0, 148px)); gap: 16px; margin-top: 32px; }
+.option-tile { display: flex; flex-direction: column; gap: 0; min-width: 0; min-height: 176px; padding: 18px 12px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); color: var(--accent); text-align: center; }
+.option-tile:hover { background: var(--soft); opacity: 1; }
+.option-tile[aria-pressed=true] { border-color: var(--muted); background: var(--soft); }
+.option-icon { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 10px; border: 1px solid var(--line); border-radius: 12px; }
+.option-icon svg { width: 30px; height: 30px; }
+.option-tile strong { font-size: .875rem; font-weight: 550; }
+.option-description { margin-top: 4px; color: var(--muted); font-size: .6875rem; font-weight: 400; line-height: 1.35; }
+.option-state { margin-top: 12px; color: var(--muted); font-size: .625rem; font-weight: 400; }
+.room-list { display: grid; gap: 16px; margin-top: 24px; }
+.admin-room { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.room-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.room-heading > div { min-width: 0; }
+.room-heading h3 { margin: 0; font-size: 1rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+.room-meta { margin: 6px 0 0; color: var(--muted); font-size: .75rem; }
+.room-link { display: inline-block; max-width: 100%; margin-top: 16px; color: var(--muted); font-size: .8125rem; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.room-link:hover { color: var(--accent); }
+.people-heading { margin: 22px 0 10px; font-size: .8125rem; font-weight: 500; }
+.room-people { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px; list-style: none; margin: 0; padding: 0; }
+.room-people li { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); }
+.member-copy { min-width: 0; }
+.member-copy strong { display: block; font-size: .8125rem; font-weight: 500; overflow-wrap: anywhere; }
+.member-copy small { display: block; margin-top: 4px; color: var(--muted); font-size: .6875rem; }
+.host-badge { flex-shrink: 0; padding: 3px 8px; border-radius: 20px; background: var(--soft); color: var(--accent); font-size: .6875rem; }
+.empty-message { margin: 0; padding: 28px 20px; border: 1px dashed var(--line); border-radius: 14px; font-size: .8125rem; text-align: center; }
 .panel { min-width: 0; margin-top: 20px; padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: var(--panel); }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .section-heading h2 { margin: 0; font-size: 1.0625rem; letter-spacing: -.02em; }
@@ -103,7 +128,6 @@ p { line-height: 1.65; color: var(--muted); }
 .search-input { max-width: 420px; margin: 8px 0 0; border-radius: 24px; background: var(--bg); }
 .table-wrap { max-width: 100%; margin-top: 22px; overflow: auto; border: 1px solid var(--line); border-radius: 14px; }
 table { width: 100%; border-collapse: collapse; min-width: 980px; font-size: .8125rem; line-height: 1.6; }
-.rooms-table table { min-width: 560px; }
 .table-wrap.empty table { min-width: 0; }
 .table-wrap.empty thead { display: none; }
 th, td { padding: 14px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
@@ -140,6 +164,8 @@ tbody tr:hover { background: var(--soft); }
   .page-actions button { min-height: 44px; }
   .intro { font-size: .8125rem; }
   .notice { margin: 20px 0; }
+  .room-people { grid-template-columns: minmax(0, 1fr); }
+  .admin-room { padding: 16px; }
 }
 @media (prefers-reduced-motion: no-preference) {
   button, a { transition: background .15s, color .15s, opacity .15s; }

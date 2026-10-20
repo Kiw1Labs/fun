@@ -53,6 +53,7 @@ Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?�
 ## Escopo, segurança e UX
 - Godmode: revisão solicitada em 20/10/2026 para permitir vários usuários administrativos, cada um com sua própria senha. As contas de administração são independentes dos nicknames e sessões dos jogadores.
 - Godmode: login e visualização administrativa devem seguir a mesma estética da página principal do Fun, conforme solicitado em 20/10/2026.
+- Godmode: oferecer, nesta ordem, cartões **Salas abertas** e **Sabe Essa?**. **Salas abertas** mostra nomes e links das salas e seus participantes, identificando o anfitrião; **Sabe Essa?** mostra perguntas e respostas. Revisão solicitada em 20/10/2026, substituindo a restrição anterior de links apenas informativos; ordem dos cartões ajustada a pedido do usuário na mesma data.
 - Interface em pt-BR, funcional em celular e desktop, acessível por teclado, contraste e leitores de tela.
 - O motor da partida deve ser autoritativo; não enviar respostas aceitas antes da revelação, proteger ações privilegiadas do host, tratar mensagens duplicadas, recarga de página e disputas entre eventos simultâneos.
 - Sem login obrigatório, ranking global ou escolha de categorias no MVP. Não inventar funcionalidades extras.

@@ -1,6 +1,10 @@
 # Painel administrativo Godmode
 
-O painel em `/godmode` exibe salas abertas (públicas e privadas) e todas as perguntas registradas no SQLite, incluindo rascunhos, perguntas em revisão e inativas. Códigos de sala são informativos; não há links ou ações para entrar nas salas.
+Após o login em `/godmode`, dois cartões permitem escolher a consulta: primeiro **Salas abertas**, com os dados das salas públicas e privadas, e depois **Sabe Essa?**, com perguntas e respostas.
+
+**Sabe Essa?** mostra todas as perguntas registradas no SQLite, incluindo rascunhos, perguntas em revisão e inativas, com respostas e busca. **Salas abertas** mostra nome, código, link, visibilidade, fase, participantes e anfitrião atual. Cada pessoa informa se está conectada ou desconectada. Saídas e expulsões removem a pessoa dessa consulta, e a identificação do anfitrião acompanha a transferência do papel no servidor. O botão **Atualizar** consulta novamente os dados; abrir a opção de salas também atualiza a consulta.
+
+Os links são montados no próprio domínio, usando somente códigos válidos de quatro letras, e abrem a sala em outra aba pelo fluxo normal de entrada. A API administrativa fornece apenas nome, indicação de anfitrião e estado de conexão de cada participante; tokens, hashes de sessão e identificadores internos não são enviados. Nomes e demais textos são inseridos como texto, sem interpretar HTML.
 
 ## Acesso
 
@@ -48,6 +52,18 @@ npm run test:browser
 ```
 
 ## Correção da tela após login — 20/10/2026
+
+### Opções Sabe Essa? e Salas abertas
+
+Revisão solicitada em 20/10/2026: cartões no formato da seleção do jogo, com indicação da opção selecionada. A consulta de perguntas é a opção inicial; as duas opções funcionam por clique e teclado. As salas mostram participantes ativos, incluindo sessões desconectadas ainda reservadas. O anfitrião aparece primeiro e sua identificação vem do estado autoritativo do servidor. A mudança adiciona o campo `people` à API administrativa, sem alterar o banco ou as regras das partidas.
+
+Validação: quatro testes da API e quatro cenários de navegador passaram, cobrindo autenticação, campos permitidos, estados de conexão, saídas, expulsões, encerramento, transferência de anfitrião, links, textos com marcação HTML exibidos literalmente e telas de 320 a 1440 px. Também passaram build, sintaxe, Ruff e verificação de espaços no diff. A primeira tentativa Python no sandbox foi bloqueada ao consultar `data/media`; a repetição autorizada passou, com o aviso de depreciação já existente do TestClient.
+
+A entrega online alterou somente os arquivos do Godmode e a consulta `godmode_rooms` em `fun/app.py`, com conferência de que o restante do backend permaneceu igual. Backup SQLite consistente com integridade `ok`, configuração e arquivos anteriores em `/root/fun/backups/godmode-opcoes-20261020T133048Z-7080c866/`. O manifesto foi validado integralmente antes e depois da atualização. O `rollback.py` da pasta restaura os arquivos com guardas de release e hashes; para carregar o backend restaurado, usar o controlador existente para reiniciar somente Fun, depois de confirmar ausência de participantes e partidas.
+
+Não havia salas, participantes ou partidas ativos antes da atualização. Foi usado exclusivamente `services.py restart fun` do controlador existente, sem editar sua configuração. Os dez processos verificados dos demais sistemas permaneceram iguais, assim como suas respostas HTTP. Nenhuma credencial foi alterada.
+
+A verificação pública confirmou 90 perguntas, os dados de uma sala privada temporária com dois participantes via WSS, abertura do link em outra aba, transferência do anfitrião, atualização e logout. A sala de teste foi encerrada, todas as consultas autenticadas retornaram HTTP 200 e não houve erro JavaScript. Houve timeout no caminho de rede padrão do PC; HTTPS respondeu normalmente por IPv4 e pelo próprio servidor. O teste final do Chromium usou IPv4 somente naquele navegador, com verificação normal de TLS e sem mudar a rede ou o túnel. Evidências em `artifacts/godmode-opcoes/`, incluindo `public-verification.json` e capturas de desktop/celular.
 
 ### Visual alinhado ao portal
 

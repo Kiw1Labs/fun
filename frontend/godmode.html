@@ -52,21 +52,29 @@
 
     <div id="dashboard" class="workspace" hidden>
       <header class="page-heading">
-        <div><p class="eyebrow">Administração</p><h1 id="dashboard-title" tabindex="-1">Godmode</h1><p class="intro">Acompanhe as salas abertas e o acervo de perguntas.</p></div>
+        <div><p class="eyebrow">Administração</p><h1 id="dashboard-title" tabindex="-1">Godmode</h1><p class="intro">Escolha o que deseja consultar.</p></div>
         <div class="page-actions">
           <button id="refresh" class="secondary" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-2l2 2M4 17l2 2a7 7 0 0 0 12-2"/></svg>Atualizar</button>
           <button id="logout" class="quiet" type="button">Sair</button>
         </div>
       </header>
+      <div class="dashboard-options" role="group" aria-label="Opções do Godmode">
+        <button id="rooms-option" class="option-tile" type="button" aria-label="Salas abertas" aria-pressed="false" aria-controls="rooms-panel">
+          <span class="option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M3 9h18M9 9v12"/></svg></span>
+          <strong>Salas abertas</strong><span class="option-description">Links, participantes<br>e anfitriões.</span><span class="option-state">Abrir</span>
+        </button>
+        <button id="questions-option" class="option-tile" type="button" aria-label="Sabe Essa?" aria-pressed="true" aria-controls="questions-panel">
+          <span class="option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="5"/><path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3h.01"/></svg></span>
+          <strong>Sabe Essa?</strong><span class="option-description">Perguntas e respostas<br>do jogo.</span><span class="option-state">Selecionado ✓</span>
+        </button>
+      </div>
       <p id="notice" class="notice" role="status" aria-live="polite">Entre para carregar os dados.</p>
-      <section class="panel" aria-labelledby="rooms-title">
+      <section id="rooms-panel" class="panel" aria-labelledby="rooms-title" hidden>
         <div class="section-heading"><h2 id="rooms-title">Salas abertas</h2><span id="room-count" class="count">—</span></div>
         <p class="section-copy">Salas públicas e privadas ativas.</p>
-        <div class="table-wrap rooms-table" tabindex="0" role="region" aria-label="Tabela de salas abertas">
-          <table><thead><tr><th scope="col">Código</th><th scope="col">Sala</th><th scope="col">Acesso</th><th scope="col">Estado</th><th scope="col">Jogadores</th></tr></thead><tbody id="rooms"><tr><td colspan="5">Aguardando autenticação…</td></tr></tbody></table>
-        </div>
+        <div id="rooms" class="room-list"><p class="empty-message">Aguardando autenticação…</p></div>
       </section>
-      <section class="panel" aria-labelledby="questions-title">
+      <section id="questions-panel" class="panel" aria-labelledby="questions-title">
         <div class="section-heading"><h2 id="questions-title">Perguntas registradas</h2><span id="question-count" class="count">—</span></div>
         <label class="search" for="question-filter">Buscar no acervo</label>
         <input id="question-filter" class="search-input" type="search" placeholder="Enunciado, resposta ou categoria">

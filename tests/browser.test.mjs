@@ -644,7 +644,7 @@ after(async()=>{
   if(temp) { assert.equal(dirname(temp),tmpdir()); await rm(temp,{recursive:true,force:true,maxRetries:10,retryDelay:200}); }
 });
 
-test('godmode mostra login próprio e protege dados sem links para salas',async()=>{
+test('godmode mostra login próprio, opções e dados protegidos',async()=>{
   assert.equal((await fetch(`${fixtureOrigin}/api/godmode/rooms`)).status,401);
   const context=await browser.newContext();
   const page=await context.newPage();
@@ -662,9 +662,10 @@ test('godmode mostra login próprio e protege dados sem links para salas',async(
   await page.getByRole('heading',{name:'Godmode',exact:true}).waitFor();
   await page.getByText(/^Atualizado às/).waitFor();
   assert.equal(await page.locator('#login-view').isVisible(),false);
-  assert.ok(await page.locator('#rooms tr').count()>=1);
+  assert.equal(await page.getByRole('button',{name:'Sabe Essa?',exact:true}).getAttribute('aria-pressed'),'true');
+  assert.equal(await page.getByRole('button',{name:'Salas abertas',exact:true}).getAttribute('aria-pressed'),'false');
+  assert.equal(await page.locator('#rooms-panel').isVisible(),false);
   assert.ok(await page.locator('#questions tr').count()>1);
-  assert.equal(await page.locator('#rooms a, #rooms button').count(),0);
   await page.getByLabel('Buscar no acervo',{exact:true}).fill('busca sem correspondência de teste');
   await page.getByText('Nenhuma pergunta encontrada.',{exact:true}).waitFor();
   await page.getByLabel('Buscar no acervo',{exact:true}).fill('');
@@ -697,7 +698,7 @@ test('godmode: usuários adicionais entram com senhas próprias e não aceitam s
       await page.getByText(/^Atualizado às/).waitFor();
       assert.equal(await page.locator('#login-view').isVisible(),false);
       assert.ok(await page.locator('#questions tr').count()>1);
-      assert.equal(await page.locator('#rooms a, #rooms button').count(),0);
+      assert.equal(await page.locator('#questions-panel').isVisible(),true);
       for(const width of [320,390,768,1024]) {
         await page.setViewportSize({width,height:844});
         assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
@@ -750,6 +751,62 @@ test('godmode: tema compartilhado com o início e navegação móvel por teclado
     assert.equal(await page.locator('#menu-backdrop').isVisible(),false);
     assert.equal(await page.locator('a[aria-current=page]').getAttribute('href'),'/godmode');
   } finally { await context.close(); }
+});
+
+test('godmode: opções mostram perguntas, links das salas, participantes e transferência do anfitrião',async()=>{
+  const contexts=await Promise.all([browser.newContext(),browser.newContext(),browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'})]);
+  const [host,guest,admin]=await Promise.all(contexts.map(context=>context.newPage()));
+  const roomName='Sala <b>da turma</b>', hostName='Ana <b>', guestName='<img>Bia</img>';
+  try {
+    await host.goto(fixtureOrigin);
+    await createRoom(host,hostName,roomName);
+    const roomURL=host.url();
+    await guest.goto(roomURL);
+    await guest.getByRole('textbox',{name:'Como podemos chamar você?',exact:true}).fill(guestName);
+    await guest.getByRole('button',{name:'Entrar na sala',exact:true}).click();
+    await guest.getByText('Ao vivo',{exact:true}).waitFor();
+    await admin.goto(`${fixtureOrigin}/godmode`);
+    await admin.getByLabel('Usuário',{exact:true}).fill('browser-admin');
+    await admin.getByLabel('Senha',{exact:true}).fill('browser-admin-password');
+    await admin.getByRole('button',{name:'Entrar',exact:true}).click();
+    await admin.getByText(/^Atualizado às/).waitFor();
+    assert.equal(await admin.locator('#questions-panel').isVisible(),true);
+    assert.ok(await admin.locator('#questions').getByText(/Resposta sintética/).count()>0);
+    const roomsOption=admin.getByRole('button',{name:'Salas abertas',exact:true});
+    await roomsOption.focus(); await roomsOption.press('Enter');
+    const room=admin.locator('.admin-room').filter({hasText:roomName});
+    await room.getByRole('heading',{name:roomName,exact:true}).waitFor();
+    assert.equal(await admin.locator('#questions-panel').isVisible(),false);
+    assert.equal(await roomsOption.getAttribute('aria-pressed'),'true');
+    const link=room.getByRole('link',{name:`Abrir sala ${roomName}`,exact:true});
+    assert.equal(await link.getAttribute('href'),roomURL);
+    assert.equal(await link.getAttribute('target'),'_blank');
+    assert.equal(await link.getAttribute('rel'),'noopener noreferrer');
+    assert.equal(await link.textContent(),roomURL);
+    await room.locator('li').filter({hasText:hostName}).getByText('Anfitrião',{exact:true}).waitFor();
+    await room.locator('li').filter({hasText:guestName}).getByText('Conectado',{exact:true}).waitFor();
+    assert.equal(await room.locator('li').count(),2);
+    assert.equal(await room.locator('b,img').count(),0);
+    await admin.screenshot({path:'artifacts/godmode-opcoes-salas-desktop.png'});
+    for(const width of [320,390,768,1024]) {
+      await admin.setViewportSize({width,height:844});
+      assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    }
+    await admin.setViewportSize({width:390,height:844});
+    await admin.screenshot({path:'artifacts/godmode-opcoes-salas-mobile.png',fullPage:true});
+    await host.getByRole('button',{name:'Sair da sala',exact:true}).click();
+    await host.getByText('Você saiu da sala.',{exact:true}).waitFor();
+    await admin.getByRole('button',{name:'Atualizar',exact:true}).click();
+    await room.locator('li').filter({hasText:guestName}).getByText('Anfitrião',{exact:true}).waitFor();
+    assert.equal(await room.locator('li').count(),1);
+    assert.equal(await room.getByText(hostName,{exact:true}).count(),0);
+    await admin.getByRole('button',{name:'Sabe Essa?',exact:true}).click();
+    assert.equal(await admin.locator('#questions-panel').isVisible(),true);
+    assert.equal(await admin.locator('#rooms-panel').isVisible(),false);
+    await guest.getByRole('button',{name:'Encerrar sala',exact:true}).click();
+    await guest.getByRole('dialog').getByRole('button',{name:'Encerrar sala',exact:true}).click();
+    await guest.getByText('Até a próxima.',{exact:true}).waitFor();
+  } finally { await Promise.all(contexts.map(context=>context.close())); }
 });
 
 test('partida sintética em navegador: resposta, cooldown, reconexão e revelação',async()=>{

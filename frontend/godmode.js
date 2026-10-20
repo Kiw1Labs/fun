@@ -65,14 +65,61 @@ function cell(row, value) {
 function renderRooms(rooms) {
   byId('room-count').textContent = String(rooms.length);
   const body = byId('rooms'); body.replaceChildren();
-  body.closest('.table-wrap').classList.toggle('empty', !rooms.length);
   if (!rooms.length) {
-    const row = body.insertRow(); const td = row.insertCell(); td.colSpan = 5; td.textContent = 'Nenhuma sala aberta.'; return;
+    const message = document.createElement('p'); message.className = 'empty-message';
+    message.textContent = 'Nenhuma sala aberta.'; body.append(message); return;
   }
   for (const room of rooms) {
-    const row = body.insertRow();
-    cell(row, room.code); cell(row, room.name); cell(row, labels[room.visibility] || room.visibility);
-    cell(row, labels[room.phase] || room.phase); cell(row, room.players);
+    const card = document.createElement('article'); card.className = 'admin-room';
+    const header = document.createElement('header'); header.className = 'room-heading';
+    const heading = document.createElement('div');
+    const name = document.createElement('h3'); name.textContent = room.name;
+    const meta = document.createElement('p'); meta.className = 'room-meta';
+    meta.textContent = `${room.code} · ${labels[room.visibility] || room.visibility} · ${labels[room.phase] || room.phase}`;
+    heading.append(name, meta);
+    const count = document.createElement('span'); count.className = 'count';
+    count.textContent = `${room.players} ${room.players === 1 ? 'pessoa' : 'pessoas'}`;
+    header.append(heading, count); card.append(header);
+    if (/^[A-Z]{4}$/.test(room.code)) {
+      const link = document.createElement('a'); link.className = 'room-link';
+      link.href = new URL(`/${room.code}`, location.origin).href;
+      link.textContent = link.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      link.setAttribute('aria-label', `Abrir sala ${room.name}`); card.append(link);
+    }
+    const peopleHeading = document.createElement('h4'); peopleHeading.className = 'people-heading';
+    peopleHeading.textContent = 'Participantes'; card.append(peopleHeading);
+    if (Array.isArray(room.people) && room.people.length) {
+      const people = document.createElement('ul'); people.className = 'room-people';
+      people.setAttribute('aria-label', `Participantes de ${room.name}`);
+      for (const person of room.people) {
+        const item = document.createElement('li');
+        const copy = document.createElement('div'); copy.className = 'member-copy';
+        const personName = document.createElement('strong'); personName.textContent = person.name;
+        const status = document.createElement('small'); status.textContent = person.online ? 'Conectado' : 'Desconectado';
+        copy.append(personName, status); item.append(copy);
+        if (person.host) {
+          const badge = document.createElement('span'); badge.className = 'host-badge';
+          badge.textContent = 'Anfitrião'; item.append(badge);
+        }
+        people.append(item);
+      }
+      card.append(people);
+    } else {
+      const message = document.createElement('p'); message.className = 'section-copy';
+      message.textContent = Array.isArray(room.people) ? 'Nenhum participante na sala.' : 'Atualize para consultar os participantes.';
+      card.append(message);
+    }
+    body.append(card);
+  }
+}
+
+function selectView(view) {
+  for (const name of ['questions', 'rooms']) {
+    const selected = view === name;
+    const button = byId(`${name}-option`);
+    button.setAttribute('aria-pressed', String(selected));
+    button.querySelector('.option-state').textContent = selected ? 'Selecionado ✓' : 'Abrir';
+    byId(`${name}-panel`).hidden = !selected;
   }
 }
 
@@ -99,6 +146,8 @@ function renderQuestions() {
 function showLogin(message = '') {
   authorization = '';
   questions = [];
+  selectView('questions');
+  byId('question-filter').value = '';
   byId('dashboard').hidden = true;
   byId('login-view').hidden = false;
   byId('login-error').textContent = message;
@@ -145,6 +194,7 @@ byId('login-form').addEventListener('submit', async event => {
     byId('login-password').value = '';
     byId('login-view').hidden = true;
     byId('dashboard').hidden = false;
+    selectView('questions');
     byId('dashboard-title').focus({preventScroll:true});
     window.scrollTo(0, 0);
     await refresh();
@@ -158,3 +208,5 @@ byId('login-form').addEventListener('submit', async event => {
 byId('logout').addEventListener('click', () => showLogin());
 byId('refresh').addEventListener('click', refresh);
 byId('question-filter').addEventListener('input', renderQuestions);
+byId('questions-option').addEventListener('click', () => selectView('questions'));
+byId('rooms-option').addEventListener('click', () => { selectView('rooms'); refresh(); });

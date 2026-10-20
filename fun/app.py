@@ -250,7 +250,11 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             return denied
         async with lock:
             rooms = [dict(code=r['code'], name=r['room_name'], visibility=r['visibility'],
-                          phase=r['phase'], players=len(engine.members(r)))
+                          phase=r['phase'], players=len(engine.members(r)),
+                          people=[dict(name=p['name'], host=p['id'] == r['host'],
+                                       online=engine.online(r['code'], p['id']))
+                                  for p in sorted(engine.members(r),
+                                                  key=lambda p: (p['id'] != r['host'], p['joined']))])
                      for r in engine.rooms.values() if r['phase'] != 'closed']
         rooms.sort(key=lambda room: (room['visibility'], room['name'].casefold(), room['code']))
         return JSONResponse({'rooms': rooms}, headers={'Cache-Control': 'no-store'})

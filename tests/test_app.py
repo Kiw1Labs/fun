@@ -115,10 +115,55 @@ def test_godmode_requires_credentials_and_lists_rooms_and_all_questions(tmp_path
         rooms = client.get('/api/godmode/rooms', auth=auth).json()['rooms']
         assert {room['code'] for room in rooms} == {private['code'], public['code']}
         assert {room['visibility'] for room in rooms} == {'private', 'public'}
-        assert all('url' not in room and 'link' not in room for room in rooms)
+        assert {room['name']: room['people'] for room in rooms} == {
+            'Privada': [dict(name='Ana', host=True, online=False)],
+            'Pública': [dict(name='Bia', host=True, online=False)],
+        }
+        assert all(set(room) == {'code', 'name', 'visibility', 'phase', 'players', 'people'} for room in rooms)
         listed = client.get('/api/godmode/questions', auth=auth).json()['questions']
         assert len(listed) == len(catalog)
         assert listed[0]['answer'] == catalog[0].answer
+
+
+def test_godmode_room_members_host_transfer_and_no_session_secrets(tmp_path, monkeypatch):
+    monkeypatch.setenv('FUN_ADMIN_USERNAME', 'admin-test')
+    monkeypatch.setenv('FUN_ADMIN_PASSWORD', 'local-test-secret')
+    auth = ('admin-test', 'local-test-secret')
+    with make_client(tmp_path) as client:
+        host = client.post('/api/rooms', headers=ORIGIN, json={'name': 'Ana', 'room_name': 'Privada'}).json()
+        code = host['code']
+        guest = client.post(f'/api/rooms/{code}/join', headers=ORIGIN, json={'name': 'Bia'}).json()
+        departed = client.post(f'/api/rooms/{code}/join', headers=ORIGIN, json={'name': 'Caio'}).json()
+        with client.websocket_connect(f'/ws/{code}', headers=ORIGIN) as host_ws:
+            host_ws.send_json({'token': host['token']})
+            receive_type(host_ws, 'state')
+            with client.websocket_connect(f'/ws/{code}', headers=ORIGIN) as guest_ws:
+                guest_ws.send_json({'token': guest['token']})
+                receive_type(guest_ws, 'state')
+                response = client.get('/api/godmode/rooms', auth=auth)
+                assert response.headers['cache-control'] == 'no-store'
+                room = response.json()['rooms'][0]
+                assert room['players'] == 3
+                assert room['people'] == [dict(name='Ana', host=True, online=True),
+                                          dict(name='Bia', host=False, online=True),
+                                          dict(name='Caio', host=False, online=False)]
+                for person in [host, guest, departed]:
+                    assert person['token'] not in response.text
+                    assert person['participant'] not in response.text
+                for secret_field in ['token_hash', 'cooldown', 'events', 'last_wrong_answer']:
+                    assert secret_field not in response.text
+                assert client.get('/api/godmode/rooms').status_code == 401
+                assert client.get('/api/godmode/rooms', headers={'Authorization': f"Bearer {host['token']}"}).status_code == 401
+                host_ws.send_json({'id': 'remove-offline-guest', 'action': 'kick', 'target': departed['participant']})
+                assert receive_type(host_ws, 'ack')['ok']
+                host_ws.send_json({'id': 'host-leaves', 'action': 'leave'})
+                assert receive_type(host_ws, 'ack')['ok']
+                room = client.get('/api/godmode/rooms', auth=auth).json()['rooms'][0]
+                assert room['players'] == 1
+                assert room['people'] == [dict(name='Bia', host=True, online=True)]
+                guest_ws.send_json({'id': 'close-room', 'action': 'close'})
+                assert receive_type(guest_ws, 'ack')['ok']
+                assert client.get('/api/godmode/rooms', auth=auth).json() == {'rooms': []}
 
 
 def test_godmode_is_disabled_without_configured_credentials(tmp_path, monkeypatch):
