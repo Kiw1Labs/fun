@@ -34,13 +34,24 @@
         <input id="contribution-nickname" name="nickname" maxlength="24" autocomplete="off" placeholder="Pode deixar em branco">
         <label for="contribution-prompt">Título da pergunta</label>
         <input id="contribution-prompt" name="prompt" maxlength="300" required placeholder="Qual o nome da música? Quem disse essa frase?">
-        <label for="contribution-reference">Texto de referência (opcional)</label>
-        <textarea id="contribution-reference" name="reference" maxlength="2000" rows="5" placeholder="Um trecho da música, uma frase famosa ou o texto que acompanha a pergunta."></textarea>
-        <label for="contribution-image">Imagem da pergunta (opcional)</label>
-        <input id="contribution-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="image-help" hidden>
-        <div class="file-picker"><button id="choose-image" class="secondary" type="button">Escolher imagem</button><span id="image-filename">Nenhuma imagem selecionada</span></div>
-        <p id="image-help" class="field-help">JPG, PNG ou WebP. A foto será ajustada para o envio.</p>
-        <div id="image-preview" class="contribution-preview" hidden><img id="preview-image" alt="Prévia da imagem da pergunta"><button id="remove-image" type="button" class="secondary">Remover imagem</button></div>
+        <fieldset class="contribution-format">
+          <legend>Formato da questão</legend>
+          <div class="format-tabs" role="tablist" aria-label="Formato da questão">
+            <button id="image-tab" type="button" role="tab" aria-selected="true" aria-controls="image-panel" data-format="image">Imagem</button>
+            <button id="text-tab" type="button" role="tab" aria-selected="false" aria-controls="text-panel" data-format="text" tabindex="-1">Texto</button>
+          </div>
+          <section id="image-panel" role="tabpanel" aria-labelledby="image-tab">
+            <label for="contribution-image">Imagem da pergunta</label>
+            <input id="contribution-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="image-help" aria-required="true" hidden>
+            <div class="file-picker"><button id="choose-image" class="secondary" type="button">Escolher imagem</button><span id="image-filename">Nenhuma imagem selecionada</span></div>
+            <p id="image-help" class="field-help">Adicione uma imagem JPG, PNG ou WebP. A foto será ajustada para o envio.</p>
+            <div id="image-preview" class="contribution-preview" hidden><img id="preview-image" alt="Prévia da imagem da pergunta"><button id="remove-image" type="button" class="secondary">Remover imagem</button></div>
+          </section>
+          <section id="text-panel" role="tabpanel" aria-labelledby="text-tab" hidden>
+            <label for="contribution-reference">Texto de referência</label>
+            <textarea id="contribution-reference" name="reference" maxlength="2000" rows="5" disabled placeholder="Um trecho da música, uma frase famosa ou o texto que acompanha a pergunta."></textarea>
+          </section>
+        </fieldset>
         <label for="contribution-answer">Resposta</label>
         <input id="contribution-answer" name="answer" maxlength="200" required autocomplete="off" placeholder="A resposta correta">
         <label for="contribution-category">Categoria</label>

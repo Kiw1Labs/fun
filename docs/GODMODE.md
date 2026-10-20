@@ -1,6 +1,6 @@
 # Painel administrativo Godmode
 
-Após o login em `/godmode`, dois cartões permitem escolher a consulta: primeiro **Salas abertas**, com os dados das salas públicas e privadas, e depois **Sabe Essa?**, com perguntas e respostas.
+Após o login em `/godmode`, os cartões permitem escolher a consulta: primeiro **Salas abertas**, com os dados das salas públicas e privadas, e depois **Sabe Essa?**, com perguntas e respostas.
 Uma terceira opção, **Contribuições**, lista somente as questões recebidas que aguardam análise. Abra um cartão para consultar título, referência, imagem, resposta, categoria e nickname opcional. Para aprovar, escolha a dificuldade e registre os direitos/fonte de uso revisados; a questão entra no acervo com a tag **Contribuição**. **Recusar questão** retira o envio da fila sem adicioná-lo ao jogo. Consulte [NOVA_QUESTAO.md](NOVA_QUESTAO.md) para os detalhes do fluxo e da implantação.
 
 **Sabe Essa?** mostra todas as perguntas registradas no SQLite em uma grade de cartões com imagem e enunciado, incluindo rascunhos, perguntas em revisão e inativas. Questões de texto têm uma indicação própria; imagens ausentes exibem uma mensagem. Clique em um cartão, ou use Enter/Espaço, para abrir os detalhes: imagem completa, enunciado, resposta, outras respostas aceitas, categoria, subcategoria, dificuldade, formato, status e identificador. Feche pelo botão, com Escape ou clicando fora do popup; o foco retorna ao cartão. A busca continua consultando enunciados, respostas, alternativas, categorias e identificadores.

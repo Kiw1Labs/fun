@@ -26,9 +26,12 @@ def setup(tmp_path, monkeypatch):
 
 
 def payload(**changes):
-    return dict(request_id='submission-request-123456', nickname='', prompt='Quem disse esta frase?',
+    data = dict(request_id='submission-request-123456', nickname='', prompt='Quem disse esta frase?',
                 reference='Referência artificial\nSegunda linha', answer='Resposta artificial',
-                category='Cultura e nostalgia', image=None) | changes
+                category='Cultura e nostalgia', image=None)
+    if changes.get('image') is not None:
+        data['reference'] = ''
+    return data | changes
 
 
 def image_bytes(kind='PNG'):
@@ -149,6 +152,16 @@ def test_raster_formats_are_detected_by_content(kind):
     media_type, extension = inspect_image(image_bytes(kind))
     assert media_type == {'PNG':'image/png','JPEG':'image/jpeg','WEBP':'image/webp'}[kind]
     assert extension in ('png','jpg','webp')
+
+
+@pytest.mark.parametrize('changes', [dict(reference='', image=None), dict(reference=' \n\t ', image=None),
+    dict(reference='Não pode acompanhar uma imagem.', image=base64.b64encode(image_bytes()).decode()),
+    dict(reference='', image='')])
+def test_exactly_one_reference_format_is_required(setup, changes):
+    with TestClient(create_app(database=str(setup), catalog=[], origins=['http://testserver'])) as client:
+        response = client.post('/api/question-submissions', headers=ORIGIN, json=payload(**changes))
+        assert response.status_code == 400
+        assert client.get('/api/godmode/submissions', auth=AUTH).json()['total'] == 0
 
 
 def test_request_limits_json_origin_pagination_and_pending_capacity(setup):

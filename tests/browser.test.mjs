@@ -883,6 +883,62 @@ test('godmode: opções mostram perguntas, links das salas, participantes e tran
   } finally { await Promise.all(contexts.map(context=>context.close())); }
 });
 
+test('contribuições: abas exigem imagem ou texto e enviam somente o formato selecionado',async()=>{
+  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+  const page=await context.newPage(),payloads=[];
+  try {
+    await page.route('**/api/question-submissions',route=>{payloads.push(route.request().postDataJSON());return route.fulfill({status:201,json:{received:true,id:'submission-tabs-test'}});});
+    await page.goto(`${auditOrigin}/nova-questao`);
+    const imageTab=page.getByRole('tab',{name:'Imagem',exact:true}),textTab=page.getByRole('tab',{name:'Texto',exact:true});
+    await page.getByLabel('Título da pergunta',{exact:true}).fill('Qual é a referência artificial?');
+    await page.getByLabel('Resposta',{exact:true}).fill('Resposta artificial');
+    await page.getByLabel('Categoria',{exact:true}).selectOption('Games');
+    assert.equal(await imageTab.getAttribute('aria-selected'),'true');
+    assert.equal(await page.locator('#image-panel').isVisible(),true);
+    assert.equal(await page.locator('#text-panel').isVisible(),false);
+    await page.getByRole('button',{name:'Enviar para análise',exact:true}).click();
+    await page.getByRole('alert').getByText('Adicione a imagem da pergunta.',{exact:true}).waitFor();
+    assert.equal(payloads.length,0);
+    await imageTab.focus();await page.keyboard.press('ArrowRight');
+    assert.equal(await textTab.getAttribute('aria-selected'),'true');
+    assert.equal(await textTab.evaluate(el=>el===document.activeElement),true);
+    assert.equal(await page.locator('#image-panel').isVisible(),false);
+    assert.equal(await page.locator('#text-panel').isVisible(),true);
+    assert.equal(await page.getByLabel('Texto de referência',{exact:true}).getAttribute('required'),'');
+    await page.getByRole('button',{name:'Enviar para análise',exact:true}).click();
+    assert.equal(payloads.length,0);
+    assert.equal(await page.getByLabel('Texto de referência',{exact:true}).evaluate(el=>el.validity.valueMissing),true);
+    await page.getByLabel('Texto de referência',{exact:true}).fill('   ');
+    await page.getByRole('button',{name:'Enviar para análise',exact:true}).click();
+    await page.getByRole('alert').getByText('Preencha o texto de referência.',{exact:true}).waitFor();
+    await page.getByLabel('Texto de referência',{exact:true}).fill('Texto artificial que ficará como rascunho.');
+    await imageTab.click();
+    await page.getByLabel('Imagem da pergunta',{exact:true}).setInputFiles({name:'referencia.png',mimeType:'image/png',buffer:await readFile('frontend/brand/fun-favicon.png')});
+    await page.waitForFunction(()=>document.querySelector('#preview-image').naturalWidth>0&&!document.querySelector('#contribution-submit').disabled);
+    assert.equal(await page.locator('#text-panel').isVisible(),false);
+    await page.screenshot({path:'artifacts/contribution-tabs/imagem-desktop.png',fullPage:true});
+    await page.getByRole('button',{name:'Enviar para análise',exact:true}).click();
+    await page.getByRole('heading',{name:'Questão enviada para análise.',exact:true}).waitFor();
+    assert.equal(payloads.length,1);assert.ok(payloads[0].image);assert.equal(payloads[0].reference,'');
+    await page.getByRole('button',{name:'Enviar outra questão',exact:true}).click();
+    await page.getByLabel('Título da pergunta',{exact:true}).fill('Outra referência artificial');
+    await page.getByLabel('Resposta',{exact:true}).fill('Resposta artificial');
+    await page.getByLabel('Categoria',{exact:true}).selectOption('Música');
+    await page.getByLabel('Imagem da pergunta',{exact:true}).setInputFiles({name:'outro-rascunho.png',mimeType:'image/png',buffer:await readFile('frontend/brand/fun-favicon.png')});
+    await page.waitForFunction(()=>!document.querySelector('#contribution-submit').disabled);
+    await textTab.click();
+    await page.getByLabel('Texto de referência',{exact:true}).fill('Referência artificial em texto.');
+    for(const width of [320,390]) {
+      await page.setViewportSize({width,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      assert.equal(await page.locator('#image-panel').isVisible(),false);
+    }
+    await page.screenshot({path:'artifacts/contribution-tabs/texto-mobile.png',fullPage:true});
+    await page.getByRole('button',{name:'Enviar para análise',exact:true}).click();
+    await page.getByRole('heading',{name:'Questão enviada para análise.',exact:true}).waitFor();
+    assert.equal(payloads.length,2);assert.equal(payloads[1].image,null);assert.equal(payloads[1].reference,'Referência artificial em texto.');
+  } finally {await context.close();}
+});
+
 test('contribuições: envio anônimo, revisão e aprovação sem duplicar a questão',async()=>{
   const contexts=await Promise.all([browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'}),browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'})]);
   const [author,admin]=await Promise.all(contexts.map(context=>context.newPage()));
@@ -893,7 +949,8 @@ test('contribuições: envio anônimo, revisão e aprovação sem duplicar a que
     assert.equal(await author.locator('a[href="/nova-questao"]').count(),0);
     await author.goto(`${auditOrigin}/nova-questao`);
     await author.getByLabel('Título da pergunta',{exact:true}).fill(prompt);
-    await author.getByLabel('Texto de referência (opcional)',{exact:true}).fill(reference);
+    await author.getByRole('tab',{name:'Texto',exact:true}).click();
+    await author.getByLabel('Texto de referência',{exact:true}).fill(reference);
     await author.getByLabel('Resposta',{exact:true}).fill(answer);
     await author.getByLabel('Categoria',{exact:true}).selectOption('Cultura e nostalgia');
     assert.equal(await author.getByLabel('Nickname (opcional)',{exact:true}).inputValue(),'');
@@ -945,7 +1002,7 @@ test('contribuições: foto, nickname opcional, falha de rede recuperável e rec
     await author.getByLabel('Título da pergunta',{exact:true}).fill(prompt);
     await author.getByLabel('Resposta',{exact:true}).fill('Imagem artificial');
     await author.getByLabel('Categoria',{exact:true}).selectOption('Games');
-    await author.getByLabel('Imagem da pergunta (opcional)',{exact:true}).setInputFiles({name:'foto-teste.png',mimeType:'image/png',buffer:await readFile('frontend/brand/fun-favicon.png')});
+    await author.getByLabel('Imagem da pergunta',{exact:true}).setInputFiles({name:'foto-teste.png',mimeType:'image/png',buffer:await readFile('frontend/brand/fun-favicon.png')});
     await author.locator('#image-preview').waitFor();
     await author.waitForFunction(()=>document.querySelector('#preview-image').naturalWidth>0);
     await author.screenshot({path:'artifacts/nova-questao/formulario-desktop.png',fullPage:true});
@@ -987,6 +1044,15 @@ test('partida sintética em navegador: resposta, cooldown, reconexão e revelaç
   const a=await browser.newContext({viewport:{width:1366,height:900},reducedMotion:'reduce'});
   const b=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
   const host=await a.newPage(), guest=await b.newPage();
+  const reference='Trecho artificial de referência.\nTexto <b>preservado</b>.';
+  await host.routeWebSocket('**/ws/*',route=>{
+    const server=route.connectToServer();
+    server.onMessage(message=>{
+      const state=JSON.parse(String(message));
+      if(state.type==='state'&&state.challenge)state.challenge.reference=reference;
+      route.send(JSON.stringify(state));
+    });
+  });
   for(const p of [host,guest]) p.on('pageerror', error=>errors.push(error.message));
   await host.goto(fixtureOrigin);
   await createRoom(host,'Host sintético');
@@ -997,6 +1063,8 @@ test('partida sintética em navegador: resposta, cooldown, reconexão e revelaç
   await host.getByRole('button',{name:'Iniciar partida',exact:true}).click();
   await host.getByLabel('Sua resposta').waitFor();
   await guest.getByLabel('Sua resposta').waitFor();
+  assert.equal(await host.locator('.challenge-reference').textContent(),reference);
+  assert.equal(await host.locator('.challenge-reference b').count(),0);
   const image=await host.locator('.challenge-image').getAttribute('src');
   const index=Number(image.match(/test_(\d+)\.png/)[1]);
   const answer=`Resposta sintética ${index}`;

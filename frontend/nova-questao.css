@@ -7,6 +7,14 @@ textarea { resize: vertical; min-height: 150px; }
 textarea::placeholder { color: var(--muted); opacity: 1; }
 textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 #contribution-form input { background: var(--bg); }
+.contribution-format { min-width: 0; margin: 0 0 22px; padding: 0; border: 0; }
+.contribution-format legend { margin-bottom: 10px; color: var(--muted); font-size: .8125rem; }
+.format-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-bottom: 22px; padding: 4px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); }
+.format-tabs button { min-width: 0; border-radius: 12px; background: transparent; color: var(--muted); }
+.format-tabs button[aria-selected=true] { background: var(--soft); color: var(--accent); }
+.format-tabs button:hover { background: var(--soft); opacity: 1; }
+.contribution-format .field-help, .contribution-format textarea, .contribution-format .contribution-preview { margin-bottom: 0; }
+.contribution-format .contribution-preview { margin-top: 20px; }
 .file-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 8px 0 22px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
 .file-picker span { min-width: 0; color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
 .field-help { margin: -10px 0 24px; font-size: .75rem; }

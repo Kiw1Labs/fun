@@ -98,6 +98,10 @@ def validate_submission(payload):
     if data['category'] not in CATEGORIES:
         raise SubmissionError('Selecione uma categoria válida.')
     raw_image = payload.get('image')
+    if raw_image is not None and data['reference']:
+        raise SubmissionError('Escolha apenas um formato: imagem ou texto de referência.')
+    if raw_image is None and not data['reference']:
+        raise SubmissionError('Adicione uma imagem ou preencha o texto de referência.')
     image = None
     media_type = extension = ''
     if raw_image is not None:

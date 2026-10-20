@@ -42,8 +42,31 @@ document.addEventListener('keydown', event => {
 });
 
 let image = null, previewURL = '', requestId = crypto.randomUUID(), busy = false, preparing = false, categoriesReady = false;
+let selectedFormat = 'image';
 function error(message = '') { byId('contribution-error').textContent = message; byId('contribution-error').hidden = !message; }
 function updateSubmit() { byId('contribution-submit').disabled = busy || preparing || !categoriesReady; }
+function selectFormat(format, focus = false) {
+  if (busy) return;
+  if (selectedFormat !== format) { requestId = crypto.randomUUID(); error(); }
+  selectedFormat = format;
+  for (const name of ['image', 'text']) {
+    const selected = name === format, tab = byId(`${name}-tab`);
+    tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
+    byId(`${name}-panel`).hidden = !selected;
+  }
+  byId('contribution-reference').disabled = format !== 'text'; byId('contribution-reference').required = format === 'text';
+  byId('contribution-image').disabled = format !== 'image' || preparing;
+  byId('contribution-image').setAttribute('aria-required', String(format === 'image'));
+  byId('choose-image').disabled = format !== 'image' || preparing;
+  byId('remove-image').disabled = format !== 'image' || preparing;
+  if (focus) byId(`${format}-tab`).focus();
+}
+for (const format of ['image', 'text']) byId(`${format}-tab`).addEventListener('click', () => selectFormat(format, true));
+document.querySelector('.format-tabs').addEventListener('keydown', event => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  event.preventDefault();
+  selectFormat(event.key === 'Home' ? 'image' : event.key === 'End' ? 'text' : selectedFormat === 'image' ? 'text' : 'image', true);
+});
 function clearImage() {
   image = null; if (previewURL) URL.revokeObjectURL(previewURL); previewURL = '';
   byId('preview-image').removeAttribute('src'); byId('image-preview').hidden = true; byId('contribution-image').value = '';
@@ -70,14 +93,17 @@ byId('contribution-image').addEventListener('change', async event => {
     byId('image-filename').textContent = file.name;
     requestId = crypto.randomUUID();
   } catch (failure) { clearImage(); error(failure.message || 'Não foi possível preparar a imagem.'); }
-  finally { bitmap?.close(); preparing = false; byId('contribution-image').disabled = false; updateSubmit(); }
+  finally { bitmap?.close(); preparing = false; selectFormat(selectedFormat); updateSubmit(); }
 });
 byId('contribution-form').addEventListener('input', () => { requestId = crypto.randomUUID(); });
 byId('contribution-form').addEventListener('submit', async event => {
   event.preventDefault(); if (busy || preparing || !categoriesReady) return;
-  const payload = {request_id:requestId, image};
-  for (const field of ['nickname', 'prompt', 'reference', 'answer', 'category']) payload[field] = byId(`contribution-${field}`).value.trim();
+  const payload = {request_id:requestId, image:selectedFormat === 'image' ? image : null,
+    reference:selectedFormat === 'text' ? byId('contribution-reference').value.trim() : ''};
+  for (const field of ['nickname', 'prompt', 'answer', 'category']) payload[field] = byId(`contribution-${field}`).value.trim();
   if (!payload.prompt || !payload.answer) { error('Preencha o título e a resposta.'); return; }
+  if (selectedFormat === 'image' && !image) { error('Adicione a imagem da pergunta.'); byId('choose-image').focus(); return; }
+  if (selectedFormat === 'text' && !payload.reference) { error('Preencha o texto de referência.'); byId('contribution-reference').focus(); return; }
   busy = true; updateSubmit(); error(); byId('contribution-submit').textContent = 'Enviando…';
   for (const control of event.currentTarget.elements) control.disabled = true;
   try {
@@ -88,13 +114,14 @@ byId('contribution-form').addEventListener('submit', async event => {
   } catch (failure) { error(failure instanceof TypeError ? 'Verifique sua conexão e tente novamente. Seu texto foi mantido.' : failure.message); }
   finally {
     busy = false; for (const control of byId('contribution-form').elements) control.disabled = false;
-    byId('contribution-submit').textContent = 'Enviar para análise'; updateSubmit();
+    byId('contribution-submit').textContent = 'Enviar para análise'; selectFormat(selectedFormat); updateSubmit();
   }
 });
 byId('send-another').addEventListener('click', () => {
   const nickname = byId('contribution-nickname').value; byId('contribution-form').reset(); byId('contribution-nickname').value = nickname;
-  clearImage(); requestId = crypto.randomUUID(); error(); byId('contribution-success').hidden = true; byId('contribution-form').hidden = false; byId('contribution-prompt').focus();
+  clearImage(); requestId = crypto.randomUUID(); error(); selectFormat(selectedFormat); byId('contribution-success').hidden = true; byId('contribution-form').hidden = false; byId('contribution-prompt').focus();
 });
+selectFormat(selectedFormat);
 try {
   const response = await fetch('/api/question-submissions/categories'); if (!response.ok) throw new Error();
   const result = await response.json();
