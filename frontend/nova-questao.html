@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Nova questão · Fun</title>
+  <link rel="icon" href="/brand/fun-favicon.png?v=20261019-4" type="image/png">
+  <link rel="stylesheet" href="/contribution-assets/godmode.css">
+  <link rel="stylesheet" href="/contribution-assets/nova-questao.css">
+  <script type="module" src="/contribution-assets/nova-questao.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Pular para o conteúdo</a>
+  <header class="mobile">
+    <button id="menu" class="icon-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Abrir navegação"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h12M4 18h16"/></svg></button>
+    <a href="/" class="brand" aria-label="Fun, início"><img src="/brand/fun-logo.png?v=20261019-2" alt=""><span>fun<span class="dot">.</span></span></a>
+  </header>
+  <button id="menu-backdrop" type="button" tabindex="-1" aria-label="Fechar navegação" hidden></button>
+  <aside id="sidebar" aria-label="Navegação">
+    <div class="sidebar-header">
+      <a class="brand" href="/" aria-label="Fun, início"><img src="/brand/fun-logo.png?v=20261019-2" alt=""><span>fun<span class="dot">.</span></span></a>
+      <button id="sidebar-toggle" class="icon-button" type="button" aria-label="Recolher navegação" aria-controls="sidebar" aria-expanded="true"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button>
+    </div>
+    <nav class="sidebar-body" aria-label="Principal"><a class="nav-item" href="/" aria-label="Início"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z"/></svg><span class="nav-label">Início</span></a></nav>
+    <div class="sidebar-footer"><button id="theme" class="nav-item" type="button" aria-label="Alternar tema"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z"/></svg><span class="nav-label">Tema <span id="theme-label">escuro</span></span></button></div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <div class="contribution-shell">
+      <header><p class="eyebrow">Sabe Essa? · Contribuições</p><h1>Uma boa questão começa com você.</h1><p class="intro">Envie sua ideia. Ela passa por análise antes de entrar no jogo.</p></header>
+      <form id="contribution-form" class="panel">
+        <label for="contribution-nickname">Nickname (opcional)</label>
+        <input id="contribution-nickname" name="nickname" maxlength="24" autocomplete="off" placeholder="Pode deixar em branco">
+        <label for="contribution-prompt">Título da pergunta</label>
+        <input id="contribution-prompt" name="prompt" maxlength="300" required placeholder="Qual o nome da música? Quem disse essa frase?">
+        <label for="contribution-reference">Texto de referência (opcional)</label>
+        <textarea id="contribution-reference" name="reference" maxlength="2000" rows="5" placeholder="Um trecho da música, uma frase famosa ou o texto que acompanha a pergunta."></textarea>
+        <label for="contribution-image">Imagem da pergunta (opcional)</label>
+        <input id="contribution-image" name="image" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="image-help" hidden>
+        <div class="file-picker"><button id="choose-image" class="secondary" type="button">Escolher imagem</button><span id="image-filename">Nenhuma imagem selecionada</span></div>
+        <p id="image-help" class="field-help">JPG, PNG ou WebP. A foto será ajustada para o envio.</p>
+        <div id="image-preview" class="contribution-preview" hidden><img id="preview-image" alt="Prévia da imagem da pergunta"><button id="remove-image" type="button" class="secondary">Remover imagem</button></div>
+        <label for="contribution-answer">Resposta</label>
+        <input id="contribution-answer" name="answer" maxlength="200" required autocomplete="off" placeholder="A resposta correta">
+        <label for="contribution-category">Categoria</label>
+        <select id="contribution-category" name="category" required><option value="">Selecione uma categoria</option></select>
+        <p class="field-help">O nickname é opcional e acompanha a contribuição na análise da administração.</p>
+        <p id="contribution-error" class="login-error" role="alert" hidden></p>
+        <button id="contribution-submit" type="submit" disabled>Enviar para análise</button>
+      </form>
+      <section id="contribution-success" class="panel contribution-success" aria-labelledby="success-title" hidden>
+        <span class="success-symbol" aria-hidden="true">✓</span><h2 id="success-title" tabindex="-1">Questão enviada para análise.</h2><p>Obrigado por contribuir! Ela só entrará no jogo após a aprovação da administração.</p><button id="send-another" type="button" class="secondary">Enviar outra questão</button>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

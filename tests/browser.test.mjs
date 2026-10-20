@@ -665,11 +665,11 @@ test('godmode mostra login próprio, opções e dados protegidos',async()=>{
   assert.equal(await page.getByRole('button',{name:'Sabe Essa?',exact:true}).getAttribute('aria-pressed'),'true');
   assert.equal(await page.getByRole('button',{name:'Salas abertas',exact:true}).getAttribute('aria-pressed'),'false');
   assert.equal(await page.locator('#rooms-panel').isVisible(),false);
-  assert.ok(await page.locator('#questions tr').count()>1);
+  assert.ok(await page.locator('#questions .question-card').count()>1);
   await page.getByLabel('Buscar no acervo',{exact:true}).fill('busca sem correspondência de teste');
   await page.getByText('Nenhuma pergunta encontrada.',{exact:true}).waitFor();
   await page.getByLabel('Buscar no acervo',{exact:true}).fill('');
-  assert.ok(await page.locator('#questions tr').count()>1);
+  assert.ok(await page.locator('#questions .question-card').count()>1);
   await page.screenshot({path:'artifacts/godmode-dashboard-desktop.png'});
   await page.getByRole('button',{name:'Alternar tema',exact:true}).click();
   await page.screenshot({path:'artifacts/godmode-dashboard-light.png'});
@@ -697,7 +697,7 @@ test('godmode: usuários adicionais entram com senhas próprias e não aceitam s
       await page.getByRole('heading',{name:'Godmode',exact:true}).waitFor();
       await page.getByText(/^Atualizado às/).waitFor();
       assert.equal(await page.locator('#login-view').isVisible(),false);
-      assert.ok(await page.locator('#questions tr').count()>1);
+      assert.ok(await page.locator('#questions .question-card').count()>1);
       assert.equal(await page.locator('#questions-panel').isVisible(),true);
       for(const width of [320,390,768,1024]) {
         await page.setViewportSize({width,height:844});
@@ -711,6 +711,80 @@ test('godmode: usuários adicionais entram com senhas próprias e não aceitam s
       assert.equal(await page.getByLabel('Senha',{exact:true}).inputValue(),'');
     }
     assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(key=>/admin|password|authorization/i.test(key))),false);
+  } finally { await context.close(); }
+});
+
+test('godmode: grade de questões e detalhes com imagem, texto, busca e teclado',async()=>{
+  const context=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+  const page=await context.newPage(), pageErrors=[];
+  page.on('pageerror',error=>pageErrors.push(error.message));
+  const imageQuestion={id:'grade-imagem',category:'Categoria artificial',subcategory:'Subcategoria artificial',difficulty:'easy',kind:'image',prompt:'Qual é a imagem <b>artificial</b>?',answer:'Resposta <em>artificial</em>',aliases:['Alternativa artificial','<img src=x>'],status:'active',image:'/media/grade-teste.svg'};
+  const textQuestion={...imageQuestion,id:'grade-texto',kind:'text',prompt:'Uma questão apenas de texto',answer:'Resposta de texto',aliases:[],image:null,status:'review'};
+  const missingQuestion={...imageQuestion,id:'grade-sem-imagem',prompt:'Uma imagem indisponível',image:'/media/grade-ausente.svg',difficulty:'hard',status:'draft'};
+  await page.route('**/api/godmode/questions',route=>route.fulfill({json:{questions:[imageQuestion,textQuestion,missingQuestion]}}));
+  await page.route('**/media/grade-teste.svg',route=>route.fulfill({contentType:'image/svg+xml',body:'<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480" fill="#ddd"/><circle cx="320" cy="240" r="100" fill="#444"/></svg>'}));
+  await page.route('**/media/grade-ausente.svg',route=>route.fulfill({status:404,body:'Imagem artificial ausente.'}));
+  try {
+    await page.goto(`${fixtureOrigin}/godmode`);
+    await page.getByLabel('Usuário',{exact:true}).fill('browser-admin');
+    await page.getByLabel('Senha',{exact:true}).fill('browser-admin-password');
+    await page.getByRole('button',{name:'Entrar',exact:true}).click();
+    await page.getByText(/^Atualizado às/).waitFor();
+    const cards=page.locator('#questions .question-card'), dialog=page.getByRole('dialog',{name:'Detalhes da questão',exact:true});
+    assert.equal(await cards.count(),3);
+    assert.deepEqual(await page.locator('.dashboard-options > button').evaluateAll(buttons=>buttons.map(button=>button.id)),['rooms-option','questions-option','submissions-option']);
+    const [first,second]=await Promise.all([cards.nth(0).boundingBox(),cards.nth(1).boundingBox()]);
+    assert.equal(first.y,second.y); assert.ok(second.x>first.x);
+    await page.waitForFunction(()=>document.querySelector('.question-card img')?.naturalWidth>0);
+    assert.equal(await cards.getByText(imageQuestion.answer,{exact:true}).count(),0);
+    await cards.nth(2).getByText('Imagem indisponível',{exact:true}).waitFor();
+    await cards.nth(0).focus(); await cards.nth(0).press('Enter');
+    await dialog.waitFor();
+    await dialog.getByText(imageQuestion.prompt,{exact:true}).waitFor();
+    await dialog.getByText(imageQuestion.answer,{exact:true}).waitFor();
+    await dialog.getByText('<img src=x>',{exact:true}).waitFor();
+    assert.equal(await dialog.locator('b,em,#question-detail-aliases img').count(),0);
+    assert.equal(await dialog.locator('#question-detail-category').textContent(),imageQuestion.category);
+    assert.equal(await dialog.locator('#question-detail-subcategory').textContent(),imageQuestion.subcategory);
+    assert.equal(await dialog.locator('#question-detail-difficulty').textContent(),'Fácil');
+    assert.equal(await dialog.locator('#question-detail-kind').textContent(),'Imagem');
+    assert.equal(await dialog.locator('#question-detail-status').textContent(),'Ativa');
+    assert.equal(await dialog.locator('#question-detail-id').textContent(),imageQuestion.id);
+    await page.keyboard.press('Tab');
+    assert.equal(await dialog.getByRole('button',{name:'Fechar detalhes da questão',exact:true}).evaluate(el=>el===document.activeElement),true);
+    await page.screenshot({path:'artifacts/godmode-grade/local-detalhes-desktop.png'});
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({state:'hidden'});
+    assert.equal(await cards.nth(0).evaluate(el=>el===document.activeElement),true);
+    await page.getByLabel('Buscar no acervo',{exact:true}).fill('Resposta de texto');
+    assert.equal(await cards.count(),1);
+    await cards.first().press('Space');
+    await dialog.getByText(textQuestion.answer,{exact:true}).waitFor();
+    assert.equal(await dialog.locator('#question-detail-media').isVisible(),false);
+    await dialog.getByText('Nenhuma alternativa cadastrada.',{exact:true}).waitFor();
+    await dialog.getByRole('button',{name:'Fechar detalhes da questão',exact:true}).click();
+    await page.getByLabel('Buscar no acervo',{exact:true}).fill('Alternativa artificial');
+    assert.equal(await cards.count(),2);
+    await page.getByLabel('Buscar no acervo',{exact:true}).fill('');
+    await page.waitForFunction(()=>document.querySelector('.question-card img')?.naturalWidth>0);
+    await cards.nth(2).getByText('Imagem indisponível',{exact:true}).waitFor();
+    await page.screenshot({path:'artifacts/godmode-grade/local-grade-desktop.png'});
+    await page.getByRole('button',{name:'Alternar tema',exact:true}).click();
+    for(const width of [390,320]) {
+      await page.setViewportSize({width,height:844});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      await cards.first().click();
+      await dialog.waitFor();
+      const bounds=await dialog.boundingBox(); assert.ok(bounds.x>=0&&bounds.x+bounds.width<=width&&bounds.height<=844);
+      assert.equal(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+      await dialog.getByText(imageQuestion.answer,{exact:true}).scrollIntoViewIfNeeded();
+      await page.screenshot({path:`artifacts/godmode-grade/local-detalhes-${width}.png`});
+      await page.keyboard.press('Escape');
+    }
+    await cards.nth(2).click();
+    await dialog.getByText('Imagem indisponível',{exact:true}).waitFor();
+    await page.keyboard.press('Escape');
+    assert.deepEqual(pageErrors,[]);
   } finally { await context.close(); }
 });
 
@@ -771,7 +845,7 @@ test('godmode: opções mostram perguntas, links das salas, participantes e tran
     await admin.getByRole('button',{name:'Entrar',exact:true}).click();
     await admin.getByText(/^Atualizado às/).waitFor();
     assert.equal(await admin.locator('#questions-panel').isVisible(),true);
-    assert.ok(await admin.locator('#questions').getByText(/Resposta sintética/).count()>0);
+    assert.ok(await admin.locator('#questions .question-card').count()>0);
     const roomsOption=admin.getByRole('button',{name:'Salas abertas',exact:true});
     await roomsOption.focus(); await roomsOption.press('Enter');
     const room=admin.locator('.admin-room').filter({hasText:roomName});
@@ -807,6 +881,105 @@ test('godmode: opções mostram perguntas, links das salas, participantes e tran
     await guest.getByRole('dialog').getByRole('button',{name:'Encerrar sala',exact:true}).click();
     await guest.getByText('Até a próxima.',{exact:true}).waitFor();
   } finally { await Promise.all(contexts.map(context=>context.close())); }
+});
+
+test('contribuições: envio anônimo, revisão e aprovação sem duplicar a questão',async()=>{
+  const contexts=await Promise.all([browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'}),browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'})]);
+  const [author,admin]=await Promise.all(contexts.map(context=>context.newPage()));
+  const pageErrors=[];for(const page of [author,admin])page.on('pageerror',error=>pageErrors.push(error.message));
+  const prompt='Quem disse a frase <b>artificial</b>?',reference='Uma referência artificial.\nOutra linha <img src=x>.',answer='Autoria artificial';
+  try {
+    await author.goto(auditOrigin);
+    assert.equal(await author.locator('a[href="/nova-questao"]').count(),0);
+    await author.goto(`${auditOrigin}/nova-questao`);
+    await author.getByLabel('Título da pergunta',{exact:true}).fill(prompt);
+    await author.getByLabel('Texto de referência (opcional)',{exact:true}).fill(reference);
+    await author.getByLabel('Resposta',{exact:true}).fill(answer);
+    await author.getByLabel('Categoria',{exact:true}).selectOption('Cultura e nostalgia');
+    assert.equal(await author.getByLabel('Nickname (opcional)',{exact:true}).inputValue(),'');
+    let release,started,posts=0;
+    const barrier=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{started=resolve;});
+    await author.route('**/api/question-submissions',async route=>{posts++;started();await barrier;await route.continue();});
+    await author.getByRole('button',{name:'Enviar para análise',exact:true}).click();await requested;
+    await author.evaluate(()=>document.querySelector('#contribution-form').requestSubmit());
+    assert.equal(posts,1);release();
+    await author.getByRole('heading',{name:'Questão enviada para análise.',exact:true}).waitFor();
+    await author.screenshot({path:'artifacts/nova-questao/enviada-mobile.png'});
+    await admin.goto(`${auditOrigin}/godmode`);
+    await admin.getByLabel('Usuário',{exact:true}).fill('browser-admin');await admin.getByLabel('Senha',{exact:true}).fill('browser-admin-password');
+    await admin.getByRole('button',{name:'Entrar',exact:true}).click();await admin.getByText(/^Atualizado às/).waitFor();
+    assert.equal(await admin.locator('#questions .question-card').filter({hasText:prompt}).count(),0);
+    await admin.getByRole('button',{name:'Contribuições',exact:true}).click();
+    const card=admin.locator('#submissions .question-card').filter({hasText:prompt});
+    await card.getByText('Anônima',{exact:true}).waitFor();await card.click();
+    const dialog=admin.getByRole('dialog',{name:'Detalhes da questão',exact:true});
+    assert.equal(await dialog.locator('#question-detail-reference').textContent(),reference);
+    assert.equal(await dialog.locator('#question-detail-answer').textContent(),answer);
+    assert.equal(await dialog.locator('b,#question-detail-reference img').count(),0);
+    await dialog.getByLabel('Dificuldade',{exact:true}).selectOption('medium');
+    await dialog.getByLabel('Direitos e fonte de uso',{exact:true}).fill('Texto artificial escrito para este teste.');
+    await admin.screenshot({path:'artifacts/nova-questao/revisao-texto-desktop.png'});
+    await dialog.getByRole('button',{name:'Aprovar e adicionar ao jogo',exact:true}).click();
+    await admin.getByText('Questão aprovada e adicionada ao acervo.',{exact:true}).waitFor();
+    assert.equal(await card.count(),0);
+    await admin.getByRole('button',{name:'Sabe Essa?',exact:true}).click();
+    await admin.getByLabel('Buscar no acervo',{exact:true}).fill('Uma referência artificial.');
+    const approved=admin.locator('#questions .question-card').filter({hasText:prompt});
+    await approved.getByText('Contribuição',{exact:true}).waitFor();await approved.click();
+    assert.equal(await dialog.locator('#question-detail-reference').textContent(),reference);
+    await admin.keyboard.press('Escape');
+    await author.getByRole('button',{name:'Enviar outra questão',exact:true}).click();
+    assert.equal(await author.getByLabel('Título da pergunta',{exact:true}).inputValue(),'');
+    assert.deepEqual(pageErrors,[]);
+  } finally {await Promise.all(contexts.map(context=>context.close()));}
+});
+
+test('contribuições: foto, nickname opcional, falha de rede recuperável e recusa',async()=>{
+  const contexts=await Promise.all([browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'}),browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'})]);
+  const [author,admin]=await Promise.all(contexts.map(context=>context.newPage()));
+  const pageErrors=[];for(const page of [author,admin]) {page.on('pageerror',error=>pageErrors.push(error.message));page.on('console',message=>{if(message.type()==='error'&&message.text().includes('Content Security Policy'))pageErrors.push(message.text());});}
+  const prompt='Qual é a imagem artificial?',nickname='<b>Contribuinte</b>';
+  try {
+    await author.goto(`${auditOrigin}/nova-questao`);
+    await author.getByLabel('Nickname (opcional)',{exact:true}).fill(nickname);
+    await author.getByLabel('Título da pergunta',{exact:true}).fill(prompt);
+    await author.getByLabel('Resposta',{exact:true}).fill('Imagem artificial');
+    await author.getByLabel('Categoria',{exact:true}).selectOption('Games');
+    await author.getByLabel('Imagem da pergunta (opcional)',{exact:true}).setInputFiles({name:'foto-teste.png',mimeType:'image/png',buffer:await readFile('frontend/brand/fun-favicon.png')});
+    await author.locator('#image-preview').waitFor();
+    await author.waitForFunction(()=>document.querySelector('#preview-image').naturalWidth>0);
+    await author.screenshot({path:'artifacts/nova-questao/formulario-desktop.png',fullPage:true});
+    let fail=true;await author.route('**/api/question-submissions',route=>fail?route.abort('failed'):route.continue());
+    await author.getByRole('button',{name:'Enviar para análise',exact:true}).click();
+    await author.getByRole('alert').getByText(/Verifique sua conexão/).waitFor();
+    assert.equal(await author.getByLabel('Título da pergunta',{exact:true}).inputValue(),prompt);
+    assert.equal(await author.locator('#image-preview').isVisible(),true);
+    fail=false;await author.getByRole('button',{name:'Enviar para análise',exact:true}).click();
+    await author.getByRole('heading',{name:'Questão enviada para análise.',exact:true}).waitFor();
+    await admin.goto(`${auditOrigin}/godmode`);
+    await admin.getByLabel('Usuário',{exact:true}).fill('browser-admin');await admin.getByLabel('Senha',{exact:true}).fill('browser-admin-password');
+    await admin.getByRole('button',{name:'Entrar',exact:true}).click();await admin.getByText(/^Atualizado às/).waitFor();
+    const initialCount=await admin.locator('#questions .question-card').count();
+    await admin.getByRole('button',{name:'Contribuições',exact:true}).click();
+    const card=admin.locator('#submissions .question-card').filter({hasText:prompt});
+    await card.getByText(nickname,{exact:true}).waitFor();assert.equal(await card.locator('b').count(),0);await card.click();
+    const dialog=admin.getByRole('dialog',{name:'Detalhes da questão',exact:true});
+    await admin.waitForFunction(()=>document.querySelector('#question-detail-media img')?.naturalWidth>0);
+    for(const width of [320,390,768,1024]) {
+      await admin.setViewportSize({width,height:844});assert.equal(await admin.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      assert.equal(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth),true);
+    }
+    await admin.setViewportSize({width:390,height:844});await admin.screenshot({path:'artifacts/nova-questao/revisao-foto-mobile.png'});
+    await dialog.getByRole('button',{name:'Recusar questão',exact:true}).click();
+    await admin.getByText('Questão recusada. Ela não foi adicionada ao jogo.',{exact:true}).waitFor();
+    await admin.getByRole('button',{name:'Sabe Essa?',exact:true}).click();
+    assert.equal(await admin.locator('#questions .question-card').count(),initialCount);
+    await author.goto(`${auditOrigin}/nova-questao`);await author.setViewportSize({width:320,height:844});
+    assert.equal(await author.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await author.getByRole('button',{name:'Abrir navegação',exact:true}).click();await author.getByRole('button',{name:'Alternar tema',exact:true}).click();await author.keyboard.press('Escape');
+    await author.screenshot({path:'artifacts/nova-questao/formulario-mobile-claro.png',fullPage:true});
+    assert.deepEqual(pageErrors,[]);
+  } finally {await Promise.all(contexts.map(context=>context.close()));}
 });
 
 test('partida sintética em navegador: resposta, cooldown, reconexão e revelação',async()=>{

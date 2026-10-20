@@ -67,6 +67,10 @@
           <span class="option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="5"/><path d="M9 8a3 3 0 0 1 6 0c0 2-3 2-3 5m0 3h.01"/></svg></span>
           <strong>Sabe Essa?</strong><span class="option-description">Perguntas e respostas<br>do jogo.</span><span class="option-state">Selecionado ✓</span>
         </button>
+        <button id="submissions-option" class="option-tile" type="button" aria-label="Contribuições" aria-pressed="false" aria-controls="submissions-panel">
+          <span class="option-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 15v5h16v-5"/></svg></span>
+          <strong>Contribuições</strong><span class="option-description">Questões aguardando<br>sua análise.</span><span class="option-state">Abrir</span>
+        </button>
       </div>
       <p id="notice" class="notice" role="status" aria-live="polite">Entre para carregar os dados.</p>
       <section id="rooms-panel" class="panel" aria-labelledby="rooms-title" hidden>
@@ -78,11 +82,47 @@
         <div class="section-heading"><h2 id="questions-title">Perguntas registradas</h2><span id="question-count" class="count">—</span></div>
         <label class="search" for="question-filter">Buscar no acervo</label>
         <input id="question-filter" class="search-input" type="search" placeholder="Enunciado, resposta ou categoria">
-        <div class="table-wrap" tabindex="0" role="region" aria-label="Tabela de perguntas registradas">
-          <table><thead><tr><th scope="col">ID</th><th scope="col">Categoria</th><th scope="col">Dificuldade</th><th scope="col">Formato</th><th scope="col">Enunciado</th><th scope="col">Resposta</th><th scope="col">Alternativas</th><th scope="col">Mídia</th><th scope="col">Status</th></tr></thead><tbody id="questions"><tr><td colspan="9">Aguardando autenticação…</td></tr></tbody></table>
-        </div>
+        <p class="section-copy">Selecione uma questão para ver a resposta e os detalhes.</p>
+        <div id="questions" class="questions-grid"><p class="empty-message">Aguardando autenticação…</p></div>
+      </section>
+      <section id="submissions-panel" class="panel" aria-labelledby="submissions-title" hidden>
+        <div class="section-heading"><h2 id="submissions-title" tabindex="-1">Contribuições pendentes</h2><span id="submission-count" class="count">—</span></div>
+        <p class="section-copy">Estas questões ainda não fazem parte do jogo. Abra uma contribuição para aprovar ou recusar.</p>
+        <p id="submission-notice" class="notice" role="status"></p>
+        <div id="submissions" class="questions-grid"></div>
+        <div class="submission-pagination"><button id="submissions-previous" class="secondary" type="button" disabled>Anterior</button><span id="submissions-page" class="section-copy"></span><button id="submissions-next" class="secondary" type="button" disabled>Próxima</button></div>
       </section>
     </div>
   </main>
+  <dialog id="question-dialog" class="question-dialog" aria-labelledby="question-dialog-title">
+    <header class="question-dialog-heading">
+      <div><p id="question-detail-id" class="eyebrow"></p><h2 id="question-dialog-title" tabindex="-1" autofocus>Detalhes da questão</h2></div>
+      <button id="question-close" class="icon-button" type="button" aria-label="Fechar detalhes da questão"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+    </header>
+    <div class="question-dialog-body">
+      <p id="question-detail-origin" class="question-origin" hidden></p>
+      <div id="question-detail-media"></div>
+      <h3 id="question-detail-prompt" class="question-detail-prompt"></h3>
+      <blockquote id="question-detail-reference" class="question-reference" hidden></blockquote>
+      <section class="question-answer" aria-labelledby="question-answer-title">
+        <h4 id="question-answer-title">Resposta</h4><p id="question-detail-answer"></p>
+        <h4>Outras respostas aceitas</h4><ul id="question-detail-aliases"></ul><p id="question-no-aliases" class="section-copy" hidden>Nenhuma alternativa cadastrada.</p>
+      </section>
+      <dl class="question-facts">
+        <div><dt>Categoria</dt><dd id="question-detail-category"></dd></div>
+        <div><dt>Subcategoria</dt><dd id="question-detail-subcategory"></dd></div>
+        <div><dt>Dificuldade</dt><dd id="question-detail-difficulty"></dd></div>
+        <div><dt>Formato</dt><dd id="question-detail-kind"></dd></div>
+        <div><dt>Status</dt><dd id="question-detail-status"></dd></div>
+      </dl>
+      <form id="submission-review" class="submission-review" hidden>
+        <h3>Revisar contribuição</h3>
+        <label for="submission-difficulty">Dificuldade</label><select id="submission-difficulty" required><option value="">Selecione a dificuldade</option><option value="easy">Fácil</option><option value="medium">Médio</option><option value="hard">Difícil</option></select>
+        <label for="submission-rights">Direitos e fonte de uso</label><textarea id="submission-rights" maxlength="1000" rows="3" required placeholder="Informe autoria, licença ou autorização de uso verificada na revisão."></textarea>
+        <p id="submission-review-error" class="login-error" role="alert" hidden></p>
+        <div class="review-actions"><button id="submission-approve" type="submit">Aprovar e adicionar ao jogo</button><button id="submission-reject" class="secondary" type="button">Recusar questão</button></div>
+      </form>
+    </div>
+  </dialog>
 </body>
 </html>

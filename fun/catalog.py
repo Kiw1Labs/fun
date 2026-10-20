@@ -6,6 +6,7 @@ import unicodedata
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+CATEGORIES = ('TV e entretenimento', 'Memes e internet', 'Games', 'Música', 'Cinema e séries', 'Cultura e nostalgia')
 
 def normalize(value: str) -> str:
     value = unicodedata.normalize('NFKD', value.casefold())
@@ -39,9 +40,14 @@ class Challenge:
     set_id: str = ''
     verification_note: str = ''
     rights_note: str = ''
+    reference: str = ''
+    submission_id: str = ''
+    submitted_by: str = ''
 
     def public(self, reveal=False):
         data = {k: getattr(self, k) for k in ('id', 'kind', 'prompt', 'image')}
+        if self.reference:
+            data['reference'] = self.reference
         if reveal:
             data['answer'] = self.answer
             if self.attribution:
@@ -80,9 +86,14 @@ def validate(rows):
             raise ValueError('Desafio de texto não usa imagem.')
         if c.status not in ('active', 'draft', 'review', 'inactive'):
             raise ValueError('Status editorial inválido.')
-        categories = ('TV e entretenimento', 'Memes e internet', 'Games', 'Música', 'Cinema e séries', 'Cultura e nostalgia')
-        if c.category and c.category not in categories:
+        if c.category and c.category not in CATEGORIES:
             raise ValueError('Categoria editorial inválida.')
+        if not isinstance(c.reference, str) or len(c.reference) > 2000:
+            raise ValueError('Texto de referência inválido.')
+        if not isinstance(c.submission_id, str) or (c.submission_id and not re.fullmatch(r'[a-zA-Z0-9_-]{1,80}', c.submission_id)):
+            raise ValueError('Origem da contribuição inválida.')
+        if not isinstance(c.submitted_by, str) or len(c.submitted_by) > 24:
+            raise ValueError('Nickname da contribuição inválido.')
         for value in (c.source_url, c.media_source_url, c.license_url):
             if value and (not isinstance(value, str) or len(value) > 2000 or not re.fullmatch(r'https://[^\s<>"\x00-\x1f]+', value)):
                 raise ValueError('Fonte/licença deve usar uma URL HTTPS válida.')

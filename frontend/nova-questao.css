@@ -1,0 +1,20 @@
+.contribution-shell { max-width: 720px; margin: 0 auto; }
+.contribution-shell > header { margin-bottom: 32px; }
+.contribution-shell h1 { max-width: 560px; }
+#contribution-form { padding: 28px; }
+textarea, select { display: block; width: 100%; min-width: 0; margin: 8px 0 22px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--accent); font: inherit; font-size: 1rem; line-height: 1.6; }
+textarea { resize: vertical; min-height: 150px; }
+textarea::placeholder { color: var(--muted); opacity: 1; }
+textarea:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+#contribution-form input { background: var(--bg); }
+.file-picker { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 8px 0 22px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+.file-picker span { min-width: 0; color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; }
+.field-help { margin: -10px 0 24px; font-size: .75rem; }
+.contribution-preview { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin: 0 0 24px; }
+.contribution-preview img { max-width: 100%; max-height: 280px; border: 1px solid var(--line); border-radius: 14px; object-fit: contain; }
+.contribution-success { padding: 36px 28px; text-align: center; }
+.contribution-success h2 { font-size: 1.25rem; }
+.contribution-success h2:focus { outline: none; }
+.contribution-success p { margin-bottom: 28px; font-size: .875rem; }
+.success-symbol { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 20px; border: 1px solid var(--line); border-radius: 50%; }
+@media(max-width:760px) { #contribution-form { padding: 20px; } .contribution-shell h1 { font-size: 1.6rem; } #contribution-submit { width: 100%; } }

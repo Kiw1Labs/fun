@@ -25,9 +25,10 @@ from starlette.websockets import WebSocketDisconnect
 
 from . import API_VERSION
 from .admin_accounts import AccountsError, AdminAccounts, accounts_path, verify_login
-from .catalog import export, load
+from .catalog import CATEGORIES, export, load, validate
 from .engine import Engine, RuleError
 from .store import Store
+from .submissions import MAX_BODY, SubmissionError, publish_image, text, validate_submission
 
 log = logging.getLogger('fun')
 
@@ -76,6 +77,8 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
     lock, limiter, clients = asyncio.Lock(), Limiter(), {}
     allowed = set(origins or os.getenv('FUN_ORIGINS', 'http://127.0.0.1:5050,http://localhost:5050').split(','))
     static = Path(static_dir or os.getenv('FUN_STATIC', 'dist'))
+    media = Path(os.getenv('FUN_MEDIA', 'data/media'))
+    media.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     def publish():
         for cid, client in list(clients.items()):
@@ -270,7 +273,119 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
                      difficulty=q['difficulty'], kind=q['kind'], prompt=q['prompt'],
                      answer=q['answer'], aliases=q['aliases'], status=q['status'], image=q['image'])
                 for q in questions]
+        for item, question in zip(safe, questions):
+            for field in ('reference', 'submission_id', 'submitted_by'):
+                if question.get(field):
+                    item[field] = question[field]
         return JSONResponse({'questions': safe}, headers={'Cache-Control': 'no-store'})
+
+    async def submission_body(request, maximum):
+        if request.headers.get('content-type', '').split(';')[0].strip().lower() != 'application/json':
+            raise SubmissionError('Envie os dados em JSON.', 415)
+        raw = bytearray()
+        async for chunk in request.stream():
+            if len(raw) + len(chunk) > maximum:
+                raise SubmissionError('Envio muito grande. Reduza a imagem.', 413)
+            raw.extend(chunk)
+        try:
+            return json.loads(raw)
+        except (ValueError, UnicodeDecodeError) as exc:
+            raise SubmissionError('JSON inválido.') from exc
+
+    async def new_question_page(request):
+        page = static / 'nova-questao.html'
+        if not page.exists():
+            page = Path(__file__).resolve().parent.parent / 'frontend' / 'nova-questao.html'
+        if not page.is_file():
+            return Response('Execute npm run build antes de iniciar.', status_code=503)
+        return FileResponse(page, headers={'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow'})
+
+    async def submission_asset(request):
+        name = request.path_params['name']
+        if name not in ('nova-questao.js', 'nova-questao.css', 'godmode.css'):
+            return Response('Arquivo não encontrado.', status_code=404)
+        asset = Path(__file__).resolve().parent.parent / 'frontend' / name
+        return FileResponse(asset, headers={'Cache-Control': 'no-store'}) if asset.is_file() else Response(status_code=404)
+
+    async def submission_categories(request):
+        return JSONResponse({'categories': CATEGORIES})
+
+    async def submit_question(request):
+        if not origin_ok(request):
+            return JSONResponse({'error': 'Origem não autorizada.'}, status_code=403)
+        ip = request.client.host if request.client else 'unknown'
+        if not limiter.allow(('submission-minute', ip), 6, 60) or not limiter.allow(('submission-hour', ip), 30, 3600):
+            return JSONResponse({'error': 'Muitos envios. Aguarde alguns minutos para enviar outra questão.'}, status_code=429)
+        try:
+            payload = await submission_body(request, MAX_BODY)
+            request_id, fingerprint, data, image = await run_in_threadpool(validate_submission, payload)
+            async with lock:
+                identifier = store.add_submission(request_id, fingerprint, data, image, clock())
+            return JSONResponse({'id': identifier, 'received': True}, status_code=201)
+        except SubmissionError as exc:
+            return JSONResponse({'error': str(exc)}, status_code=exc.status)
+
+    async def godmode_submissions(request):
+        denied = await admin_auth(request)
+        if denied:
+            return denied
+        try:
+            page = int(request.query_params.get('page', '1'))
+            if not 1 <= page <= 1000:
+                raise ValueError
+        except ValueError:
+            return JSONResponse({'error': 'Página inválida.'}, status_code=400)
+        async with lock:
+            total, submissions = store.submissions(page)
+        return JSONResponse({'submissions': submissions, 'total': total, 'page': page, 'page_size': 20})
+
+    async def godmode_submission_image(request):
+        denied = await admin_auth(request)
+        if denied:
+            return denied
+        submission = store.submission(request.path_params['identifier'])
+        if not submission or submission['state'] != 'pending' or not submission['image_bytes']:
+            return Response(status_code=404)
+        return Response(submission['image_bytes'], media_type=submission['media_type'])
+
+    async def review_submission(request):
+        denied = await admin_auth(request)
+        if denied:
+            return denied
+        if not origin_ok(request):
+            return JSONResponse({'error': 'Origem não autorizada.'}, status_code=403)
+        try:
+            payload = await submission_body(request, 4096)
+            if not isinstance(payload, dict) or set(payload) - {'action', 'difficulty', 'rights'} or payload.get('action') not in ('approve', 'reject'):
+                raise SubmissionError('Selecione aprovar ou recusar.')
+            action = payload['action']
+            if action == 'approve':
+                if payload.get('difficulty') not in ('easy', 'medium', 'hard'):
+                    raise SubmissionError('Defina a dificuldade antes de aprovar.')
+                rights = text(payload.get('rights', ''), 'Direitos e fonte de uso', 1000, required=True)
+            identifier = request.path_params['identifier']
+            async with lock:
+                submission = store.submission(identifier)
+                if not submission:
+                    raise SubmissionError('Contribuição não encontrada.', 404)
+                challenge = None
+                if action == 'approve' and submission['state'] == 'pending':
+                    image_url, digest = publish_image(submission, media) if submission['image_bytes'] else (None, '')
+                    challenge = validate([dict(id='community_' + identifier, kind=submission['kind'],
+                        difficulty=payload['difficulty'], prompt=submission['prompt'], reference=submission['reference'],
+                        answer=submission['answer'], aliases=[], classification=[submission['category']],
+                        rights=rights, image=image_url, category=submission['category'], status='active',
+                        submission_id=identifier, submitted_by=submission['nickname'],
+                        media_type=submission['media_type'], media_sha256=digest,
+                        verified_at=time.strftime('%Y-%m-%d', time.gmtime(clock())),
+                        verification_note='Contribuição revisada e aprovada no Godmode.', rights_note=rights)])[0]
+                question_id = store.review_submission(identifier, action, challenge, clock(), engine.catalog)
+                if challenge:
+                    engine.catalog = [*engine.catalog, challenge]
+                    publish()
+            return JSONResponse({'status': 'approved' if action == 'approve' else 'rejected', 'question_id': question_id})
+        except (SubmissionError, ValueError) as exc:
+            return JSONResponse({'error': str(exc)}, status_code=getattr(exc, 'status', 400))
 
     async def ws(socket):
         code = socket.path_params['code']
@@ -351,9 +466,16 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         return FileResponse(static / 'index.html', headers={'Cache-Control': 'no-cache'})
 
     routes = [Route('/health', health), Route('/godmode', godmode_page),
+              Route('/nova-questao', new_question_page),
+              Route('/contribution-assets/{name}', submission_asset),
+              Route('/api/question-submissions/categories', submission_categories),
+              Route('/api/question-submissions', submit_question, methods=['POST']),
               Route('/godmode-assets/{name}', godmode_asset),
               Route('/api/godmode/rooms', godmode_rooms),
               Route('/api/godmode/questions', godmode_questions),
+              Route('/api/godmode/submissions', godmode_submissions),
+              Route('/api/godmode/submissions/{identifier}/image', godmode_submission_image),
+              Route('/api/godmode/submissions/{identifier}/review', review_submission, methods=['POST']),
               Route('/api/rooms', public_rooms, methods=['GET']),
               Route('/api/rooms', create_or_join, methods=['POST']),
               Route('/api/rooms/{code}/join', create_or_join, methods=['POST']),
@@ -370,7 +492,6 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         favicon = Path(__file__).resolve().parent.parent / 'frontend' / 'favicon.svg'
     if favicon.exists():
         routes.append(Route('/favicon.svg', lambda request: FileResponse(favicon, media_type='image/svg+xml', headers={'Cache-Control': 'public, max-age=300'})))
-    media = Path(os.getenv('FUN_MEDIA', 'data/media'))
     if media.exists():
         routes.append(Mount('/media', app=StaticFiles(directory=media)))
     routes.append(Route('/{path:path}', index))
@@ -381,7 +502,8 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         response = await call_next(request)
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['Referrer-Policy'] = 'no-referrer'
-        response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+        image_sources = "'self' blob:" if request.url.path == '/nova-questao' or request.url.path == '/godmode' else "'self'"
+        response.headers['Content-Security-Policy'] = f"default-src 'self'; script-src 'self'; style-src 'self'; img-src {image_sources}; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         response.headers['Cache-Control'] = response.headers.get('Cache-Control', 'no-store')
         return response
 

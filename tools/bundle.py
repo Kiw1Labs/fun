@@ -9,6 +9,8 @@ root = Path(__file__).resolve().parents[1]
 files = [p for directory in ('fun', 'dist', 'deploy') for p in (root / directory).rglob('*')
          if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc']
 files += [root / 'requirements.lock', root / '.env.example']
+files += [root / 'frontend' / name for name in ('godmode.html', 'godmode.css', 'godmode.js',
+                                              'nova-questao.html', 'nova-questao.css', 'nova-questao.js')]
 files += [root / 'tools' / name for name in ('import_catalog.py','validate_catalog.py','backup.py','add_admin.py')]
 manifest = {p.relative_to(root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
 (root / 'artifacts').mkdir(exist_ok=True)

@@ -1,0 +1,22 @@
+# Contribuições de questões
+
+Página solicitada em 20/10/2026: `/nova-questao`. Não há botão nem link para ela no portal, na barra lateral ou no Godmode. Quem recebe o endereço pode enviar uma questão sem conta e sem preencher nickname.
+
+O formulário segue o tema e a navegação do Fun. Recebe título, texto de referência opcional, foto opcional, resposta e categoria. As categorias são as seis já existentes no catálogo. Título e referência são campos distintos; a referência preserva quebras de linha e aparece no jogo depois da aprovação. O nickname acompanha a revisão administrativa e não é enviado aos jogadores. A tela informa que o conteúdo passará por análise e confirma o recebimento.
+
+No Godmode, **Contribuições** aparece depois de **Salas abertas** e **Sabe Essa?**. A fila mostra 20 envios por página. Abra um deles para ver o conteúdo e sua imagem privada. A aprovação pede dificuldade e registro dos direitos/fonte de uso, necessários à classificação editorial existente. Não há aprovação automática nem alteração de conteúdo na revisão. A resposta principal é a única aceita inicialmente; não são gerados aliases. Ao aprovar, a tag **Contribuição**, a referência e o nickname são preservados no registro administrativo. Recusar não publica uma questão. O registro da decisão permanece no banco privado.
+
+## Decisões técnicas
+
+- Migração aditiva 2: `question_submissions` no SQLite do Fun, separada do catálogo. Dados e fotos pendentes não são disponibilizados por rotas públicas de consulta. Apenas as APIs administrativas autenticadas podem listá-los e consultar as imagens.
+- Fotos: JPG, PNG ou WebP de até 12 MB no navegador, reduzidas para JPEG com lado máximo de 1440 px e até 512 KiB. A conversão remove os metadados originais. A API verifica formato raster por conteúdo, dimensões e tamanho; não aceita SVG ou HTML. A imagem pendente fica como BLOB no banco privado. Ao aprovar, o arquivo é publicado em `/media/community/` com nome derivado do hash, sem sobrescrever mídia diferente. Ao recusar, o BLOB é removido. Não há dependência nativa nova no servidor.
+- Requisição JSON limitada a 768 KiB, sem confiar no tamanho declarado pelo cliente. Origem conferida no servidor. Limites operacionais iniciais: seis tentativas/minuto e 30/hora por endereço observado pelo backend, 500 pendências e 64 MiB de fotos pendentes. Proxies podem agrupar vários visitantes no mesmo endereço observado. Estes limites protegem recursos; não são regras do jogo.
+- Identificador de envio aleatório no navegador e fingerprint no banco evitam duplicação por repetição do mesmo pedido. Uma aprovação repetida não cria outra questão. Decisões concorrentes são serializadas pelo lock do aplicativo e por transação SQLite. Aprovação e registro de decisão são atômicos no banco; arquivos de imagem são imutáveis e escritos antes da transação.
+- A aprovação atualiza o catálogo do processo em execução. A primeira inclusão no SQLite preserva o catálogo legado em JSON, caso ele seja a fonte atual. Decks de partidas em andamento não são modificados. Referências e proveniência são campos opcionais, compatíveis com os registros anteriores.
+- Imagens privadas do Godmode são consultadas com o cabeçalho de autenticação em memória e exibidas por URLs `blob:` temporárias, revogadas ao fechar o popup. A CSP permite `blob:` somente nas páginas `/godmode` e `/nova-questao`; as demais páginas mantêm sua política anterior. Textos são inseridos como texto, sem interpretar marcação HTML.
+
+## Validação e entrega
+
+Testes locais usam contas, banco e conteúdo artificiais isolados. A suíte Python cobre persistência após reinício, separação entre pendentes e acervo, autenticação, origem, limites, formatos, imagem privada, publicação após aprovação, recusa e concorrência. Os cenários de navegador cobrem envio anônimo, nickname, foto, repetição de envio, falha de rede recuperável, aprovação, recusa, busca por referência e telas pequenas.
+
+O proxy online observado ainda limita todos os corpos a 4 KiB e adiciona CSP própria. O candidato em `deploy/nginx-fun.conf` mantém esse limite nas rotas existentes e permite até 768 KiB exclusivamente em `/api/question-submissions`. Também ajusta a política de imagens somente das duas páginas que precisam de prévia privada. Ativar esse candidato exige validar o Nginx completo e recarregar o master compartilhado; seguir a confirmação e os baselines de [DEPLOY.md](DEPLOY.md:32). Não declarar a página publicada antes dessa ativação e da verificação pública.

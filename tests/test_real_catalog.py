@@ -72,7 +72,7 @@ def test_idempotent_import_preserves_existing_rooms_and_deactivation(tmp_path):
     assert second == {**first,'inserted':0,'unchanged':90}
     store = Store(str(database))
     assert store.db.execute('SELECT data FROM rooms WHERE code=?',('ABCD',)).fetchone()[0] == '{"user_data":"preserve exactly"}'
-    assert store.db.execute('SELECT count(*) FROM schema_migrations').fetchone()[0] == 1
+    assert store.db.execute('SELECT count(*) FROM schema_migrations').fetchone()[0] == 2
     old = store.catalog()[0]
     store.import_catalog([replace(old,status='inactive')])
     assert len(store.catalog()) == 89

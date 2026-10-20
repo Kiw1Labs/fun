@@ -1,8 +1,11 @@
 # Painel administrativo Godmode
 
 Após o login em `/godmode`, dois cartões permitem escolher a consulta: primeiro **Salas abertas**, com os dados das salas públicas e privadas, e depois **Sabe Essa?**, com perguntas e respostas.
+Uma terceira opção, **Contribuições**, lista somente as questões recebidas que aguardam análise. Abra um cartão para consultar título, referência, imagem, resposta, categoria e nickname opcional. Para aprovar, escolha a dificuldade e registre os direitos/fonte de uso revisados; a questão entra no acervo com a tag **Contribuição**. **Recusar questão** retira o envio da fila sem adicioná-lo ao jogo. Consulte [NOVA_QUESTAO.md](NOVA_QUESTAO.md) para os detalhes do fluxo e da implantação.
 
-**Sabe Essa?** mostra todas as perguntas registradas no SQLite, incluindo rascunhos, perguntas em revisão e inativas, com respostas e busca. **Salas abertas** mostra nome, código, link, visibilidade, fase, participantes e anfitrião atual. Cada pessoa informa se está conectada ou desconectada. Saídas e expulsões removem a pessoa dessa consulta, e a identificação do anfitrião acompanha a transferência do papel no servidor. O botão **Atualizar** consulta novamente os dados; abrir a opção de salas também atualiza a consulta.
+**Sabe Essa?** mostra todas as perguntas registradas no SQLite em uma grade de cartões com imagem e enunciado, incluindo rascunhos, perguntas em revisão e inativas. Questões de texto têm uma indicação própria; imagens ausentes exibem uma mensagem. Clique em um cartão, ou use Enter/Espaço, para abrir os detalhes: imagem completa, enunciado, resposta, outras respostas aceitas, categoria, subcategoria, dificuldade, formato, status e identificador. Feche pelo botão, com Escape ou clicando fora do popup; o foco retorna ao cartão. A busca continua consultando enunciados, respostas, alternativas, categorias e identificadores.
+
+**Salas abertas** mostra nome, código, link, visibilidade, fase, participantes e anfitrião atual. Cada pessoa informa se está conectada ou desconectada. Saídas e expulsões removem a pessoa dessa consulta, e a identificação do anfitrião acompanha a transferência do papel no servidor. O botão **Atualizar** consulta novamente os dados; abrir a opção de salas também atualiza a consulta.
 
 Os links são montados no próprio domínio, usando somente códigos válidos de quatro letras, e abrem a sala em outra aba pelo fluxo normal de entrada. A API administrativa fornece apenas nome, indicação de anfitrião e estado de conexão de cada participante; tokens, hashes de sessão e identificadores internos não são enviados. Nomes e demais textos são inseridos como texto, sem interpretar HTML.
 
@@ -30,7 +33,7 @@ As respostas usam `Cache-Control: no-store`, e a página solicita aos buscadores
 
 ## Desenvolvimento e build
 
-O login e o painel seguem a estética do portal: marca oficial, paleta neutra, fonte do sistema, barra lateral, painéis com bordas discretas e botões arredondados. O tema claro/escuro usa a mesma preferência `fun:theme` da página principal. No celular, o menu bloqueia o conteúdo enquanto está aberto, mantém a navegação por teclado e fecha com Escape ou toque fora. As tabelas rolam dentro dos painéis, sem alargar a página; estados vazios permanecem legíveis em telas pequenas.
+O login e o painel seguem a estética do portal: marca oficial, paleta neutra, fonte do sistema, barra lateral, painéis com bordas discretas e botões arredondados. O tema claro/escuro usa a mesma preferência `fun:theme` da página principal. No celular, o menu bloqueia o conteúdo enquanto está aberto, mantém a navegação por teclado e fecha com Escape ou toque fora. A grade ajusta a quantidade de colunas à largura da tela, e o popup rola internamente sem alargar a página. As miniaturas são carregadas sob demanda e preservam a imagem inteira; nenhum arquivo de mídia é gerado ou alterado.
 
 No PC, `npm.cmd run dev` carrega `.env.local` e `.env` na raiz do projeto. As variáveis já definidas no terminal têm prioridade, seguidas de `.env.local` e `.env`. Os dois arquivos privados são ignorados pelo Git; não copie os caminhos de produção de `.env.example` para o PC.
 
@@ -52,6 +55,14 @@ npm run test:browser
 ```
 
 ## Correção da tela após login — 20/10/2026
+
+### Grade de questões e popup de detalhes
+
+A consulta **Sabe Essa?** passou de tabela para grade, conforme solicitado. Os cartões mostram miniatura, enunciado, categoria, dificuldade e status; respostas e alternativas ficam no popup. A implementação usa o `dialog` nativo do navegador, texto inserido sem interpretar HTML e as imagens existentes em `/media/` no próprio domínio. Não há nova dependência, mudança de API, banco ou regra de jogo. A opção **Salas abertas** continua primeiro na seleção, e **Sabe Essa?** permanece a consulta inicial.
+
+Validação final: cinco cenários Chromium de Godmode passaram, incluindo login de contas distintas, grade, detalhes de imagem e texto, mídia ausente, busca por resposta e alternativa, Escape, retorno de foco, textos com HTML exibidos literalmente, temas e telas de 320 a 1440 px. Build e verificação de sintaxe passaram. A verificação pública confirmou 90 cartões, 48 questões de imagem, miniaturas visíveis carregadas, detalhes e respostas, busca, logout, APIs autenticadas HTTP 200 e ausência de erros JavaScript. HTTP, HTTPS e uma conexão WSS foram verificados; a sala privada temporária foi encerrada. Evidências em `artifacts/godmode-grade/`, incluindo `public-verification.json` e capturas de desktop/celular.
+
+Antes da entrega, o manifesto completo e os hashes dos arquivos online foram conferidos; os três arquivos de origem coincidiam com o backup local anterior à alteração. A entrega mudou somente HTML, CSS e JavaScript do Godmode, a cópia estática do HTML e suas entradas no manifesto. Nenhum serviço foi reiniciado. Backup e rollback com guardas de release e hashes em `/root/fun/backups/godmode-grade-20261020T142714Z-06e947ff/`. O manifesto completo foi validado novamente após a escrita. O `rollback.py` dessa pasta restaura os arquivos anteriores sem reiniciar serviços. Backup local em `artifacts/godmode-grade-backup-20261020-111749/`.
 
 ### Opções Sabe Essa? e Salas abertas
 

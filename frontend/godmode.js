@@ -2,6 +2,11 @@ const byId = id => document.getElementById(id);
 const labels = {lobby:'Lobby', question:'Em partida', reveal:'Revelação', results:'Resultados', public:'Pública', private:'Privada', easy:'Fácil', medium:'Médio', hard:'Difícil', image:'Imagem', text:'Texto', active:'Ativa', draft:'Rascunho', review:'Em revisão', inactive:'Inativa'};
 let questions = [];
 let authorization = '';
+let activeQuestionId = null;
+let questionTrigger = null;
+let activeSubmission = null, submissionImageURL = '', moderationBusy = false;
+let submissionImageRequest = 0;
+let submissionPage = 1;
 
 const mobileLayout = matchMedia('(max-width: 760px)');
 function setMenu(open, restoreFocus = false) {
@@ -56,12 +61,6 @@ document.addEventListener('keydown', event => {
   }
 });
 
-function cell(row, value) {
-  const td = document.createElement('td');
-  td.textContent = value == null || value === '' ? '—' : String(value);
-  row.append(td);
-}
-
 function renderRooms(rooms) {
   byId('room-count').textContent = String(rooms.length);
   const body = byId('rooms'); body.replaceChildren();
@@ -114,7 +113,8 @@ function renderRooms(rooms) {
 }
 
 function selectView(view) {
-  for (const name of ['questions', 'rooms']) {
+  if (view !== 'questions') closeQuestion();
+  for (const name of ['questions', 'rooms', 'submissions']) {
     const selected = view === name;
     const button = byId(`${name}-option`);
     button.setAttribute('aria-pressed', String(selected));
@@ -123,27 +123,123 @@ function selectView(view) {
   }
 }
 
+function questionMedia(question, large = false) {
+  const media = document.createElement('span'); media.className = 'question-media';
+  const placeholder = document.createElement('span'); placeholder.className = 'question-placeholder';
+  const symbol = document.createElement('span'); symbol.className = 'question-placeholder-symbol';
+  symbol.textContent = question.kind === 'image' ? '?' : 'Aa'; symbol.setAttribute('aria-hidden', 'true');
+  const caption = document.createElement('span');
+  caption.textContent = question.kind === 'image' ? 'Imagem indisponível' : 'Questão de texto';
+  placeholder.append(symbol, caption); media.append(placeholder);
+  if (question.kind === 'image' && question.image) {
+    try {
+      const url = new URL(question.image, location.origin);
+      if (url.origin === location.origin && url.pathname.startsWith('/media/')) {
+        const image = document.createElement('img');
+        image.alt = large ? 'Imagem da questão' : '';
+        image.loading = large ? 'eager' : 'lazy'; image.decoding = 'async';
+        placeholder.hidden = true;
+        image.addEventListener('error', () => { image.remove(); placeholder.hidden = false; }, {once:true});
+        image.src = url.href; media.append(image);
+      }
+    } catch { /* Mídia inválida mantém a indicação de imagem indisponível. */ }
+  }
+  return media;
+}
+
+function renderQuestionDetails(question) {
+  byId('submission-review').hidden = !activeSubmission;
+  const contributed = !!(question.submission_id || activeSubmission);
+  byId('question-detail-origin').hidden = !contributed;
+  byId('question-detail-origin').textContent = contributed ? `Contribuição · ${question.submitted_by || question.nickname || 'Anônima'}` : '';
+  byId('question-detail-id').textContent = question.id;
+  byId('question-detail-prompt').textContent = question.prompt || 'Sem enunciado';
+  byId('question-detail-reference').textContent = question.reference || '';
+  byId('question-detail-reference').hidden = !question.reference;
+  byId('question-detail-media').replaceChildren();
+  byId('question-detail-media').hidden = question.kind !== 'image';
+  if (question.kind === 'image') byId('question-detail-media').append(questionMedia(question, true));
+  byId('question-detail-answer').textContent = question.answer || '—';
+  const aliases = byId('question-detail-aliases'); aliases.replaceChildren();
+  for (const alias of question.aliases || []) {
+    const item = document.createElement('li'); item.textContent = alias; aliases.append(item);
+  }
+  aliases.hidden = !aliases.childElementCount;
+  byId('question-no-aliases').hidden = !!aliases.childElementCount;
+  for (const field of ['category', 'subcategory', 'difficulty', 'kind', 'status']) {
+    const value = question[field];
+    byId(`question-detail-${field}`).textContent = (['difficulty', 'kind', 'status'].includes(field) ? labels[value] : '') || value || '—';
+  }
+}
+
+function openQuestion(question, trigger) {
+  activeQuestionId = question.id; questionTrigger = trigger;
+  renderQuestionDetails(question);
+  byId('question-dialog').showModal();
+  document.body.classList.add('question-open');
+}
+
+function closeQuestion() {
+  if (moderationBusy) return;
+  if (byId('question-dialog').open) byId('question-dialog').close();
+}
+
+byId('question-close').addEventListener('click', closeQuestion);
+byId('question-dialog').addEventListener('cancel', event => { if (moderationBusy) event.preventDefault(); });
+byId('question-dialog').addEventListener('click', event => {
+  if (event.target !== event.currentTarget) return;
+  const bounds = event.currentTarget.getBoundingClientRect();
+  if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) closeQuestion();
+});
+byId('question-dialog').addEventListener('close', () => {
+  document.body.classList.remove('question-open');
+  if (!byId('dashboard').hidden && !byId('questions-panel').hidden) {
+    const trigger = questionTrigger?.isConnected ? questionTrigger : [...byId('questions').querySelectorAll('.question-card')].find(card => card.dataset.questionId === activeQuestionId);
+    (trigger || byId('question-filter')).focus({preventScroll:true});
+  }
+  if (activeSubmission && !byId('dashboard').hidden && !byId('submissions-panel').hidden) (questionTrigger?.isConnected ? questionTrigger : byId('submissions-title')).focus({preventScroll:true});
+  activeSubmission = null; byId('submission-review').hidden = true;
+  submissionImageRequest++;
+  if (submissionImageURL) URL.revokeObjectURL(submissionImageURL); submissionImageURL = '';
+  activeQuestionId = null; questionTrigger = null;
+});
+
 function renderQuestions() {
   const query = byId('question-filter').value.trim().toLocaleLowerCase('pt-BR');
-  const filtered = questions.filter(q => [q.id,q.category,q.subcategory,q.prompt,q.answer,...q.aliases].join(' ').toLocaleLowerCase('pt-BR').includes(query));
+  const filtered = questions.filter(q => [q.id,q.category,q.subcategory,q.prompt,q.reference,q.answer,...(q.aliases || [])].join(' ').toLocaleLowerCase('pt-BR').includes(query));
   byId('question-count').textContent = query ? `${filtered.length} / ${questions.length}` : String(questions.length);
   const body = byId('questions'); body.replaceChildren();
-  body.closest('.table-wrap').classList.toggle('empty', !filtered.length);
   if (!filtered.length) {
-    const row = body.insertRow(); const td = row.insertCell(); td.colSpan = 9; td.textContent = 'Nenhuma pergunta encontrada.'; return;
+    const message = document.createElement('p'); message.className = 'empty-message';
+    message.textContent = 'Nenhuma pergunta encontrada.'; body.append(message);
   }
   for (const q of filtered) {
-    const row = body.insertRow();
-    cell(row,q.id); cell(row,[q.category,q.subcategory].filter(Boolean).join(' · '));
-    cell(row,labels[q.difficulty] || q.difficulty); cell(row,labels[q.kind] || q.kind);
-    cell(row,q.prompt); cell(row,q.answer); cell(row,(q.aliases || []).join(', ')); cell(row,q.image);
-    const status = document.createElement('td');
-    const badge = document.createElement('span'); badge.className = `badge ${q.status}`;
-    badge.textContent = labels[q.status] || q.status; status.append(badge); row.append(status);
+    const card = document.createElement('button'); card.type = 'button'; card.className = 'question-card';
+    card.dataset.questionId = q.id;
+    card.setAttribute('aria-label', `Ver detalhes: ${q.prompt || 'Sem enunciado'}`);
+    card.setAttribute('aria-haspopup', 'dialog'); card.setAttribute('aria-controls', 'question-dialog');
+    const copy = document.createElement('span'); copy.className = 'question-card-copy';
+    const category = document.createElement('span'); category.className = 'question-category';
+    category.textContent = q.category || 'Sem categoria';
+    const prompt = document.createElement('span'); prompt.className = 'question-card-prompt';
+    prompt.textContent = q.prompt || 'Sem enunciado';
+    const meta = document.createElement('span'); meta.className = 'question-card-meta';
+    const difficulty = document.createElement('span'); difficulty.textContent = labels[q.difficulty] || q.difficulty || '—';
+    const badge = document.createElement('span'); badge.className = 'badge'; badge.classList.toggle('active', q.status === 'active');
+    badge.textContent = labels[q.status] || q.status || '—'; meta.append(difficulty, badge);
+    copy.append(category, prompt);
+    if (q.submission_id) { const origin = document.createElement('span'); origin.className = 'badge'; origin.textContent = 'Contribuição'; copy.append(origin); }
+    copy.append(meta); card.append(questionMedia(q), copy);
+    card.addEventListener('click', () => openQuestion(q, card)); body.append(card);
+  }
+  if (byId('question-dialog').open && !activeSubmission) {
+    const active = questions.find(question => question.id === activeQuestionId);
+    if (active) renderQuestionDetails(active); else closeQuestion();
   }
 }
 
 function showLogin(message = '') {
+  closeQuestion();
   authorization = '';
   questions = [];
   selectView('questions');
@@ -156,9 +252,78 @@ function showLogin(message = '') {
   byId('login-username').focus();
 }
 
-async function request(path) {
-  return fetch(path, {cache:'no-store', headers:{Authorization:authorization}});
+async function request(path, options = {}) {
+  return fetch(path, {...options, cache:'no-store', headers:{...options.headers, Authorization:authorization}});
 }
+
+async function openSubmission(submission, trigger) {
+  const imageRequest = ++submissionImageRequest;
+  activeSubmission = submission;
+  byId('submission-review').reset(); byId('submission-review-error').hidden = true;
+  openQuestion({...submission, status:'Aguardando análise', aliases:[]}, trigger);
+  if (submission.kind !== 'image') return;
+  const media = byId('question-detail-media'); media.replaceChildren();
+  const loading = document.createElement('p'); loading.className = 'section-copy'; loading.textContent = 'Carregando imagem…'; media.append(loading);
+  try {
+    const response = await request(`/api/godmode/submissions/${encodeURIComponent(submission.id)}/image`);
+    if (response.status === 401) { showLogin('Sua sessão expirou. Entre novamente.'); return; }
+    if (!response.ok) throw new Error();
+    const blob = await response.blob();
+    if (imageRequest !== submissionImageRequest || activeSubmission?.id !== submission.id || !byId('question-dialog').open) return;
+    submissionImageURL = URL.createObjectURL(blob);
+    const container = document.createElement('span'); container.className = 'question-media';
+    const image = document.createElement('img'); image.alt = 'Imagem da contribuição'; image.src = submissionImageURL;
+    image.addEventListener('error', () => { container.replaceChildren(); loading.textContent = 'Imagem indisponível.'; container.append(loading); }, {once:true});
+    container.append(image); media.replaceChildren(container);
+  } catch { if (activeSubmission?.id === submission.id) loading.textContent = 'Não foi possível carregar a imagem. Feche e abra a contribuição para tentar novamente.'; }
+}
+
+async function loadSubmissions() {
+  byId('submission-notice').textContent = 'Carregando contribuições…';
+  try {
+    const response = await request(`/api/godmode/submissions?page=${submissionPage}`);
+    if (response.status === 401) { showLogin('Sua sessão expirou. Entre novamente.'); return; }
+    const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Falha ao consultar contribuições.');
+    if (submissionPage > 1 && !result.submissions.length) { submissionPage--; await loadSubmissions(); return; }
+    byId('submission-count').textContent = result.total;
+    const grid = byId('submissions'); grid.replaceChildren();
+    for (const submission of result.submissions) {
+      const card = document.createElement('button'); card.type = 'button'; card.className = 'question-card submission-card'; card.dataset.questionId = submission.id;
+      card.setAttribute('aria-haspopup', 'dialog'); card.setAttribute('aria-label', `Revisar contribuição: ${submission.prompt}`);
+      const copy = document.createElement('span'); copy.className = 'question-card-copy';
+      for (const [name, value] of [['question-category', submission.category], ['question-card-prompt', submission.prompt], ['question-category', submission.nickname || 'Anônima'], ['badge', 'Contribuição'], ['question-category', submission.kind === 'image' ? 'Imagem anexada' : 'Questão de texto']]) {
+        const text = document.createElement('span'); text.className = name; text.textContent = value; copy.append(text);
+      }
+      card.append(copy); card.addEventListener('click', () => openSubmission(submission, card)); grid.append(card);
+    }
+    if (!result.submissions.length) { const message = document.createElement('p'); message.className = 'empty-message'; message.textContent = 'Nenhuma contribuição aguardando análise.'; grid.append(message); }
+    byId('submissions-page').textContent = `Página ${submissionPage} de ${Math.max(1, Math.ceil(result.total / 20))}`;
+    byId('submissions-previous').disabled = submissionPage <= 1; byId('submissions-next').disabled = submissionPage * 20 >= result.total;
+    byId('submission-notice').textContent = '';
+  } catch (error) { byId('submission-notice').textContent = error.message || 'Falha de conexão.'; }
+}
+
+async function moderateSubmission(action) {
+  if (moderationBusy || !activeSubmission) return;
+  const payload = {action};
+  if (action === 'approve') { payload.difficulty = byId('submission-difficulty').value; payload.rights = byId('submission-rights').value.trim(); }
+  moderationBusy = true; byId('submission-review-error').hidden = true;
+  for (const control of byId('submission-review').elements) control.disabled = true;
+  byId('question-close').disabled = true;
+  try {
+    const response = await request(`/api/godmode/submissions/${encodeURIComponent(activeSubmission.id)}/review`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Não foi possível revisar a contribuição.');
+    moderationBusy = false; closeQuestion();
+    await Promise.all([refresh(), loadSubmissions()]);
+    byId('submission-notice').textContent = action === 'approve' ? 'Questão aprovada e adicionada ao acervo.' : 'Questão recusada. Ela não foi adicionada ao jogo.';
+  } catch (error) { byId('submission-review-error').textContent = error instanceof TypeError ? 'Verifique sua conexão e tente novamente.' : error.message; byId('submission-review-error').hidden = false; }
+  finally { moderationBusy = false; byId('question-close').disabled = false; for (const control of byId('submission-review').elements) control.disabled = false; }
+}
+byId('submission-review').addEventListener('submit', event => { event.preventDefault(); moderateSubmission('approve'); });
+byId('submission-reject').addEventListener('click', () => moderateSubmission('reject'));
+byId('submissions-previous').addEventListener('click', () => { submissionPage--; loadSubmissions(); });
+byId('submissions-next').addEventListener('click', () => { submissionPage++; loadSubmissions(); });
 
 async function refresh() {
   byId('notice').textContent = 'Atualizando dados…';
@@ -206,7 +371,8 @@ byId('login-form').addEventListener('submit', async event => {
 });
 
 byId('logout').addEventListener('click', () => showLogin());
-byId('refresh').addEventListener('click', refresh);
+byId('refresh').addEventListener('click', () => { refresh(); if (!byId('submissions-panel').hidden) loadSubmissions(); });
 byId('question-filter').addEventListener('input', renderQuestions);
 byId('questions-option').addEventListener('click', () => selectView('questions'));
 byId('rooms-option').addEventListener('click', () => { selectView('rooms'); refresh(); });
+byId('submissions-option').addEventListener('click', () => { selectView('submissions'); loadSubmissions(); });

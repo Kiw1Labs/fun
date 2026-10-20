@@ -19,6 +19,7 @@ Portas informadas anteriormente: Flask 5000, Django 8000, Nginx dashboard 8080 e
 - `/` portal; selecionando Sabe Essa? a home do jogo continua na mesma URL.
 - `/{codigo}` (quatro letras) mostra sala do jogo resolvida pelo servidor e sobrevive a F5; evitar conflito com rotas reservadas como `/api/`, `/assets/`, `/health` e `/ws`.
 - Backend expõe uma checagem de saúde privada ou sem segredos, APIs e canal em tempo real; implementar limites de taxa e validação de entrada.
+- `/nova-questao` é uma página pública sem links de entrada no portal. `POST /api/question-submissions` recebe contribuições anônimas ou com nickname opcional; a tabela privada `question_submissions` mantém os envios separados de `questions`. As APIs `/api/godmode/submissions` e suas rotas de imagem/revisão exigem autenticação administrativa. Somente a aprovação cria um desafio ativo e atualiza o catálogo em memória; partidas já iniciadas mantêm seus decks.
 - WebSocket deve suportar upgrade via Nginx/Cloudflare, heartbeat, retomada de sessão, sincronização ao conectar e idempotência.
 
 ## Entrega técnica e segurança operacional
