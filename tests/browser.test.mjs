@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import {join,dirname} from 'node:path';
 import {chromium} from '@playwright/test';
 
-const origin='http://127.0.0.1:15050', fixtureOrigin='http://127.0.0.1:15051', auditOrigin='http://127.0.0.1:15054';
+const origin='http://127.0.0.1:15050', fixtureOrigin='http://127.0.0.1:15051', auditOrigin='http://127.0.0.1:15054', nicknameOrigin='http://127.0.0.1:15055';
 let browser, temp, errors=[];
 const processes=[];
 async function createRoom(page,name,roomName='Sala de teste',visibility='private') {
@@ -18,12 +18,21 @@ async function createRoom(page,name,roomName='Sala de teste',visibility='private
   await page.waitForURL(/\/[A-Z]{4}$/);
   await page.getByText('Ao vivo',{exact:true}).waitFor();
 }
+async function saveNickname(page,name) {
+  const menu=page.getByRole('button',{name:'Abrir navegação',exact:true});
+  if(await menu.isVisible()) await menu.click();
+  await page.getByRole('button',{name:'Alterar nome do usuário',exact:true}).click();
+  const popup=page.locator('#profile-dialog');
+  await popup.getByLabel('Seu nome',{exact:true}).fill(name);
+  await popup.getByRole('button',{name:'Salvar nome',exact:true}).click();
+  await popup.waitFor({state:'hidden'});
+}
 before(async()=>{
   temp=await mkdtemp(join(tmpdir(),'fun-browser-'));
   const python=process.env.FUN_TEST_PYTHON || (process.platform==='win32'?'.venv/Scripts/python.exe':'.venv/bin/python');
-  for(const [i,url] of [origin,fixtureOrigin,auditOrigin].entries()) {
+  for(const [i,url] of [origin,fixtureOrigin,auditOrigin,nicknameOrigin].entries()) {
     try { await fetch(`${url}/health`); throw new Error(`Porta de teste já ocupada: ${url}`); } catch(error) { if(error.message.startsWith('Porta')) throw error; }
-    const processHandle=spawn(python,['-m','tests.browser_server'],{env:{...process.env,FUN_PORT:new URL(url).port,FUN_ORIGINS:url,FUN_DATABASE:join(temp,`test${i}.sqlite3`),FUN_TEST_FIXTURES:i===1?'1':'0',FUN_TEST_ANSWERS:join(temp,'answers.json'),FUN_ADMIN_USERNAME:'browser-admin',FUN_ADMIN_PASSWORD:'browser-admin-password'},stdio:['ignore','pipe','pipe'],windowsHide:true});
+    const processHandle=spawn(python,['-m','tests.browser_server'],{env:{...process.env,FUN_PORT:new URL(url).port,FUN_ORIGINS:url,FUN_DATABASE:join(temp,`test${i}.sqlite3`),FUN_MEDIA:join(temp,'media'),FUN_TEST_FIXTURES:i===1?'1':'0',FUN_TEST_ANSWERS:join(temp,'answers.json'),FUN_ADMIN_USERNAME:'browser-admin',FUN_ADMIN_PASSWORD:'browser-admin-password',FUN_ADMIN_USERS_FILE:join(temp,`admins${i}.json`),FUN_TEST_MULTI_ADMIN:i===1?'1':'0'},stdio:['ignore','pipe','pipe'],windowsHide:true});
     processes.push(processHandle);
     let logs=''; processHandle.stderr.on('data', chunk=>{logs+=chunk;});
     let ready=false;
@@ -36,6 +45,287 @@ before(async()=>{
   }
   browser=await chromium.launch({headless:true});
   await mkdir('artifacts',{recursive:true});
+});
+
+test('perfil: popup no topo, validação, cancelamento e nome persistido na criação',async()=>{
+  const context=await browser.newContext({viewport:{width:1366,height:900},reducedMotion:'reduce'});
+  const page=await context.newPage();
+  try {
+    page.on('pageerror',error=>errors.push(error.message));
+    await page.goto(auditOrigin);
+    const profile=page.getByRole('button',{name:'Alterar nome do usuário',exact:true});
+    const popup=page.locator('#profile-dialog');
+    await profile.click();
+    await popup.getByLabel('Seu nome',{exact:true}).fill('   ');
+    await popup.getByRole('button',{name:'Salvar nome',exact:true}).click();
+    await popup.getByRole('alert').filter({hasText:'Digite seu nome'}).waitFor();
+    await popup.getByLabel('Seu nome',{exact:true}).fill('  Ana <b>BR</b>  ');
+    await popup.getByLabel('Seu nome',{exact:true}).press('Enter');
+    await popup.waitFor({state:'hidden'});
+    assert.equal(await page.locator('#profile-name-label').textContent(),'Ana <b>BR</b>');
+    assert.equal(await profile.locator('b').count(),0);
+    assert.equal(await page.evaluate(()=>localStorage.getItem('fun:player-name')),'Ana <b>BR</b>');
+    await profile.click();
+    await popup.getByLabel('Seu nome',{exact:true}).fill('Descartar');
+    await page.keyboard.press('Escape');
+    assert.equal(await profile.evaluate(el=>el===document.activeElement),true);
+    assert.equal(await page.locator('#profile-name-label').textContent(),'Ana <b>BR</b>');
+    await page.reload();
+    assert.equal(await page.locator('#profile-name-label').textContent(),'Ana <b>BR</b>');
+    await page.getByRole('button',{name:'Recolher navegação',exact:true}).click();
+    assert.equal(await profile.isVisible(),true);
+    await profile.click();
+    await page.screenshot({path:'artifacts/profile-popup-desktop.png',fullPage:true});
+    await popup.getByRole('button',{name:'Cancelar',exact:true}).click();
+    await page.getByRole('button',{name:'Alternar tema',exact:true}).click();
+    await profile.click();
+    await page.screenshot({path:'artifacts/profile-popup-light.png',fullPage:true});
+    await popup.getByRole('button',{name:'Cancelar',exact:true}).click();
+    await page.getByRole('button',{name:'Alternar tema',exact:true}).click();
+    await page.getByRole('button',{name:'Jogar',exact:true}).click();
+    await page.waitForURL(/\/[A-Z]{4}$/);
+    assert.equal(await page.locator('#identity-dialog').evaluate(el=>el.open),false);
+    await page.getByRole('heading',{name:'Sala do Ana <b>BR</b>',exact:true}).waitFor();
+    await page.getByText('Ana <b>BR</b> (você)',{exact:true}).waitFor();
+    await page.screenshot({path:'artifacts/profile-sidebar-desktop.png',fullPage:true});
+  } finally { await context.close(); }
+});
+
+test('perfil: celular reutiliza nickname na entrada e altera nome na partida sem perder pontos',async()=>{
+  const hostContext=await browser.newContext(),guestContext=await browser.newContext({viewport:{width:320,height:720},reducedMotion:'reduce'});
+  const host=await hostContext.newPage(),guest=await guestContext.newPage();
+  try {
+    for(const page of [host,guest]) page.on('pageerror',error=>errors.push(error.message));
+    await host.goto(fixtureOrigin);
+    await createRoom(host,'Ana');
+    await guest.goto(host.url());
+    const menu=guest.getByRole('button',{name:'Abrir navegação',exact:true});
+    const popup=guest.locator('#profile-dialog');
+    await menu.click();
+    await guest.getByRole('button',{name:'Alterar nome do usuário',exact:true}).focus();
+    await guest.keyboard.press('Enter');
+    assert.equal(await menu.getAttribute('aria-expanded'),'false');
+    await popup.getByLabel('Seu nome',{exact:true}).fill('Bia');
+    await popup.getByRole('button',{name:'Salvar nome',exact:true}).click();
+    assert.equal(await menu.evaluate(el=>el===document.activeElement),true);
+    assert.equal(await guest.locator('#join-name-field').isVisible(),false);
+    assert.equal(await guest.locator('#known-identity strong').textContent(),'Bia');
+    await guest.getByRole('button',{name:'Entrar na sala',exact:true}).click();
+    await guest.getByText('Ao vivo',{exact:true}).waitFor();
+    const identity=await guest.evaluate(code=>JSON.parse(localStorage.getItem(`fun:${code}`)),new URL(guest.url()).pathname.slice(1));
+    const tab=await guestContext.newPage();
+    await tab.goto(guest.url());
+    await tab.getByText('Ao vivo',{exact:true}).waitFor();
+    await guest.bringToFront();
+    await host.getByRole('button',{name:'Iniciar partida',exact:true}).click();
+    await guest.getByLabel('Sua resposta').waitFor();
+    const index=(await guest.locator('.prompt').textContent()).match(/\d+/)[0];
+    await guest.getByLabel('Sua resposta').fill(`Resposta sintética ${index}`);
+    await guest.getByRole('button',{name:'Responder',exact:true}).click();
+    await guest.getByText('Você acertou! Aguarde os demais.').waitFor();
+    const score=await guest.locator('.scoreboard li').filter({hasText:'Bia'}).locator('.score').textContent();
+    assert.ok(Number(score)>0);
+    await menu.click();
+    await guest.screenshot({path:'artifacts/profile-sidebar-mobile.png',fullPage:true});
+    await guest.getByRole('button',{name:'Alterar nome do usuário',exact:true}).click();
+    await popup.getByLabel('Seu nome',{exact:true}).fill('Beatriz');
+    await guest.screenshot({path:'artifacts/profile-popup-mobile.png',fullPage:true});
+    await popup.getByLabel('Seu nome',{exact:true}).press('Enter');
+    await popup.waitFor({state:'hidden'});
+    await host.getByText('Beatriz',{exact:true}).waitFor();
+    for(const page of [guest,tab]) {
+      await page.getByText('Beatriz (você)',{exact:true}).waitFor();
+      assert.equal(await page.locator('#profile-name-label').textContent(),'Beatriz');
+      assert.equal(await page.locator('.scoreboard li').count(),2);
+      assert.equal(await page.locator('.scoreboard li').filter({hasText:'Beatriz'}).locator('.score').textContent(),score);
+    }
+    assert.equal(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await guest.reload();
+    await guest.getByText('Beatriz (você)',{exact:true}).waitFor();
+    assert.deepEqual(await guest.evaluate(code=>JSON.parse(localStorage.getItem(`fun:${code}`)),identity.code),identity);
+    assert.equal(await guest.evaluate(()=>localStorage.getItem('fun:player-name')),'Beatriz');
+  } finally { await hostContext.close(); await guestContext.close(); }
+});
+
+test('perfil: armazenamento bloqueado mantém popup recuperável e nome anterior',async()=>{
+  const context=await browser.newContext();
+  try {
+    await context.addInitScript(()=>{Storage.prototype.setItem=()=>{throw new DOMException('Blocked','SecurityError');};});
+    const page=await context.newPage();
+    await page.goto(auditOrigin);
+    await page.getByRole('button',{name:'Alterar nome do usuário',exact:true}).click();
+    const popup=page.locator('#profile-dialog');
+    await popup.getByLabel('Seu nome',{exact:true}).fill('Ana');
+    await popup.getByRole('button',{name:'Salvar nome',exact:true}).click();
+    await popup.getByRole('alert').filter({hasText:'Permita o armazenamento'}).waitFor();
+    assert.equal(await popup.getByLabel('Seu nome',{exact:true}).inputValue(),'Ana');
+    assert.equal(await popup.getByRole('button',{name:'Salvar nome',exact:true}).isEnabled(),true);
+    assert.equal(await page.locator('#profile-name-label').textContent(),'Adicione seu nickname');
+    await popup.getByRole('button',{name:'Cancelar',exact:true}).click();
+    await popup.waitFor({state:'hidden'});
+  } finally { await context.close(); }
+});
+
+test('perfil: recusa do servidor permite corrigir e confirmação perdida é retomada com o mesmo evento',async()=>{
+  const context=await browser.newContext();
+  const page=await context.newPage();
+  page.setDefaultTimeout(6000);
+  try {
+    let rejectFirst=true,holdAck=false,ackSeen,reconnect;
+    const events=[];
+    const ackArrived=new Promise(resolve=>{ackSeen=resolve;});
+    await page.routeWebSocket('**/ws/*',route=>{
+      const server=route.connectToServer();
+      let closed=false;
+      route.onMessage(message=>{
+        const parsed=JSON.parse(String(message));
+        if(parsed.action==='rename_player') {
+          events.push(parsed);
+          if(rejectFirst) {rejectFirst=false;server.send(JSON.stringify({...parsed,name:'   '}));return;}
+        }
+        server.send(message);
+      });
+      server.onMessage(message=>{
+        if(closed) return;
+        const parsed=JSON.parse(String(message));
+        if(holdAck&&parsed.type==='ack') {
+          holdAck=false;
+          reconnect=async()=>{closed=true;await route.close({code:1012});await server.close();};
+          ackSeen();return;
+        }
+        route.send(message);
+      });
+    });
+    await page.goto(auditOrigin);
+    await createRoom(page,'Ana');
+    await page.getByRole('button',{name:'Alterar nome do usuário',exact:true}).click();
+    const popup=page.locator('#profile-dialog');
+    await popup.getByLabel('Seu nome',{exact:true}).fill('Aninha');
+    await popup.getByRole('button',{name:'Salvar nome',exact:true}).click();
+    await popup.getByRole('alert').filter({hasText:'Use um nome de 1 a 24 caracteres'}).waitFor();
+    assert.equal(await popup.getByLabel('Seu nome',{exact:true}).inputValue(),'Aninha');
+    assert.equal(await popup.getByRole('button',{name:'Salvar nome',exact:true}).isEnabled(),true);
+    assert.equal(await page.locator('#profile-name-label').textContent(),'Ana');
+    holdAck=true;
+    await popup.getByRole('button',{name:'Salvar nome',exact:true}).click();
+    await ackArrived;
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Escape');
+    assert.equal(await popup.evaluate(el=>el.open),true);
+    assert.equal(await page.locator('#profile-submit').isDisabled(),true);
+    assert.equal(events.length,2);
+    await reconnect();
+    await popup.waitFor({state:'hidden'});
+    await page.getByText('Aninha (você)',{exact:true}).waitFor();
+    assert.equal(events.length,3);
+    assert.deepEqual(events[2],events[1]);
+    assert.equal(await page.locator('.scoreboard li').count(),1);
+    assert.equal(await page.evaluate(()=>localStorage.getItem('fun:player-name')),'Aninha');
+  } finally { await context.close(); }
+});
+
+for(const entry of ['código','lista pública','link']) test(`nickname salvo: entra por ${entry} sem pedir identificação e retoma a sessão`,async()=>{
+  const hostContext=await browser.newContext(),guestContext=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  const host=await hostContext.newPage(),guest=await guestContext.newPage();
+  try {
+    for(const page of [host,guest]) page.on('pageerror',error=>errors.push(error.message));
+    await host.goto(nicknameOrigin);
+    const roomName=`Entrada por ${entry}`;
+    await createRoom(host,'Ana',roomName,'public');
+    const roomURL=host.url(),roomCode=new URL(roomURL).pathname.slice(1);
+    await guest.goto(nicknameOrigin);
+    await saveNickname(guest,'Bia');
+    await guest.reload();
+    let joins=0;
+    guest.on('request',request=>{if(request.method()==='POST'&&request.url().endsWith(`/api/rooms/${roomCode}/join`)) joins++;});
+    if(entry==='código') {
+      await guest.getByLabel('Código da sala',{exact:true}).fill(roomCode.toLowerCase());
+      await guest.locator('#join-code-form').getByRole('button',{name:'Entrar',exact:true}).click();
+    } else if(entry==='lista pública') {
+      await guest.locator('.directory-list li').filter({hasText:roomName}).getByRole('button',{name:`Entrar na sala ${roomName}`,exact:true}).click();
+    } else await guest.goto(roomURL);
+    await guest.waitForURL(roomURL);
+    await guest.getByText('Bia (você)',{exact:true}).waitFor();
+    await host.getByText('Bia',{exact:true}).waitFor();
+    assert.equal(await guest.locator('#identity-dialog').evaluate(el=>el.open),false);
+    assert.equal(joins,1);
+    const identity=await guest.evaluate(code=>JSON.parse(localStorage.getItem(`fun:${code}`)),roomCode);
+    await guest.reload();
+    await guest.getByText('Bia (você)',{exact:true}).waitFor();
+    assert.deepEqual(await guest.evaluate(code=>JSON.parse(localStorage.getItem(`fun:${code}`)),roomCode),identity);
+    assert.equal(joins,1);
+    assert.equal(await host.locator('.scoreboard li').count(),2);
+  } finally { await Promise.all([hostContext.close(),guestContext.close()]); }
+});
+
+for(const entry of ['código','link']) test(`nickname salvo: falha de rede por ${entry} permite tentar novamente sem repetir nome ou duplicar pessoa`,async()=>{
+  const hostContext=await browser.newContext(),guestContext=await browser.newContext({viewport:{width:320,height:720},reducedMotion:'reduce'});
+  const host=await hostContext.newPage(),guest=await guestContext.newPage();
+  const nickname=entry==='link'?'W'.repeat(24):'Bia';
+  let release;
+  const barrier=new Promise(resolve=>{release=resolve;});
+  try {
+    await host.goto(nicknameOrigin);
+    await createRoom(host,'Ana','Entrada recuperável','public');
+    const roomURL=host.url(),roomCode=new URL(roomURL).pathname.slice(1);
+    await guest.goto(nicknameOrigin);
+    await saveNickname(guest,nickname);
+    let fail=true,joins=0,started;
+    const requested=new Promise(resolve=>{started=resolve;});
+    await guest.route('**/api/rooms/*/join',async route=>{
+      joins++;
+      if(fail) {started();await barrier;await route.abort('failed');}
+      else await route.continue();
+    });
+    if(entry==='código') {
+      await guest.getByLabel('Código da sala',{exact:true}).fill(roomCode);
+      await guest.locator('#join-code-form').getByRole('button',{name:'Entrar',exact:true}).click();
+    } else await guest.goto(roomURL);
+    await requested;
+    const form=guest.locator(entry==='código'?'#join-code-form':'#room-form');
+    await form.evaluate(form=>form.requestSubmit());
+    if(entry==='código') {
+      await guest.locator('.directory-list li').filter({hasText:'Entrada recuperável'}).getByRole('button').click();
+    } else {
+      assert.equal(await guest.locator('#join-name-field').isVisible(),false);
+      assert.equal(await guest.locator('#known-identity strong').textContent(),nickname);
+    }
+    assert.equal(joins,1);
+    release();
+    await guest.locator('#notice').filter({hasText:'Verifique sua conexão'}).waitFor();
+    assert.equal(await guest.locator('#identity-dialog').evaluate(el=>el.open),false);
+    assert.equal(await guest.evaluate(()=>localStorage.getItem('fun:player-name')),nickname);
+    assert.equal(await form.getByRole('button').isEnabled(),true);
+    assert.equal(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    if(entry==='link') await guest.screenshot({path:'artifacts/saved-nickname-link-retry-mobile.png',fullPage:true});
+    fail=false;
+    await form.getByRole('button').click();
+    await guest.waitForURL(roomURL);
+    await guest.getByText(`${nickname} (você)`,{exact:true}).waitFor();
+    await host.getByText(nickname,{exact:true}).waitFor();
+    assert.equal(joins,2);
+    assert.equal(await host.locator('.scoreboard li').count(),2);
+  } finally { release();await Promise.all([hostContext.close(),guestContext.close()]); }
+});
+
+test('nickname ausente ou inválido continua pedindo identificação antes de entrar por link',async()=>{
+  const hostContext=await browser.newContext(),guestContext=await browser.newContext();
+  try {
+    const host=await hostContext.newPage(),guest=await guestContext.newPage();
+    await host.goto(nicknameOrigin);
+    await createRoom(host,'Ana');
+    await guest.addInitScript(()=>localStorage.setItem('fun:player-name','   '));
+    let joins=0;
+    guest.on('request',request=>{if(request.method()==='POST'&&request.url().endsWith('/join')) joins++;});
+    await guest.goto(host.url());
+    const name=guest.getByRole('textbox',{name:'Como podemos chamar você?',exact:true});
+    await name.waitFor();
+    assert.equal(joins,0);
+    await name.fill('Bia');
+    await guest.getByRole('button',{name:'Entrar na sala',exact:true}).click();
+    await guest.getByText('Bia (você)',{exact:true}).waitFor();
+    assert.equal(joins,1);
+  } finally { await Promise.all([hostContext.close(),guestContext.close()]); }
 });
 
 test('auditoria: nome padrão, Enter no formulário e reentrada sem duplicar pessoa',async()=>{
@@ -377,6 +667,32 @@ test('godmode mostra login próprio e protege dados sem links para salas',async(
   await context.close();
 });
 
+test('godmode: usuários adicionais entram com senhas próprias e não aceitam senha de outra conta',async()=>{
+  const context=await browser.newContext();
+  try {
+    const page=await context.newPage();
+    await page.goto(`${fixtureOrigin}/godmode`);
+    await page.getByRole('heading',{name:'Entrar no Godmode',exact:true}).waitFor();
+    await page.getByLabel('Usuário',{exact:true}).fill('browser-second');
+    await page.getByLabel('Senha',{exact:true}).fill('browser-third-password');
+    await page.getByRole('button',{name:'Entrar',exact:true}).click();
+    await page.getByRole('alert').getByText(/Usuário ou senha incorretos/).waitFor();
+    for(const username of ['browser-second','browser-third']) {
+      await page.getByLabel('Usuário',{exact:true}).fill(username);
+      await page.getByLabel('Senha',{exact:true}).fill(`${username}-password`);
+      await page.getByRole('button',{name:'Entrar',exact:true}).click();
+      await page.getByRole('heading',{name:'Godmode',exact:true}).waitFor();
+      await page.getByText(/^Atualizado às/).waitFor();
+      assert.ok(await page.locator('#questions tr').count()>1);
+      assert.equal(await page.locator('#rooms a, #rooms button').count(),0);
+      await page.getByRole('button',{name:'Sair',exact:true}).click();
+      await page.getByRole('heading',{name:'Entrar no Godmode',exact:true}).waitFor();
+      assert.equal(await page.getByLabel('Senha',{exact:true}).inputValue(),'');
+    }
+    assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(key=>/admin|password|authorization/i.test(key))),false);
+  } finally { await context.close(); }
+});
+
 test('partida sintética em navegador: resposta, cooldown, reconexão e revelação',async()=>{
   const answers=JSON.parse(await readFile(join(temp,'answers.json'),'utf8'));
   const a=await browser.newContext({viewport:{width:1366,height:900},reducedMotion:'reduce'});
@@ -435,7 +751,7 @@ test('portal, home em /, sala, F5, nova aba, entrada e controles do anfitrião',
   }),{type:'image/png',signature:[137,80,78,71,13,10,26,10]});
   assert.ok(await page.locator('.brand img').evaluateAll(images=>images.length===2&&images.every(img=>img.complete&&img.naturalWidth>0)));
   await page.screenshot({path:'artifacts/portal-desktop.png',fullPage:true});
-  await page.locator('#game-nav').click();
+  assert.equal(await page.locator('#sidebar #game-nav, #sidebar .nav-heading').count(),0);
   assert.equal(new URL(page.url()).pathname,'/');
   await createRoom(page,'Ana');
   const roomURL=page.url();
@@ -490,10 +806,10 @@ test('navegação compacta, tema persistido e menu móvel por teclado',async()=>
   await page.locator('#sidebar').click({position:{x:34,y:500}});
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sidebar-collapsed')),false);
   await page.getByRole('button',{name:'Recolher navegação'}).click();
-  await page.getByRole('button',{name:'Sabe Essa?',exact:true}).click();
+  await page.getByRole('button',{name:'Início',exact:true}).click();
   await page.getByLabel('Nome da sala',{exact:true}).waitFor();
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('sidebar-collapsed')),false);
-  assert.equal(await page.locator('#game-nav').getAttribute('aria-current'),'page');
+  assert.equal(await page.locator('#portal-nav').getAttribute('aria-current'),'page');
   await page.getByRole('button',{name:'Início',exact:true}).click();
   await page.getByRole('heading',{name:'Vamos jogar?'}).waitFor();
   await page.getByRole('button',{name:'Recolher navegação'}).click();
@@ -502,7 +818,7 @@ test('navegação compacta, tema persistido e menu móvel por teclado',async()=>
   assert.equal(await page.locator('html').getAttribute('data-theme'),'light');
   await page.screenshot({path:'artifacts/minimal-portal-light.png',fullPage:true});
   await page.getByRole('button',{name:'Alternar tema'}).click();
-  await page.locator('#game-nav').click();
+  await page.getByRole('button',{name:'Início',exact:true}).click();
   await page.screenshot({path:'artifacts/minimal-home-desktop.png',fullPage:true});
   for (const width of [320,390,768,1024]) {
     await page.setViewportSize({width,height:844});

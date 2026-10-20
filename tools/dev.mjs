@@ -1,11 +1,11 @@
 // Desenvolvimento no PC: build e Python atualizados juntos; nunca usado pelo supervisor.
 import {spawn,spawnSync} from 'node:child_process';
 import {watch} from 'node:fs';
-import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
 import net from 'node:net';
+import {root,loadLocalEnv} from './local-env.mjs';
 
-const root=fileURLToPath(new URL('../',import.meta.url));
+loadLocalEnv();
 const port=Number(process.env.FUN_PORT || 5050);
 const python=process.env.FUN_PYTHON || join(root,'.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
 try {
@@ -67,3 +67,4 @@ process.once('SIGINT',stop);
 process.once('SIGTERM',stop);
 startBackend();
 console.log(`Fun local em http://127.0.0.1:${port}. Python recarrega automaticamente; Ctrl+C encerra.`);
+console.log(`Godmode em http://127.0.0.1:${port}/godmode quando houver credenciais. Adicione usuários com npm run admin:add -- nome.`);

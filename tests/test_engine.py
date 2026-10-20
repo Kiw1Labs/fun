@@ -68,6 +68,49 @@ def test_host_can_rename_room_only_in_lobby(game):
     assert not act(engine, host, 'rename', room_name='Fora do lobby')['ok']
 
 
+def test_player_rename_preserves_session_score_and_reconnect(game, catalog):
+    engine, now, host, guest, room = start(game)
+    player = room['people'][guest['participant']]
+    answer = room['deck'][0]['answer']
+    assert act(engine, guest, 'answer', round_id=room['round_id'], answer=answer)['correct']
+    before = {key: player[key] for key in ('id', 'token_hash', 'joined', 'score', 'answered', 'cooldown')}
+    event = dict(id='rename-player-01', action='rename_player', name='  Bia <b>BR</b>  ')
+    reply = engine.action(guest['code'], guest['participant'], event)
+    assert reply['ok']
+    assert engine.action(guest['code'], guest['participant'], event) == reply
+    assert {key: player[key] for key in before} == before
+    for identity in (host, guest):
+        snapshot = engine.snapshot(identity['code'], identity['participant'])
+        renamed = next(p for p in snapshot['people'] if p['id'] == guest['participant'])
+        assert renamed['name'] == 'Bia <b>BR</b>' and renamed['score'] == before['score']
+    assert room['room_name'] == 'Sala do Ana'
+    assert room['people'][host['participant']]['name'] == 'Ana'
+    engine.disconnect(guest['code'], guest['participant'], 'b')
+    assert engine.connect(guest['code'], guest['token'], 'b-reconnected') == guest['participant']
+    assert player['name'] == 'Bia <b>BR</b>'
+    restored = Engine(engine.store, catalog, lambda: now[0])
+    _, recovered = restored.auth(guest['code'], guest['token'])
+    assert recovered['name'] == 'Bia <b>BR</b>' and recovered['score'] == before['score']
+
+
+@pytest.mark.parametrize('name', ['', '   ', 'x' * 25, 'a\nb', 'a\x7fb', None, 42])
+def test_player_rename_rejects_invalid_names(game, name):
+    engine, now, host, guest = game
+    assert not act(engine, guest, 'rename_player', name=name)['ok']
+    assert engine.rooms[host['code']]['people'][guest['participant']]['name'] == 'Bia'
+
+
+def test_player_rename_cannot_target_another_identity(game):
+    engine, now, host, guest = game
+    assert not act(engine, guest, 'rename_player', name='Outro', target=host['participant'])['ok']
+    room = engine.rooms[host['code']]
+    assert room['people'][host['participant']]['name'] == 'Ana'
+    assert room['people'][guest['participant']]['name'] == 'Bia'
+    assert act(engine, guest, 'leave')['ok']
+    with pytest.raises(RuleError, match='sessão não está ativa'):
+        act(engine, guest, 'rename_player', name='Voltei')
+
+
 def test_privacy_alias_cooldown_duplicate(game):
     engine, now, a, b, r = start(game)
     view = engine.snapshot(a['code'], a['participant'])

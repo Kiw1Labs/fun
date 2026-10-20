@@ -5,7 +5,7 @@ import {mkdtemp,cp,readFile,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {resolve,join,dirname} from 'node:path';
 
-test('dev: build, recarga do Python, atualização da interface e recusa de JavaScript inválido',{timeout:30000},async()=>{
+test('dev: configuração privada, Godmode, recarga do Python e atualização segura da interface',{timeout:30000},async()=>{
   const temp=await mkdtemp(join(tmpdir(),'fun-dev-audit-'));
   const python=process.env.FUN_TEST_PYTHON || resolve(process.platform==='win32'?'.venv/Scripts/python.exe':'.venv/bin/python');
   const origin='http://127.0.0.1:15055';
@@ -20,10 +20,23 @@ test('dev: build, recarga do Python, atualização da interface e recusa de Java
   }
   try {
     for(const directory of ['fun','frontend','tools']) await cp(directory,join(temp,directory),{recursive:true,filter:source=>!source.includes('__pycache__')});
-    child=spawn(process.execPath,['tools/dev.mjs'],{cwd:temp,env:{...process.env,FUN_PORT:'15055',FUN_PYTHON:python,FUN_DATABASE:join(temp,'audit.sqlite3'),FUN_CATALOG:join(temp,'empty.json'),FUN_STATIC:join(temp,'dist'),FUN_LOG:'',FUN_ORIGINS:origin},stdio:['ignore','pipe','pipe'],windowsHide:true});
+    await writeFile(join(temp,'.env'),'FUN_PORT=15056\nFUN_ADMIN_USERNAME=base-admin\nFUN_ADMIN_PASSWORD=base-test-password\n');
+    await writeFile(join(temp,'.env.local'),'FUN_PORT=15057\nFUN_ADMIN_USERNAME=file-admin\nFUN_ADMIN_PASSWORD="local-test-password # with spaces"\n');
+    const env={...process.env,FUN_PORT:'15055',FUN_PYTHON:python,FUN_DATABASE:join(temp,'audit.sqlite3'),FUN_CATALOG:join(temp,'empty.json'),FUN_STATIC:join(temp,'dist'),FUN_LOG:'',FUN_ORIGINS:origin,FUN_ADMIN_USERNAME:'override-admin'};
+    delete env.FUN_ADMIN_PASSWORD;
+    child=spawn(process.execPath,['tools/dev.mjs'],{cwd:temp,env,stdio:['ignore','pipe','pipe'],windowsHide:true});
     child.stderr.on('data',data=>{logs+=data;});
     child.stdout.on('data',data=>{logs+=data;});
     await until(async()=>{if(child.exitCode!==null)assert.fail(logs);return (await(await fetch(`${origin}/health`)).json()).api_version===2;});
+    const login=await fetch(`${origin}/godmode`);
+    assert.equal(login.status,200);
+    assert.match(await login.text(),/Entrar no Godmode/);
+    assert.equal((await fetch(`${origin}/api/godmode/rooms`)).status,401);
+    const auth=(username,password)=>({Authorization:`Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`});
+    assert.equal((await fetch(`${origin}/api/godmode/rooms`,{headers:auth('override-admin','local-test-password # with spaces')})).status,200);
+    assert.equal((await fetch(`${origin}/api/godmode/rooms`,{headers:auth('file-admin','local-test-password # with spaces')})).status,401);
+    assert.equal((await fetch(`${origin}/api/godmode/rooms`,{headers:auth('override-admin','base-test-password')})).status,401);
+    assert.ok(!logs.includes('local-test-password')&&!logs.includes('base-test-password'));
     const identity=await(await fetch(`${origin}/api/rooms`,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({name:'Teste local'})})).json();
     assert.ok(identity.code);
     // Um segundo launcher não toma a porta nem substitui o servidor em execução.

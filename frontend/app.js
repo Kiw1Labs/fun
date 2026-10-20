@@ -2,11 +2,14 @@ const main = document.querySelector('main');
 const notice = document.querySelector('#notice');
 const dialog = document.querySelector('#close-dialog');
 const identityDialog = document.querySelector('#identity-dialog');
+const profileDialog = document.querySelector('#profile-dialog');
 const renameDialog = document.querySelector('#rename-room-dialog');
 const kickDialog = document.querySelector('#kick-dialog');
 let kickTarget = null;
 let roomIntent = null;
 let directoryRequest = 0;
+let playerName = '', profileEventId = null;
+let enteringRoom = false;
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function mediaCredits(challenge) {
   const credits=challenge?.credits;
@@ -42,9 +45,9 @@ function sessionFor(roomCode) {
     return identity?.code===roomCode && typeof identity.token==='string' && typeof identity.participant==='string' ? identity : null;
   } catch { return null; }
 }
-function requireStorage() {
+function requireStorage(message = 'Permita o armazenamento neste navegador para criar ou entrar em uma sala.') {
   try { localStorage.setItem('fun:storage-check','1'); localStorage.removeItem('fun:storage-check'); }
-  catch { throw new ApiError('Permita o armazenamento neste navegador para criar ou entrar em uma sala.'); }
+  catch { throw new ApiError(message); }
 }
 const gameIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.5 1-1.5 1-1.5 2M12 16h.01"/></svg>';
 const mobileLayout = matchMedia('(max-width: 760px)');
@@ -84,17 +87,86 @@ function stored(key, value) {
   } catch { toast('Habilite o armazenamento do navegador para retomar sua sessão após F5.'); return null; }
 }
 function toast(message) { notice.textContent = message; }
+function knownPlayerName() {
+  const name = playerName.trim();
+  return name && [...name].length <= 24 && !/[\u0000-\u001f\u007f]/.test(name) ? name : '';
+}
+function syncJoinIdentity() {
+  const field = document.querySelector('#join-name-field');
+  if (!field) return;
+  const name = knownPlayerName();
+  field.hidden = Boolean(name);
+  field.querySelector('input').disabled = Boolean(name);
+  const identity = document.querySelector('#known-identity');
+  identity.hidden = !name;
+  identity.querySelector('strong').textContent = name;
+}
+function setPlayerName(name, persist = true) {
+  const previous = playerName;
+  playerName = name;
+  document.querySelector('#profile-name-label').textContent = name || 'Adicione seu nickname';
+  document.querySelector('#profile-open').title = name ? `${name} · Alterar nome` : 'Alterar nome do usuário';
+  const input = document.querySelector('#name');
+  if (input && (!input.value || input.value === previous)) input.value = name;
+  syncJoinIdentity();
+  if (persist) stored('fun:player-name', name);
+}
+function profileBusy(busy) {
+  for (const id of ['profile-name', 'profile-submit', 'profile-cancel']) document.getElementById(id).disabled = busy;
+  document.querySelector('#profile-submit').textContent = busy ? 'Salvando…' : 'Salvar nome';
+  document.querySelector('#profile-form').setAttribute('aria-busy', String(busy));
+}
+function finishProfileSave(error = '') {
+  profileEventId = null;
+  profileBusy(false);
+  document.querySelector('#profile-error').textContent = error;
+  if (!error) { profileDialog.close(); toast('Nome atualizado.'); }
+}
+function openProfile() {
+  if (mobileLayout.matches) menu(false);
+  document.querySelector('#profile-error').textContent = '';
+  document.querySelector('#profile-name').value = playerName;
+  profileDialog.showModal();
+  document.querySelector('#profile-name').focus();
+  document.querySelector('#profile-name').select();
+}
+function saveProfile(name) {
+  if (profileEventId) return;
+  try {
+    if (!name) throw new ApiError('Digite seu nome para continuar.');
+    if ([...name].length > 24 || /[\u0000-\u001f\u007f]/.test(name)) throw new ApiError('Use um nome de 1 a 24 caracteres.');
+    requireStorage('Permita o armazenamento neste navegador para salvar seu nome.');
+    if (code && session() && !stopped) {
+      if (!online || !state?.people.some(p => p.id === state.you && p.active)) throw new ApiError('Aguarde a reconexão para alterar seu nome na sala.');
+      profileEventId = send('rename_player', {name});
+      if (profileEventId) { document.querySelector('#profile-error').textContent = ''; profileBusy(true); }
+    } else {
+      if (!stored('fun:player-name', name)) throw new ApiError('Não foi possível salvar seu nome. Libere espaço no armazenamento do navegador.');
+      setPlayerName(name, false);
+      finishProfileSave();
+    }
+  } catch (error) {
+    document.querySelector('#profile-error').textContent = userError(error, 'Não foi possível salvar seu nome. Tente novamente.');
+  }
+}
 const session = () => sessionFor(code);
 function status() { return `<span class="connection ${online ? 'connected' : ''}">${online ? 'Ao vivo' : 'Reconectando…'}</span>`; }
-function portal(gameSelected = false) {
-  activeNav(gameSelected ? 'game-nav' : 'portal-nav');
-  main.innerHTML = `<section class="portal workspace"><header class="portal-heading"><h1>${gameSelected ? 'Sabe Essa?' : 'Vamos jogar?'}</h1><p>Escolha um jogo e junte a turma.</p></header><div class="portal-panels"><section class="portal-panel create-panel" aria-labelledby="create-title"><h2 id="create-title">Criar uma nova sala</h2><form id="create-room-form"><label class="game-tile"><input type="radio" name="game" value="sabe-essa" checked><span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span></label><div class="create-controls"><div class="room-name-field"><label class="sr-only" for="room-name">Nome da sala</label><input id="room-name" name="room_name" maxlength="48" autocomplete="off" placeholder="Nome da sala"></div><fieldset class="visibility"><legend class="sr-only">Visibilidade da sala</legend><label><input type="radio" name="visibility" value="public"><span>Público</span></label><label><input type="radio" name="visibility" value="private" checked><span>Privado</span></label></fieldset><button type="submit">Jogar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><p class="panel-note"></p></form></section><section class="portal-panel join-panel" aria-labelledby="join-title"><h2 id="join-title">Entrar em sala privada</h2><p>Já tem um convite?</p><form id="join-code-form"><label for="join-code">Código da sala</label><div class="code-entry"><input id="join-code" name="code" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-describedby="join-help" required><button type="submit">Entrar</button></div><p id="join-help" class="panel-note">Use as quatro letras do código.</p></form></section></div><section class="public-rooms" aria-labelledby="public-title"><header><div><h2 id="public-title">Salas públicas</h2><p>Encontre uma turma para jogar.</p></div><button id="refresh-rooms" class="quiet" aria-label="Atualizar salas públicas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18A8 8 0 0 1 5 15"/></svg><span>Atualizar</span></button></header><div id="public-room-list" aria-live="polite"><p class="directory-message" role="status">Buscando salas…</p></div></section></section>`;
+function portal() {
+  activeNav('portal-nav');
+  main.innerHTML = `<section class="portal workspace"><header class="portal-heading"><h1>Vamos jogar?</h1><p>Escolha um jogo e junte a turma.</p></header><div class="portal-panels"><section class="portal-panel create-panel" aria-labelledby="create-title"><h2 id="create-title">Criar uma nova sala</h2><form id="create-room-form"><label class="game-tile"><input type="radio" name="game" value="sabe-essa" checked><span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span></label><div class="create-controls"><div class="room-name-field"><label class="sr-only" for="room-name">Nome da sala</label><input id="room-name" name="room_name" maxlength="48" autocomplete="off" placeholder="Nome da sala"></div><fieldset class="visibility"><legend class="sr-only">Visibilidade da sala</legend><label><input type="radio" name="visibility" value="public"><span>Público</span></label><label><input type="radio" name="visibility" value="private" checked><span>Privado</span></label></fieldset><button type="submit">Jogar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><p class="panel-note"></p></form></section><section class="portal-panel join-panel" aria-labelledby="join-title"><h2 id="join-title">Entrar em sala privada</h2><p>Já tem um convite?</p><form id="join-code-form"><label for="join-code">Código da sala</label><div class="code-entry"><input id="join-code" name="code" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-describedby="join-help" required><button type="submit">Entrar</button></div><p id="join-help" class="panel-note">Use as quatro letras do código.</p></form></section></div><section class="public-rooms" aria-labelledby="public-title"><header><div><h2 id="public-title">Salas públicas</h2><p>Encontre uma turma para jogar.</p></div><button id="refresh-rooms" class="quiet" aria-label="Atualizar salas públicas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18A8 8 0 0 1 5 15"/></svg><span>Atualizar</span></button></header><div id="public-room-list" aria-live="polite"><p class="directory-message" role="status">Buscando salas…</p></div></section></section>`;
   loadPublicRooms();
 }
 function home(joinCode = '') {
-  if (!joinCode) { portal(true); return; }
-  activeNav('game-nav');
-  main.innerHTML = `<section class="welcome game-home"><span class="eyebrow">${joinCode ? `Sala ${esc(joinCode)}` : 'Fun / Jogos'}</span><h1>Sabe Essa?</h1><p>15 desafios. 20 segundos para cada resposta.</p><form id="room-form"><label for="name">Como podemos chamar você?</label><input id="name" name="name" maxlength="24" autocomplete="nickname" required placeholder="Seu nome"><div class="join-fields"><label for="code">Código da sala${joinCode ? '' : ' <span class="optional">· para entrar</span>'}</label><input id="code" name="code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-describedby="code-help" placeholder="ABCD" value="${esc(joinCode)}" ${joinCode ? 'required' : ''}></div><p id="code-help" class="fine">${joinCode ? '' : 'Para criar uma sala, basta preencher seu nome.'}</p><div class="actions">${joinCode ? '' : '<button type="submit" name="mode" value="create">Criar sala</button>'}<button type="submit" name="mode" value="join" class="secondary">Entrar na sala</button></div></form><p class="fine"><br></p></section>`;
+  if (!joinCode) { portal(); return; }
+  activeNav(null);
+  main.innerHTML = `<section class="welcome game-home"><span class="eyebrow">Sala ${esc(joinCode)}</span><h1>Sabe Essa?</h1><p>15 desafios. 20 segundos para cada resposta.</p><form id="room-form"><div id="join-name-field"><label for="name">Como podemos chamar você?</label><input id="name" name="name" maxlength="24" autocomplete="nickname" required placeholder="Seu nome"></div><p id="known-identity" hidden>Você vai entrar como <strong></strong>.</p><div class="join-fields"><label for="code">Código da sala</label><input id="code" name="code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" value="${esc(joinCode)}" required></div><div class="actions"><button type="submit" name="mode" value="join" class="secondary">Entrar na sala</button></div></form></section>`;
+  document.querySelector('#name').value = playerName;
+  syncJoinIdentity();
+}
+function openRoomEntry(joinCode) {
+  home(joinCode);
+  const name = knownPlayerName();
+  if (name) enterRoom({mode:'join',code:joinCode}, name, document.querySelector('#room-form button[type="submit"]'));
 }
 async function loadPublicRooms() {
   const list = document.querySelector('#public-room-list');
@@ -115,47 +187,60 @@ async function loadPublicRooms() {
 }
 setInterval(() => {
   const list=document.querySelector('#public-room-list');
-  if (!document.hidden && !identityDialog.open && !list?.contains(document.activeElement)) loadPublicRooms();
+  if (!document.hidden && !identityDialog.open && !enteringRoom && !list?.contains(document.activeElement)) loadPublicRooms();
 }, 15000);
-function requestIdentity(intent) {
+function requestIdentity(intent, button) {
+  if (enteringRoom) return;
   if (intent.mode==='join' && sessionFor(intent.code)) { location.assign(`/${intent.code}`); return; }
+  const name = knownPlayerName();
+  if (name) { enterRoom(intent, name, button); return; }
   roomIntent = intent;
   document.querySelector('#identity-description').textContent = intent.mode==='create' ? `Criar ${intent.room_name || 'uma sala de Sabe Essa?'} · ${intent.visibility==='public' ? 'Pública' : 'Privada'}` : `Entrar na sala ${intent.code}`;
   document.querySelector('#identity-submit').textContent = intent.mode==='create' ? 'Jogar' : 'Entrar';
   document.querySelector('#identity-error').textContent = '';
-  document.querySelector('#player-name').value = stored('fun:player-name') || '';
+  document.querySelector('#player-name').value = playerName;
   identityDialog.showModal();
   document.querySelector('#player-name').focus();
 }
 async function enterRoom(intent, name, button) {
-  if (!button || button.disabled) return;
+  if (enteringRoom || !button || button.disabled) return;
+  enteringRoom = true;
+  let navigating = false;
   button.disabled = true;
+  button.setAttribute('aria-busy','true');
   if (identityDialog.open) document.querySelector('#identity-cancel').disabled = true;
+  toast(intent.mode==='create' ? 'Criando sala…' : 'Entrando na sala…');
   try {
     if (!name) throw new ApiError('Digite seu nome para continuar.');
     requireStorage();
     await requireCurrentAPI();
     const body = intent.mode==='create' ? {name,room_name:intent.room_name,visibility:intent.visibility} : {name};
     const result = await requestJSON(intent.mode==='create'?'/api/rooms':`/api/rooms/${intent.code}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if (!stored(`fun:${result.code}`,JSON.stringify(result))) throw new ApiError('Não foi possível salvar sua sessão. Libere espaço no armazenamento do navegador.');
     code = result.code;
-    if (!stored(`fun:${code}`,JSON.stringify(result))) throw new ApiError('Não foi possível salvar sua sessão. Libere espaço no armazenamento do navegador.');
-    stored('fun:player-name',name);
+    setPlayerName(name);
     location.assign(`/${code}`);
+    navigating = true;
   } catch (error) {
     const message = userError(error,'Não foi possível entrar. Verifique sua conexão e tente novamente.');
-    if (identityDialog.open) document.querySelector('#identity-error').textContent = message; else toast(message);
+    if (identityDialog.open) { toast(''); document.querySelector('#identity-error').textContent = message; } else toast(message);
   } finally {
-    button.disabled = false;
-    document.querySelector('#identity-cancel').disabled = false;
+    if (!navigating) {
+      enteringRoom = false;
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      document.querySelector('#identity-cancel').disabled = false;
+    }
   }
 }
 function render() {
   if (!state) return;
-  activeNav('game-nav');
+  activeNav(null);
   const focus = document.activeElement?.id;
   const previousAnswer = document.querySelector('#answer')?.value || '';
   const selection = document.querySelector('#answer')?.selectionStart;
   const me = state.people.find(p => p.id === state.you);
+  if (me?.active && me.name !== playerName) setPlayerName(me.name);
   if (!me?.active || state.phase === 'closed') {
     stopped = true;
     stored(`fun:${code}`, null);
@@ -211,7 +296,7 @@ function render() {
     edit.type = 'button'; edit.textContent = 'Alterar nome'; edit.setAttribute('aria-label', 'Alterar nome da sala');
     titleLine.after(edit);
   }
-  if (focus && document.getElementById(focus)) {
+  if (focus && main.contains(document.getElementById(focus))) {
     const input = document.getElementById(focus);
     input.focus({preventScroll:true});
     if (selection !== null && input.setSelectionRange) input.setSelectionRange(selection, selection);
@@ -233,6 +318,7 @@ function send(action, extras={}) {
   const event = {id:crypto.randomUUID(), action, ...extras};
   pending.set(event.id,event);
   ws.send(JSON.stringify(event));
+  return event.id;
 }
 async function copyRoomLink() {
   const link = `${location.origin}/${code}`;
@@ -283,7 +369,11 @@ function connect() {
       render();
     } else if (msg.type==='ack') {
       const event=pending.get(msg.id); pending.delete(msg.id);
-      if (!msg.ok) toast(msg.error);
+      if (event?.action==='rename_player') {
+        if (msg.ok) setPlayerName(event.name.trim());
+        finishProfileSave(msg.ok ? '' : msg.error || 'Não foi possível alterar seu nome. Tente novamente.');
+      }
+      else if (!msg.ok) toast(msg.error);
       else if(event?.action==='rename') renameDialog.close();
       else if(event?.action==='answer') {
         feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : '';
@@ -295,6 +385,7 @@ function connect() {
   ws.onclose = event => {
     online=false; clearInterval(ping);
     if (event.code===4001) {
+      if (profileEventId) finishProfileSave('Sua sessão na sala foi encerrada. Tente salvar seu nome novamente.');
       stopped=true; pending.clear(); stored(`fun:${code}`,null);
       const player=state?.people.find(person=>person.id===state.you);
       if(player) player.active=false;
@@ -302,6 +393,7 @@ function connect() {
       return;
     }
     if (event.code===1008) {
+      if (profileEventId) finishProfileSave('Não foi possível retomar a sala. Entre novamente para alterar seu nome.');
       stopped=true; pending.clear();
       toast('Conexão recusada. Feche abas extras ou tente retomar sua sessão.');
       main.innerHTML='<section class="welcome"><h1>Vamos reconectar?</h1><p>A sessão pode ter expirado ou atingido o limite de conexões.</p><div class="actions"><button id="retry-session">Retomar sessão</button><button id="new-session" class="secondary">Entrar novamente</button></div></section>';
@@ -312,6 +404,10 @@ function connect() {
   ws.onerror = () => toast('Conexão interrompida. Tentando retomar sua sessão.');
 }
 document.addEventListener('submit', async event => {
+  if(event.target.id==='profile-form') {
+    event.preventDefault();
+    saveProfile(event.target.elements.name.value.trim()); return;
+  }
   if(event.target.id==='answer-form') {
     event.preventDefault();
     send('answer',{answer:document.querySelector('#answer').value, round_id:state.round_id}); return;
@@ -319,12 +415,12 @@ document.addEventListener('submit', async event => {
   if(event.target.id==='create-room-form') {
     event.preventDefault();
     const form=event.target;
-    requestIdentity({mode:'create',room_name:form.elements.room_name.value.trim(),visibility:form.elements.visibility.value});
+    requestIdentity({mode:'create',room_name:form.elements.room_name.value.trim(),visibility:form.elements.visibility.value},event.submitter || form.querySelector('button[type="submit"]'));
     return;
   }
   if(event.target.id==='join-code-form') {
     event.preventDefault();
-    requestIdentity({mode:'join',code:event.target.elements.code.value.trim().toUpperCase()});
+    requestIdentity({mode:'join',code:event.target.elements.code.value.trim().toUpperCase()},event.submitter || event.target.querySelector('button[type="submit"]'));
     return;
   }
   if(event.target.id==='identity-form') {
@@ -340,7 +436,7 @@ document.addEventListener('submit', async event => {
   if(event.target.id!=='room-form') return;
   event.preventDefault();
   const form=event.target, mode=event.submitter?.value || 'join';
-  const name=form.elements.name.value.trim(), inputCode=form.elements.code.value.trim().toUpperCase();
+  const name=knownPlayerName() || form.elements.name.value.trim(), inputCode=form.elements.code.value.trim().toUpperCase();
   if(mode==='join'&&!/^[A-Z]{4}$/.test(inputCode)) { toast('Digite as quatro letras da sala.'); return; }
   await enterRoom({mode,code:inputCode},name,event.submitter || form.querySelector('button[type="submit"]'));
 });
@@ -348,10 +444,10 @@ document.addEventListener('click', event => {
   const row=event.target.closest('li[data-kick-target]');
   if(row && main.contains(row)) { openKickConfirmation(row.dataset.kickTarget); return; }
   const button=event.target.closest('button'); if(!button) return;
-  if(['game-nav','portal-nav'].includes(button.id)) {
+  if(button.id==='portal-nav') {
     if(code) { location.assign('/'); return; }
     menu(false);
-    if(button.id==='portal-nav') portal(); else home();
+    portal();
     main.focus({preventScroll:true});
     toast('');
   }
@@ -361,6 +457,8 @@ document.addEventListener('click', event => {
     setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
   }
   if(button.id==='theme') { const theme=document.documentElement.dataset.theme==='dark'?'light':'dark'; applyTheme(theme); stored('fun:theme',theme); }
+  if(button.id==='profile-open') openProfile();
+  if(button.id==='profile-cancel' && !profileEventId) profileDialog.close();
   if(button.id==='close-room') dialog.showModal();
   if(button.id==='copy-room-link') copyRoomLink();
   if(button.id==='edit-room-name' && state?.phase==='lobby' && state.host===state.you) {
@@ -371,9 +469,9 @@ document.addEventListener('click', event => {
   if(button.id==='rename-room-cancel') renameDialog.close();
   if(button.id==='refresh-rooms') loadPublicRooms();
   if(button.id==='identity-cancel') identityDialog.close();
-  if(button.dataset.joinCode) requestIdentity({mode:'join',code:button.dataset.joinCode});
+  if(button.dataset.joinCode) requestIdentity({mode:'join',code:button.dataset.joinCode},button);
   if(button.id==='retry-session') { stopped=false; connect(); }
-  if(button.id==='new-session') { stored(`fun:${code}`,null); state=null; home(code); }
+  if(button.id==='new-session') { stored(`fun:${code}`,null); state=null; openRoomEntry(code); }
   if(button.dataset.action) send(button.dataset.action,button.dataset.target?{target:button.dataset.target}:{});
 });
 dialog.addEventListener('close',()=>{ if(dialog.returnValue==='close') send('close'); });
@@ -383,6 +481,13 @@ kickDialog.addEventListener('close',()=>{
 });
 identityDialog.addEventListener('close',()=>{ roomIntent=null; });
 identityDialog.addEventListener('cancel',event=>{ if(document.querySelector('#identity-submit').disabled) event.preventDefault(); });
+profileDialog.addEventListener('cancel',event=>{ if(profileEventId) event.preventDefault(); });
+profileDialog.addEventListener('close',()=>{
+  document.querySelector(mobileLayout.matches ? '#menu' : '#profile-open').focus();
+});
+window.addEventListener('storage',event=>{
+  if (event.key==='fun:player-name' && !state?.people.some(p=>p.id===state.you&&p.active)) setPlayerName(event.newValue || '', false);
+});
 document.addEventListener('keydown', event => {
   const row=event.target.closest?.('li[data-kick-target]');
   if(row && (event.key==='Enter'||event.key===' ')) {
@@ -391,9 +496,10 @@ document.addEventListener('keydown', event => {
 });
 document.addEventListener('keydown', event => {
   if (!document.body.classList.contains('menu-open')) return;
+  if (document.querySelector('dialog[open]')) return;
   if (event.key==='Escape') { event.preventDefault(); menu(false,true); }
   if (event.key==='Tab') {
-    const controls=[document.querySelector('#menu'),...document.querySelectorAll('#sidebar .sidebar-body button, #theme')];
+    const controls=[document.querySelector('#menu'),...document.querySelectorAll('#profile-open, #sidebar .sidebar-body button, #theme')];
     const first=controls[0], last=controls.at(-1);
     if(event.shiftKey&&document.activeElement===first) { event.preventDefault(); last.focus(); }
     else if(!event.shiftKey&&document.activeElement===last) { event.preventDefault(); first.focus(); }
@@ -402,8 +508,9 @@ document.addEventListener('keydown', event => {
 mobileLayout.addEventListener('change', () => menu(false));
 const theme=stored('fun:theme');
 applyTheme(theme==='light'?'light':'dark');
+setPlayerName(stored('fun:player-name') || '', false);
 if(code) {
   if(session()) { main.innerHTML='<section class="welcome"><p role="status">Retomando sua sala…</p></section>'; connect(); }
-  else home(code);
+  else openRoomEntry(code);
 } else if(location.pathname==='/') portal();
 else main.innerHTML='<section class="welcome"><h1>Página não encontrada.</h1><a href="/">Voltar ao início</a></section>';

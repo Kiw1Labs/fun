@@ -66,7 +66,7 @@ class Engine:
         return self.rooms[code]
 
     def name(self, name):
-        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 24 or any(ord(c) < 32 for c in name):
+        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 24 or any(ord(c) < 32 or ord(c) == 127 for c in name):
             raise RuleError('Use um nome de 1 a 24 caracteres.')
         return name.strip()
 
@@ -225,7 +225,7 @@ class Engine:
         p = r['people'].get(pid)
         if not p or not p['active'] or not self.online(code, pid):
             raise RuleError('Sua sessão não está ativa.')
-        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target', 'room_name'}:
+        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target', 'room_name', 'name'}:
             raise RuleError('Mensagem inválida.')
         eid = event.get('id')
         if not isinstance(eid, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,80}', eid):
@@ -241,7 +241,11 @@ class Engine:
         try:
             if action in ('start', 'lobby', 'kick', 'close', 'rename') and r['host'] != pid:
                 raise RuleError('Somente o anfitrião pode realizar esta ação.')
-            if action == 'rename':
+            if action == 'rename_player':
+                if 'target' in event:
+                    raise RuleError('Altere apenas o seu próprio nome.')
+                p['name'] = self.name(event.get('name'))
+            elif action == 'rename':
                 if r['phase'] != 'lobby':
                     raise RuleError('O nome da sala só pode ser alterado no lobby.')
                 room_name = event.get('room_name')

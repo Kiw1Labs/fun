@@ -5,11 +5,13 @@ Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?�
 ## Plataforma e URLs
 - Portal em `https://fun.kw1.com.br/`, inicialmente com **Sabe Essa?** como único jogo. Revisão aprovada em 18/10/2026: título no topo, painel de criação à esquerda e painel de entrada por código à direita; no celular, painéis empilhados.
 - Criação na página principal com seleção do jogo, nome da sala e seletor **Público/Privado**, seguida da ação **Jogar**. O nome do jogador é solicitado antes de criar/entrar e é distinto do nome da sala.
+- Correção solicitada em 20/10/2026: quando o nickname já estiver salvo neste navegador, reutilizá-lo ao criar ou entrar em sala, sem pedir novamente. Solicitar identificação somente quando não houver nickname válido.
 - Se o nome da sala estiver vazio ou contiver apenas espaços, criar como **Sala do [nome do usuário]**, usando o nome informado pelo criador. Regra confirmada pelo usuário em 18/10/2026.
 - Salas públicas aparecem na página principal; salas privadas ficam acessíveis por código ou link, sem listagem pública. Comportamento confirmado pelo usuário em 18/10/2026.
-- Ao selecionar o jogo na navegação, sua home permanece **na mesma URL `/`**, mudando apenas o estado da interface, antes de entrar em sala.
+- A home do jogo permanece **na mesma URL `/`**, antes de entrar em sala. Revisão solicitada em 20/10/2026: remover o título “Jogos” e o atalho “Sabe Essa?” da barra lateral; o jogo continua acessível na página inicial.
 - Salas têm URL `https://fun.kw1.com.br/ABCD`, com exatamente **quatro letras** no código, únicas em toda a plataforma entre salas ativas, incluindo jogos futuros. O backend resolve o código para o jogo e a sala.
 - Design minimalista inspirado na navegação do site ChatGPT, incluindo barra lateral, responsividade e visual claro/escuro; sem copiar marcas ou logotipos.
+- Revisão solicitada em 20/10/2026: oferecer um controle no topo da barra lateral que abre um popup para alterar o nome do usuário.
 - Preparar arquitetura para mais jogos, implementar somente Sabe Essa? agora.
 
 ## Desafios
@@ -49,6 +51,7 @@ Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?�
 - Lobby e tela de resultados: depois de **30 minutos de inatividade relevante**, mostrar aviso de presença durante **2 minutos**; se ninguém confirmar, encerrar sala. Confirmação reinicia contagem. Não encerrar jogo ativo pela mesma regra de inatividade.
 
 ## Escopo, segurança e UX
+- Godmode: revisão solicitada em 20/10/2026 para permitir vários usuários administrativos, cada um com sua própria senha. As contas de administração são independentes dos nicknames e sessões dos jogadores.
 - Interface em pt-BR, funcional em celular e desktop, acessível por teclado, contraste e leitores de tela.
 - O motor da partida deve ser autoritativo; não enviar respostas aceitas antes da revelação, proteger ações privilegiadas do host, tratar mensagens duplicadas, recarga de página e disputas entre eventos simultâneos.
 - Sem login obrigatório, ranking global ou escolha de categorias no MVP. Não inventar funcionalidades extras.

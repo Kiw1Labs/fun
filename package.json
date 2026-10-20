@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "node tools/dev.mjs",
+    "admin:add": "node tools/add-admin.mjs",
     "build": "node tools/build.mjs",
-    "check": "node --check frontend/app.js && node --check frontend/godmode.js && node --check tools/build.mjs && node --check tools/dev.mjs",
+    "check": "node --check frontend/app.js && node --check frontend/godmode.js && node --check tools/build.mjs && node --check tools/dev.mjs && node --check tools/local-env.mjs && node --check tools/add-admin.mjs",
     "test:browser": "node --test tests/browser.test.mjs",
     "test:catalog": "node tests/catalog.browser.mjs",
     "test:dev": "node --test tests/dev.test.mjs"

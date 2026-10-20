@@ -8,7 +8,7 @@ Implementação com motor autoritativo, HTTP/WebSocket, frontend responsivo clar
 
 ## Desenvolvimento no Windows
 
-Checkout confirmado: `C:\Users\eduar\Documents\github\fun`. Requer Python 3.11+ e Node 20+. Os comandos abaixo são PowerShell; usar `npm.cmd` evita depender de mudança da política de scripts do Windows. Se `python` for um alias da Store sem acesso, usar o executável real exibido por `py -0p` para criar o venv. Não modificar credenciais.
+Checkout confirmado: `C:\Users\eduar\Documents\github\fun`. Requer Python 3.11+ e Node 20.12+. Os comandos abaixo são PowerShell; usar `npm.cmd` evita depender de mudança da política de scripts do Windows. Se `python` for um alias da Store sem acesso, usar o executável real exibido por `py -0p` para criar o venv. Não modificar credenciais existentes.
 
 ```powershell
 python -m venv .venv
@@ -20,7 +20,11 @@ npm.cmd run dev
 
 Abrir **http://127.0.0.1:5050**. Na página principal, escolha Sabe Essa?, preencha o nome da sala, selecione Público/Privado e clique em **Jogar**. Uma janela pede seu nome como jogador. Salas públicas aparecem abaixo dos painéis; para uma privada, use o painel de entrada com o código ou compartilhe a URL de quatro letras. A navegação do jogo permanece em `/`. Backend local aceita Origin localhost/127.0.0.1 na porta 5050; para outro endereço, definir `FUN_ORIGINS` explicitamente. O frontend já construído é servido pelo backend no desenvolvimento; produção serve assets no Nginx existente. Não executar múltiplos workers.
 
-No Linux: `.venv/bin/python` no lugar de `.\.venv\Scripts\python.exe`. As variáveis estão em `.env.example`; o supervisor as carrega, mas `python -m fun` não lê `.env` automaticamente. Dados de desenvolvimento ficam em `data/`, ignorado pelo Git.
+No Linux: `.venv/bin/python` no lugar de `.\.venv\Scripts\python.exe`. As variáveis estão em `.env.example`; o supervisor as carrega, mas `python -m fun` não lê `.env` automaticamente. `npm.cmd run dev` carrega `.env.local` e `.env`, preservando primeiro as variáveis do terminal. Use caminhos locais nesses arquivos, que são ignorados pelo Git. Dados de desenvolvimento ficam em `data/`, ignorado pelo Git.
+
+Para habilitar o [Godmode local](docs/GODMODE.md), cadastre um usuário com o comando abaixo, ou mantenha o par `FUN_ADMIN_USERNAME`/`FUN_ADMIN_PASSWORD` em `.env.local`. Alterações nas variáveis exigem reiniciar `npm.cmd run dev`; contas adicionadas pelo comando são reconhecidas automaticamente. Sem conta em nenhuma dessas fontes, `/godmode` responde `404` com “Painel administrativo indisponível”. Senhas nunca são incluídas nos logs.
+
+Para adicionar outros usuários ao Godmode, execute **`npm.cmd run admin:add -- joao`**, trocando `joao` pelo nome escolhido. O comando solicita e confirma uma senha oculta de pelo menos 12 caracteres e salva somente seu hash. Repita com outro nome para cadastrar mais contas. O administrador anterior continua funcionando, e os novos cadastros passam a valer sem reiniciar o Fun. Os dados ficam em `data/godmode-users.json` (ou junto ao banco configurado), fora do Git. Veja [cadastro e configuração](docs/GODMODE.md#adicionar-usuários).
 
 Com o ambiente já instalado, basta **`npm.cmd run dev`**. Esse comando gera o build, observa a interface e reinicia o Python local quando o código dele muda. Após editar a interface, atualize a página no navegador. Encerre com **Ctrl+C**. Uma reinicialização durante uma partida cancela a partida e preserva o estado recuperável, como definido na especificação.
 

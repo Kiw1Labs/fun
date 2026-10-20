@@ -8,11 +8,16 @@ from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
 from fun.app import create_app
+from fun.admin_accounts import accounts_path
+from tools.add_admin import add_user
 from tests.fixtures import synthetic_catalog
 from tests.metrics import metrics
 
 
 def app():
+    if os.getenv('FUN_TEST_MULTI_ADMIN') == '1':
+        add_user(accounts_path(), 'browser-second', 'browser-second-password')
+        add_user(accounts_path(), 'browser-third', 'browser-third-password')
     catalog = synthetic_catalog() if os.getenv('FUN_TEST_FIXTURES') == '1' else []
     epoch, monotonic, offset = time.time(), time.monotonic(), [0]
     application = create_app(catalog=catalog, clock=lambda: epoch + time.monotonic() - monotonic + offset[0])

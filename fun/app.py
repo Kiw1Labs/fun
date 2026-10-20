@@ -8,12 +8,14 @@ import logging
 import mimetypes
 import os
 import re
+import secrets
 import time
 from collections import OrderedDict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from starlette.applications import Starlette
+from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
@@ -22,6 +24,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.websockets import WebSocketDisconnect
 
 from . import API_VERSION
+from .admin_accounts import AccountsError, AdminAccounts, accounts_path, verify_login
 from .catalog import export, load
 from .engine import Engine, RuleError
 from .store import Store
@@ -46,6 +49,10 @@ class Limiter:
             self.buckets.popitem(last=False)
         return allowed
 
+    def exhausted(self, key, count, window):
+        now = time.monotonic()
+        return sum(stamp > now-window for stamp in self.buckets.get(key, ())) >= count
+
 
 def create_app(database=None, catalog=None, clock=None, static_dir=None, origins=None):
     # Alguns registros MIME do Windows não conhecem WebP; usar tipo explícito.
@@ -54,7 +61,12 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         epoch, monotonic = time.time(), time.monotonic()
         def clock():
             return epoch + time.monotonic() - monotonic
-    store = Store(database or os.getenv('FUN_DATABASE', 'data/fun.sqlite3'))
+    database = database or os.getenv('FUN_DATABASE', 'data/fun.sqlite3')
+    store = Store(database)
+    admin_accounts = AdminAccounts(accounts_path(database))
+    admin_hash_lock = asyncio.Lock()
+    admin_verified = OrderedDict()
+    admin_cache_key = secrets.token_bytes(32)
     if catalog is None:
         stored = store.catalog()
         # Não ressuscitar questões desativadas por um fallback JSON antigo.
@@ -146,14 +158,30 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             rooms = engine.public_rooms()
         return JSONResponse({'rooms': rooms}, headers={'Cache-Control': 'no-store'})
 
-    def admin_auth(request):
-        username = os.getenv('FUN_ADMIN_USERNAME', '')
-        password = os.getenv('FUN_ADMIN_PASSWORD', '')
-        if not username or not password:
-            return JSONResponse({'error': 'Painel administrativo indisponível.'}, status_code=404,
+    def admin_configuration():
+        try:
+            users = admin_accounts.load()
+        except AccountsError:
+            return None, JSONResponse({'error': 'Configuração administrativa indisponível.'}, status_code=503,
+                                      headers={'Cache-Control': 'no-store'})
+        if not users and not (os.getenv('FUN_ADMIN_USERNAME') and os.getenv('FUN_ADMIN_PASSWORD')):
+            return users, JSONResponse({'error': 'Painel administrativo indisponível.'}, status_code=404,
+                                       headers={'Cache-Control': 'no-store'})
+        return users, None
+
+    async def admin_auth(request):
+        users, denied = admin_configuration()
+        if denied:
+            return denied
+        configuration_signature = admin_accounts.signature
+        ip = request.client.host if request.client else 'unknown'
+        if limiter.exhausted(('godmode-auth', ip), 10, 60) or not limiter.allow(('godmode-check', ip), 60, 60):
+            return JSONResponse({'error': 'Muitas tentativas. Aguarde um minuto.'}, status_code=429,
                                 headers={'Cache-Control': 'no-store'})
         header = request.headers.get('authorization', '')
         try:
+            if len(header) > 4096:
+                raise ValueError('length')
             scheme, encoded = header.split(' ', 1)
             if scheme.lower() != 'basic':
                 raise ValueError('scheme')
@@ -161,11 +189,28 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             supplied_user, supplied_password = decoded.split(':', 1)
         except (ValueError, UnicodeDecodeError):
             supplied_user, supplied_password = '', ''
-        user_ok = hmac.compare_digest(supplied_user.encode(), username.encode())
-        password_ok = hmac.compare_digest(supplied_password.encode(), password.encode())
-        valid = user_ok & password_ok
+        arguments = (users, supplied_user, supplied_password, os.getenv('FUN_ADMIN_USERNAME', ''),
+                     os.getenv('FUN_ADMIN_PASSWORD', ''))
+        if users:
+            # A derivação não bloqueia o relógio das partidas e não usa várias CPUs em paralelo.
+            async with admin_hash_lock:
+                if not supplied_user or not supplied_password:
+                    valid = False
+                else:
+                    context = json.dumps([header, configuration_signature, arguments[3], arguments[4]]).encode('utf-8')
+                    cache_key = hmac.digest(admin_cache_key, context, 'sha256')
+                    if admin_verified.get(cache_key, 0) > time.monotonic():
+                        valid = True
+                        admin_verified.move_to_end(cache_key)
+                    else:
+                        valid = await run_in_threadpool(verify_login, *arguments)
+                        if valid:
+                            admin_verified[cache_key] = time.monotonic() + 300
+                            if len(admin_verified) > 256:
+                                admin_verified.popitem(last=False)
+        else:
+            valid = verify_login(*arguments)
         if not valid:
-            ip = request.client.host if request.client else 'unknown'
             if not limiter.allow(('godmode-auth', ip), 10, 60):
                 return JSONResponse({'error': 'Muitas tentativas. Aguarde um minuto.'}, status_code=429,
                                     headers={'Cache-Control': 'no-store'})
@@ -174,9 +219,9 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         return None
 
     async def godmode_page(request):
-        if not os.getenv('FUN_ADMIN_USERNAME', '') or not os.getenv('FUN_ADMIN_PASSWORD', ''):
-            return JSONResponse({'error': 'Painel administrativo indisponível.'}, status_code=404,
-                                headers={'Cache-Control': 'no-store'})
+        _, denied = admin_configuration()
+        if denied:
+            return denied
         page = static / 'godmode.html'
         if not page.exists():
             page = Path(__file__).resolve().parent.parent / 'frontend' / 'godmode.html'
@@ -186,9 +231,9 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         return FileResponse(page, headers={'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow'})
 
     async def godmode_asset(request):
-        if not os.getenv('FUN_ADMIN_USERNAME', '') or not os.getenv('FUN_ADMIN_PASSWORD', ''):
-            return JSONResponse({'error': 'Painel administrativo indisponível.'}, status_code=404,
-                                headers={'Cache-Control': 'no-store'})
+        _, denied = admin_configuration()
+        if denied:
+            return denied
         name = request.path_params['name']
         if name not in ('godmode.js', 'godmode.css'):
             return Response('Arquivo não encontrado.', status_code=404,
@@ -200,7 +245,7 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         return FileResponse(asset, headers={'Cache-Control': 'no-store'})
 
     async def godmode_rooms(request):
-        denied = admin_auth(request)
+        denied = await admin_auth(request)
         if denied:
             return denied
         async with lock:
@@ -211,7 +256,7 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
         return JSONResponse({'rooms': rooms}, headers={'Cache-Control': 'no-store'})
 
     async def godmode_questions(request):
-        denied = admin_auth(request)
+        denied = await admin_auth(request)
         if denied:
             return denied
         questions = store.all_questions()
