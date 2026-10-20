@@ -3,6 +3,59 @@ const labels = {lobby:'Lobby', question:'Em partida', reveal:'Revelação', resu
 let questions = [];
 let authorization = '';
 
+const mobileLayout = matchMedia('(max-width: 760px)');
+function setMenu(open, restoreFocus = false) {
+  open = open && mobileLayout.matches;
+  byId('sidebar').classList.toggle('open', open);
+  document.body.classList.toggle('menu-open', open);
+  byId('menu-backdrop').hidden = !open;
+  byId('menu').setAttribute('aria-expanded', String(open));
+  byId('main').inert = open;
+  if (restoreFocus) byId('menu').focus();
+}
+function setSidebarCollapsed(collapsed) {
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  const button = byId('sidebar-toggle');
+  button.setAttribute('aria-expanded', String(!collapsed));
+  button.setAttribute('aria-label', collapsed ? 'Expandir navegação' : 'Recolher navegação');
+  button.title = button.getAttribute('aria-label');
+}
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+  byId('theme-label').textContent = theme === 'light' ? 'claro' : 'escuro';
+}
+let savedTheme;
+try { savedTheme = localStorage.getItem('fun:theme'); } catch {}
+applyTheme(savedTheme);
+byId('theme').addEventListener('click', () => {
+  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  applyTheme(theme);
+  try { localStorage.setItem('fun:theme', theme); } catch {}
+});
+window.addEventListener('storage', event => {
+  if (event.key === 'fun:theme') applyTheme(event.newValue);
+});
+byId('menu').addEventListener('click', () => setMenu(!document.body.classList.contains('menu-open')));
+byId('menu-backdrop').addEventListener('click', () => setMenu(false, true));
+byId('sidebar-toggle').addEventListener('click', event => {
+  event.stopPropagation();
+  setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+});
+byId('sidebar').addEventListener('click', () => {
+  if (document.body.classList.contains('sidebar-collapsed')) setSidebarCollapsed(false);
+});
+mobileLayout.addEventListener('change', () => setMenu(false));
+document.addEventListener('keydown', event => {
+  if (!document.body.classList.contains('menu-open')) return;
+  if (event.key === 'Escape') { event.preventDefault(); setMenu(false, true); }
+  if (event.key === 'Tab') {
+    const controls = [byId('menu'), ...byId('sidebar').querySelectorAll('a[href], button')].filter(el => el.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});
+
 function cell(row, value) {
   const td = document.createElement('td');
   td.textContent = value == null || value === '' ? '—' : String(value);
@@ -12,6 +65,7 @@ function cell(row, value) {
 function renderRooms(rooms) {
   byId('room-count').textContent = String(rooms.length);
   const body = byId('rooms'); body.replaceChildren();
+  body.closest('.table-wrap').classList.toggle('empty', !rooms.length);
   if (!rooms.length) {
     const row = body.insertRow(); const td = row.insertCell(); td.colSpan = 5; td.textContent = 'Nenhuma sala aberta.'; return;
   }
@@ -27,6 +81,7 @@ function renderQuestions() {
   const filtered = questions.filter(q => [q.id,q.category,q.subcategory,q.prompt,q.answer,...q.aliases].join(' ').toLocaleLowerCase('pt-BR').includes(query));
   byId('question-count').textContent = query ? `${filtered.length} / ${questions.length}` : String(questions.length);
   const body = byId('questions'); body.replaceChildren();
+  body.closest('.table-wrap').classList.toggle('empty', !filtered.length);
   if (!filtered.length) {
     const row = body.insertRow(); const td = row.insertCell(); td.colSpan = 9; td.textContent = 'Nenhuma pergunta encontrada.'; return;
   }
@@ -90,6 +145,8 @@ byId('login-form').addEventListener('submit', async event => {
     byId('login-password').value = '';
     byId('login-view').hidden = true;
     byId('dashboard').hidden = false;
+    byId('dashboard-title').focus({preventScroll:true});
+    window.scrollTo(0, 0);
     await refresh();
   } catch (error) {
     authorization = '';

@@ -26,6 +26,8 @@ As respostas usam `Cache-Control: no-store`, e a página solicita aos buscadores
 
 ## Desenvolvimento e build
 
+O login e o painel seguem a estética do portal: marca oficial, paleta neutra, fonte do sistema, barra lateral, painéis com bordas discretas e botões arredondados. O tema claro/escuro usa a mesma preferência `fun:theme` da página principal. No celular, o menu bloqueia o conteúdo enquanto está aberto, mantém a navegação por teclado e fecha com Escape ou toque fora. As tabelas rolam dentro dos painéis, sem alargar a página; estados vazios permanecem legíveis em telas pequenas.
+
 No PC, `npm.cmd run dev` carrega `.env.local` e `.env` na raiz do projeto. As variáveis já definidas no terminal têm prioridade, seguidas de `.env.local` e `.env`. Os dois arquivos privados são ignorados pelo Git; não copie os caminhos de produção de `.env.example` para o PC.
 
 Configure `FUN_ADMIN_USERNAME` e `FUN_ADMIN_PASSWORD` nesse arquivo privado, usando uma senha forte. O launcher não cria senhas padrão nem imprime credenciais nos logs. Depois de editar esses arquivos, encerre o launcher com Ctrl+C e execute `npm.cmd run dev` novamente. Requer Node 20.12+ para carregar os arquivos de ambiente sem dependências adicionais.
@@ -44,6 +46,24 @@ Os testes correspondentes estão em `tests/test_app.py` e `tests/browser.test.mj
 python -m pytest
 npm run test:browser
 ```
+
+## Correção da tela após login — 20/10/2026
+
+### Visual alinhado ao portal
+
+A revisão seguinte substituiu o visual azul e os gradientes pela estética da home, no formulário e no painel. A marca, as cores e a fonte foram comparadas com `https://fun.kw1.com.br/` em ambos os temas. As verificações públicas em 1440×1000 e 390×844 confirmaram login e saída, busca, atualização, 90 perguntas, APIs HTTP 200, ausência de erros JavaScript e página sem rolagem horizontal. As capturas ficam em `artifacts/godmode-estetica/`; os testes locais usam apenas contas e perguntas artificiais.
+
+Passaram build, verificação de sintaxe, `git diff --check` e os três cenários de navegador selecionados por `godmode`. Uma repetição no sandbox do Windows falhou no encerramento dos processos temporários; somente a árvore desse teste foi encerrada após conferir PID, comando e criação. A repetição final fora dessa restrição passou com os três cenários e encerramento normal.
+
+A entrega online alterou somente `frontend/godmode.html`, `frontend/godmode.css`, `frontend/godmode.js`, a cópia estática de `godmode.html` e os hashes correspondentes no manifesto. Nenhum serviço foi reiniciado e nenhuma credencial foi alterada. Backup completo anterior ao novo visual em `/root/fun/backups/godmode-estetica-20261020T130257Z-653da347/`; backup do ajuste final de legibilidade em `/root/fun/backups/godmode-estetica-20261020T130741Z-93a72745/`. Cada pasta contém `CHANGE.json` e `rollback.py`, com conferência da release e hashes. Para voltar ao visual anterior, executar os rollbacks na ordem inversa. Os demais arquivos da release foram verificados contra o manifesto antes e depois da entrega.
+
+### Correção inicial da transição
+
+O login online era aceito pelas APIs, mas a regra `display: grid` de `.login-shell` prevalecia sobre o atributo `hidden`. O formulário permanecia visível e o painel aparecia abaixo da primeira tela. A regra `.login-shell[hidden]{display:none}` restaura a transição entre login e painel. Os testes de navegador agora verificam que o formulário desaparece ao entrar e que o painel desaparece ao sair, em desktop e celular; os dois cenários falharam antes da correção e passaram depois.
+
+Aplicada somente essa regra ao CSS da release online, com atualização de seu hash no manifesto. Backup anterior do CSS e manifesto, registro da alteração e `rollback.py` em `/root/fun/backups/godmode-visibility-20261020T124945Z-fb8fe4a8/`. O rollback confere a release e os hashes antes de restaurar. Nenhum serviço foi reiniciado, e nenhuma conta, senha ou dado de sala foi alterado. O manifesto completo estava consistente antes da mudança.
+
+A verificação pública em `https://fun.kw1.com.br/godmode`, em Chromium com telas de 1366×900 e 390×844, confirmou autenticação, APIs HTTP 200, 90 perguntas carregadas, formulário oculto e painel no topo, saída normal e ausência de erros JavaScript. Evidências locais, sem senhas, em `artifacts/godmode-online-login/`. Esta verificação cobre somente o painel administrativo.
 
 ## Entrega de múltiplos usuários — 20/10/2026
 

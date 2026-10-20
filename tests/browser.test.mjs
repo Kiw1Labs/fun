@@ -651,6 +651,8 @@ test('godmode mostra login próprio e protege dados sem links para salas',async(
   await page.goto(`${fixtureOrigin}/godmode`);
   await page.getByRole('heading',{name:'Entrar no Godmode'}).waitFor();
   assert.equal(await page.locator('#dashboard').isVisible(),false);
+  assert.ok(await page.locator('.brand img').evaluateAll(images=>images.length===2&&images.every(img=>img.complete&&img.naturalWidth>0)));
+  await page.screenshot({path:'artifacts/godmode-login-desktop.png',fullPage:true});
   await page.locator('#login-username').fill('browser-admin');
   await page.locator('#login-password').fill('senha-incorreta');
   await page.getByRole('button',{name:'Entrar'}).click();
@@ -659,20 +661,30 @@ test('godmode mostra login próprio e protege dados sem links para salas',async(
   await page.getByRole('button',{name:'Entrar'}).click();
   await page.getByRole('heading',{name:'Godmode',exact:true}).waitFor();
   await page.getByText(/^Atualizado às/).waitFor();
+  assert.equal(await page.locator('#login-view').isVisible(),false);
   assert.ok(await page.locator('#rooms tr').count()>=1);
   assert.ok(await page.locator('#questions tr').count()>1);
   assert.equal(await page.locator('#rooms a, #rooms button').count(),0);
+  await page.getByLabel('Buscar no acervo',{exact:true}).fill('busca sem correspondência de teste');
+  await page.getByText('Nenhuma pergunta encontrada.',{exact:true}).waitFor();
+  await page.getByLabel('Buscar no acervo',{exact:true}).fill('');
+  assert.ok(await page.locator('#questions tr').count()>1);
+  await page.screenshot({path:'artifacts/godmode-dashboard-desktop.png'});
+  await page.getByRole('button',{name:'Alternar tema',exact:true}).click();
+  await page.screenshot({path:'artifacts/godmode-dashboard-light.png'});
   await page.getByRole('button',{name:'Sair'}).click();
   await page.getByRole('heading',{name:'Entrar no Godmode'}).waitFor();
+  assert.equal(await page.locator('#dashboard').isVisible(),false);
   await context.close();
 });
 
 test('godmode: usuários adicionais entram com senhas próprias e não aceitam senha de outra conta',async()=>{
-  const context=await browser.newContext();
+  const context=await browser.newContext({viewport:{width:390,height:844}});
   try {
     const page=await context.newPage();
     await page.goto(`${fixtureOrigin}/godmode`);
     await page.getByRole('heading',{name:'Entrar no Godmode',exact:true}).waitFor();
+    await page.screenshot({path:'artifacts/godmode-login-mobile.png',fullPage:true});
     await page.getByLabel('Usuário',{exact:true}).fill('browser-second');
     await page.getByLabel('Senha',{exact:true}).fill('browser-third-password');
     await page.getByRole('button',{name:'Entrar',exact:true}).click();
@@ -683,13 +695,60 @@ test('godmode: usuários adicionais entram com senhas próprias e não aceitam s
       await page.getByRole('button',{name:'Entrar',exact:true}).click();
       await page.getByRole('heading',{name:'Godmode',exact:true}).waitFor();
       await page.getByText(/^Atualizado às/).waitFor();
+      assert.equal(await page.locator('#login-view').isVisible(),false);
       assert.ok(await page.locator('#questions tr').count()>1);
       assert.equal(await page.locator('#rooms a, #rooms button').count(),0);
+      for(const width of [320,390,768,1024]) {
+        await page.setViewportSize({width,height:844});
+        assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+      }
+      await page.setViewportSize({width:390,height:844});
+      if(username==='browser-second') await page.screenshot({path:'artifacts/godmode-dashboard-mobile.png'});
       await page.getByRole('button',{name:'Sair',exact:true}).click();
       await page.getByRole('heading',{name:'Entrar no Godmode',exact:true}).waitFor();
+      assert.equal(await page.locator('#dashboard').isVisible(),false);
       assert.equal(await page.getByLabel('Senha',{exact:true}).inputValue(),'');
     }
     assert.equal(await page.evaluate(()=>Object.keys(localStorage).some(key=>/admin|password|authorization/i.test(key))),false);
+  } finally { await context.close(); }
+});
+
+test('godmode: tema compartilhado com o início e navegação móvel por teclado',async()=>{
+  const context=await browser.newContext({viewport:{width:1366,height:900},reducedMotion:'reduce'});
+  try {
+    const page=await context.newPage();
+    await page.goto(fixtureOrigin);
+    await page.getByRole('button',{name:'Alternar tema',exact:true}).click();
+    await page.goto(`${fixtureOrigin}/godmode`);
+    assert.equal(await page.locator('html').getAttribute('data-theme'),'light');
+    await page.screenshot({path:'artifacts/godmode-login-light.png',fullPage:true});
+    await page.getByRole('button',{name:'Alternar tema',exact:true}).click();
+    await page.reload();
+    assert.equal(await page.locator('html').getAttribute('data-theme'),'dark');
+    await page.getByRole('button',{name:'Recolher navegação',exact:true}).click();
+    assert.equal(await page.locator('#sidebar-toggle').getAttribute('aria-expanded'),'false');
+    await page.locator('#sidebar').click({position:{x:34,y:500}});
+    assert.equal(await page.locator('#sidebar-toggle').getAttribute('aria-expanded'),'true');
+    await page.setViewportSize({width:390,height:844});
+    const menu=page.getByRole('button',{name:'Abrir navegação',exact:true});
+    await menu.click();
+    assert.equal(await page.locator('main').evaluate(el=>el.inert),true);
+    await page.getByRole('button',{name:'Alternar tema',exact:true}).focus();
+    await page.keyboard.press('Tab');
+    assert.equal(await menu.evaluate(el=>el===document.activeElement),true);
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await page.locator('#theme').evaluate(el=>el===document.activeElement),true);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('main').evaluate(el=>el.inert),false);
+    assert.equal(await menu.evaluate(el=>el===document.activeElement),true);
+    await menu.click();
+    await page.locator('#menu-backdrop').click({position:{x:380,y:300}});
+    assert.equal(await menu.getAttribute('aria-expanded'),'false');
+    await menu.click();
+    await page.setViewportSize({width:1366,height:900});
+    await page.waitForFunction(()=>!document.querySelector('main').inert);
+    assert.equal(await page.locator('#menu-backdrop').isVisible(),false);
+    assert.equal(await page.locator('a[aria-current=page]').getAttribute('href'),'/godmode');
   } finally { await context.close(); }
 });
 
