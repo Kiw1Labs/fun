@@ -61,6 +61,8 @@ Em Batata Quente, o anfitrião abre a confirmação de remoção clicando no par
 
 A batata pula no mesmo lugar e muda de cor e expressão conforme esquenta, acompanhando o relógio do servidor. A preferência de movimento reduzido mantém as mudanças de aparência sem os pulos.
 
+Se os pulos estiverem desativados, use **Ativar pulos** na sala. A escolha fica salva neste navegador e pode ser desfeita em **Pulos ligados**.
+
 - `fun/engine.py`: salas, identidade, conexões, prazos e eventos idempotentes.
 - `fun/games/`: registro modular e política Sabe Essa?.
 - `fun/catalog.py`: validação editorial, normalização e seleção exata.

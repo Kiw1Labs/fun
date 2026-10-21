@@ -7,6 +7,19 @@ import {gunzipSync} from 'node:zlib';
 import {chromium} from '@playwright/test';
 
 const origin='http://127.0.0.1:15056';
+async function actualMotion(page) {
+  return page.evaluate(async()=>{
+    const points=[],transforms=new Set();
+    for(let i=0;i<30;i++) {
+      await new Promise(resolve=>requestAnimationFrame(resolve));
+      const group=document.querySelector('.potato-motion');
+      points.push(new DOMPoint(80,158).matrixTransform(group.getScreenCTM()));
+      transforms.add(getComputedStyle(group).transform);
+      await new Promise(resolve=>setTimeout(resolve,50));
+    }
+    return {poses:transforms.size,rise:Math.max(...points.map(p=>p.y))-Math.min(...points.map(p=>p.y))};
+  });
+}
 test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, transferência e remoção confirmada', {timeout:240000}, async()=>{
   const folder=resolve(`artifacts/batata-browser-${Date.now()}`);
   await mkdir(folder,{recursive:true});
@@ -109,6 +122,23 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
     await host.getByRole('button',{name:/Começar a esquentar/}).click();
     await host.locator('#answer:not([disabled])').waitFor();
     await host.getByText('Em partida',{exact:true}).waitFor();
+    await host.emulateMedia({reducedMotion:'no-preference'});
+    for(const width of [1440,390,320]) {
+      await host.setViewportSize({width,height:1000});
+      const motion=await actualMotion(host);
+      assert.ok(motion.poses>10,`Batata parada durante a partida em ${width}px`);
+      assert.ok(motion.rise>(width===1440?12:width===390?6:3),`Pulo pouco visível em ${width}px: ${motion.rise}px`);
+    }
+    await host.setViewportSize({width:1440,height:1000});
+    await host.emulateMedia({reducedMotion:'reduce'});
+    await host.getByRole('button',{name:'Ativar pulos',exact:true}).waitFor();
+    await host.getByRole('button',{name:'Ativar pulos',exact:true}).click();
+    assert.ok((await actualMotion(host)).rise>12,'Ativação manual deve liberar os pulos com movimento reduzido.');
+    await host.reload();
+    await host.getByRole('button',{name:'Pulos ligados',exact:true}).waitFor();
+    assert.ok((await actualMotion(host)).rise>12,'A preferência de pulos deve sobreviver ao F5.');
+    await host.getByRole('button',{name:'Pulos ligados',exact:true}).click();
+    await host.waitForFunction(()=>document.querySelector('.potato-motion').getAnimations().length===0);
     await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill('zzqqww');
     await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
     await host.locator('#answer-feedback').filter({hasText:'dicionário'}).waitFor();

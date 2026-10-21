@@ -81,11 +81,11 @@
 @keyframes potato-breathe { 50% { transform: translateY(-5px) rotate(3deg); } }
 @keyframes potato-hop {
   0%, 50%, 100% { transform: translate(0, 0) rotate(0) scale(1.025, .96); }
-  10%, 60% { transform: translate(0, -2px) rotate(0) scale(.98, 1.025); }
-  25% { transform: translate(-3px, -16px) rotate(calc(var(--hop-tilt, 8deg) * -1)); }
-  40% { transform: translate(-1px, -4px) rotate(-3deg); }
-  75% { transform: translate(3px, -16px) rotate(var(--hop-tilt, 8deg)); }
-  90% { transform: translate(1px, -4px) rotate(3deg); }
+  10%, 60% { transform: translate(0, -6px) rotate(0) scale(.98, 1.025); }
+  25% { transform: translate(-9px, -48px) rotate(calc(var(--hop-tilt, 8deg) * -1)); }
+  40% { transform: translate(-3px, -12px) rotate(-3deg); }
+  75% { transform: translate(9px, -48px) rotate(var(--hop-tilt, 8deg)); }
+  90% { transform: translate(3px, -12px) rotate(3deg); }
 }
 @media (max-width: 760px) {
   .potato-room h1 { font-size: 1.5rem; }
@@ -130,3 +130,6 @@
 @media (prefers-reduced-motion: reduce) {
   .potato-token .potato-motion { animation: none; }
 }
+.potato-room[data-motion="on"] .potato-motion { animation: potato-breathe 3s ease-in-out infinite; }
+.potato-room[data-motion="on"] .is-playing .potato-motion { animation: potato-hop 1s linear infinite; }
+.potato-room[data-motion="off"] .potato-motion { animation: none; }

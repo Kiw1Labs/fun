@@ -16,10 +16,26 @@
     </g>
   </svg>`;
   let muted = false, audio, previousTurn, previousPhase, lastEvent, seenState=false, currentCycle, lastAlert=0, heatIdentity='', heatLevel=0;
-  try { muted=localStorage.getItem('fun:potato-muted')==='1'; } catch {}
-  const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
-  matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',event=>{
-    if(event.matches)for(const motion of document.querySelectorAll('.potato-motion'))for(const animation of motion.getAnimations())animation.cancel();
+  let motionPreference=null;
+  try {
+    muted=localStorage.getItem('fun:potato-muted')==='1';
+    const saved=localStorage.getItem('fun:potato-motion');
+    if(saved==='on'||saved==='off')motionPreference=saved;
+  } catch {}
+  const systemMotion=matchMedia('(prefers-reduced-motion: reduce)');
+  const reduced=()=>motionPreference==='off'||(motionPreference!=='on'&&systemMotion.matches);
+  function syncMotion() {
+    const room=document.querySelector('.potato-room'),button=document.querySelector('#potato-motion');
+    if(room)room.dataset.motion=motionPreference||'system';
+    if(button) {button.textContent=reduced()?'Ativar pulos':'Pulos ligados';button.setAttribute('aria-pressed',String(!reduced()));}
+    if(reduced())for(const motion of document.querySelectorAll('.potato-motion'))for(const animation of motion.getAnimations())animation.cancel();
+  }
+  systemMotion.addEventListener('change',syncMotion);
+  document.addEventListener('click',event=>{
+    if(!event.target.closest('#potato-motion'))return;
+    motionPreference=reduced()?'on':'off';
+    try {localStorage.setItem('fun:potato-motion',motionPreference);} catch {}
+    syncMotion();
   });
   function unlock() {
     if(muted) return;
@@ -93,8 +109,9 @@
     const event=p.event;
     const phaseLabel=lobby?'No lobby':playing?'Em partida':'Resultado';
 
-    main.innerHTML=`<section class="potato-room"><header class="room-header"><div><div class="potato-eyebrow">BATATA QUENTE <span>· SALA ${esc(state.code)}</span></div><div class="room-title-line"><h1>${esc(state.room_name)}</h1><button id="copy-room-link" class="quiet icon-button room-share" aria-label="Copiar link da sala"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 13 2.93l-1.72 1.71M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71"/></svg></button></div><p class="potato-room-meta">${state.visibility==='private'?'Só por convite':'Sala pública'} · ${state.people.filter(x=>x.active).length}/8 pessoas ${host&&lobby?'<button id="edit-room-name" class="quiet">Alterar nome</button>':''}</p></div><div class="potato-tools">${status()}<button id="potato-sound" class="quiet" aria-pressed="${!muted}">${muted?'Som desligado':'Som ligado'}</button></div></header>${state.warning?'<div class="presence" role="alert"><p>Confirme sua presença para manter a sala aberta.</p><button data-action="presence">Estou aqui</button></div>':''}<div class="potato-layout"><section class="potato-table" aria-label="Mesa de jogo"><div class="table-caption"><span><i aria-hidden="true"></i>${phaseLabel}</span><span>${p.used_count} palavras na roda</span></div><div class="potato-arena ${playing?'is-playing':''}"><div class="potato-orbit" aria-hidden="true"></div><div class="potato-center"><div class="potato-token">${mascot}</div>${lead}</div><ol class="potato-seats" aria-label="Jogadores">${roster.map((person,index)=>`<li id="potato-seat-${esc(person.id)}" data-seat="${index}" ${host&&person.active&&person.id!==state.you?`data-kick-target="${esc(person.id)}" tabindex="0" role="button" aria-label="Abrir confirmação para remover ${esc(person.name)}"`:""} class="potato-seat ${person.id===p.turn&&playing?'current-seat':''} ${person.lives===0||!person.active?'out-seat':''}">${person.id===p.turn&&playing?'<span class="turn-pointer" aria-hidden="true"></span>':''}<span class="seat-avatar" aria-hidden="true">${esc(person.name.slice(0,1).toUpperCase())}</span><strong>${esc(person.name)}${person.id===state.you?' (você)':''}</strong><small>${person.host?'♛ ':''}${!person.active?'Saiu':!person.online?'Reconectando':person.spectator?'Espectador':person.lives===0?'Eliminado':person.id===p.turn&&playing?'▶ Está com a batata':lobby?'Pronto pra jogar':'Na roda'}</small>${person.lives!=null?`<span class="seat-hearts" aria-label="${person.lives} vidas">${'♥'.repeat(person.lives)}${'♡'.repeat(Math.max(0,p.settings.lives-person.lives))}</span>`:''}</li>`).join('')}</ol></div><div class="potato-input-area">${controls}</div></section></div><footer class="room-footer"><div><button class="quiet" data-action="leave">Sair da sala</button>${host?'<button id="close-room" class="quiet danger-text">Encerrar sala</button>':''}</div></footer></section>`;
+    main.innerHTML=`<section class="potato-room"><header class="room-header"><div><div class="potato-eyebrow">BATATA QUENTE <span>· SALA ${esc(state.code)}</span></div><div class="room-title-line"><h1>${esc(state.room_name)}</h1><button id="copy-room-link" class="quiet icon-button room-share" aria-label="Copiar link da sala"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 13 2.93l-1.72 1.71M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71"/></svg></button></div><p class="potato-room-meta">${state.visibility==='private'?'Só por convite':'Sala pública'} · ${state.people.filter(x=>x.active).length}/8 pessoas ${host&&lobby?'<button id="edit-room-name" class="quiet">Alterar nome</button>':''}</p></div><div class="potato-tools">${status()}<button id="potato-motion" class="quiet" aria-pressed="${!reduced()}">${reduced()?'Ativar pulos':'Pulos ligados'}</button><button id="potato-sound" class="quiet" aria-pressed="${!muted}">${muted?'Som desligado':'Som ligado'}</button></div></header>${state.warning?'<div class="presence" role="alert"><p>Confirme sua presença para manter a sala aberta.</p><button data-action="presence">Estou aqui</button></div>':''}<div class="potato-layout"><section class="potato-table" aria-label="Mesa de jogo"><div class="table-caption"><span><i aria-hidden="true"></i>${phaseLabel}</span><span>${p.used_count} palavras na roda</span></div><div class="potato-arena ${playing?'is-playing':''}"><div class="potato-orbit" aria-hidden="true"></div><div class="potato-center"><div class="potato-token">${mascot}</div>${lead}</div><ol class="potato-seats" aria-label="Jogadores">${roster.map((person,index)=>`<li id="potato-seat-${esc(person.id)}" data-seat="${index}" ${host&&person.active&&person.id!==state.you?`data-kick-target="${esc(person.id)}" tabindex="0" role="button" aria-label="Abrir confirmação para remover ${esc(person.name)}"`:""} class="potato-seat ${person.id===p.turn&&playing?'current-seat':''} ${person.lives===0||!person.active?'out-seat':''}">${person.id===p.turn&&playing?'<span class="turn-pointer" aria-hidden="true"></span>':''}<span class="seat-avatar" aria-hidden="true">${esc(person.name.slice(0,1).toUpperCase())}</span><strong>${esc(person.name)}${person.id===state.you?' (você)':''}</strong><small>${person.host?'♛ ':''}${!person.active?'Saiu':!person.online?'Reconectando':person.spectator?'Espectador':person.lives===0?'Eliminado':person.id===p.turn&&playing?'▶ Está com a batata':lobby?'Pronto pra jogar':'Na roda'}</small>${person.lives!=null?`<span class="seat-hearts" aria-label="${person.lives} vidas">${'♥'.repeat(person.lives)}${'♡'.repeat(Math.max(0,p.settings.lives-person.lives))}</span>`:''}</li>`).join('')}</ol></div><div class="potato-input-area">${controls}</div></section></div><footer class="room-footer"><div><button class="quiet" data-action="leave">Sair da sala</button>${host?'<button id="close-room" class="quiet danger-text">Encerrar sala</button>':''}</div></footer></section>`;
     const arena=main.querySelector('.potato-arena');
+    syncMotion();
     layoutArena(arena);
     if(seenState&&event?.id!==lastEvent&&event) {
       tone(event.kind);

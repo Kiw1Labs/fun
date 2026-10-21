@@ -1,5 +1,15 @@
 # Batata Quente — validação local de 21/10/2026
 
+## Correção dos pulos pouco visíveis ou desativados
+
+Após o relato de mudança de cor/expressão sem movimento, a sondagem distinguiu animação normal de movimento reduzido: com movimento normal houve variação de poses; com movimento reduzido, uma pose e deslocamento zero. Isso reproduz o sintoma, sem afirmar qual configuração estava ativa no navegador do usuário. O salto anterior também tinha deslocamento pequeno devido à escala do SVG. O deslocamento do pulo passou de 16 para 48 unidades do desenho.
+
+Adicionado o botão “Ativar pulos” / “Pulos ligados”. Por padrão, a sala respeita movimento reduzido; uma escolha explícita pode ativar os pulos nesse modo e fica salva neste navegador, sem alterar o sistema. A cor e a expressão continuam acompanhando o aquecimento em ambos os modos.
+
+`npm.cmd run check`, `npm.cmd run build` e `npm.cmd run test:batata` passaram. Build de 295.615 bytes. O novo teste mede movimento espontâneo na partida por vários quadros, sem posicionar a animação manualmente: mais de dez poses e deslocamento vertical superior a 12/6/3 px em 1440/390/320 px. Também mede movimento após ativação manual com movimento reduzido, persistência após F5 e parada ao desligar. O jogo completo, as quatro expressões e a roda de oito pessoas continuam passando. Evidências finais: `artifacts/batata-browser-1792616965480/`.
+
+Backup anterior em `artifacts/batata-hop-fix-backup/`, sondagem em `artifacts/potato-motion-probe.json` e inventários remotos em `artifacts/batata-hop-fix-before-activation.json` e `artifacts/batata-hop-fix-runtime-before.json`. A publicação segue somente por assets, com CI, backup, rollback e preservação de processo; verificação posterior em `artifacts/batata-hop-fix-preservation.json`.
+
 ## Aquecimento animado da batata
 
 Implementada a referência do usuário: inclinação e pulos alternados no mesmo lugar, com cor progressivamente mais queimada, manchas, boca séria, sobrancelhas tensas, olhos semicerrados e suor. O desenho continua em SVG. A aparência usa os prazos autoritativos, não esfria com a extensão de prazo ao passar e reinicia a cada novo aquecimento. A velocidade dos pulos aumenta preservando a fase da animação entre atualizações; a preferência de movimento reduzido cancela os pulos, inclusive quando alterada durante a partida.

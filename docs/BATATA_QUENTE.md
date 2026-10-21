@@ -32,6 +32,8 @@ Para acesso pela rede local, o processo precisa escutar na interface autorizada,
 
 ## Decisões técnicas desta versão
 
+- O controle de pulos segue a preferência de movimento reduzido por padrão. “Ativar pulos” permite uma escolha explícita mesmo nesse modo; “Pulos ligados” permite desativar. A escolha fica em `fun:potato-motion`, sem alterar configurações do sistema. O deslocamento vertical foi ampliado para ser perceptível em 1440/390/320 px. O teste mede posições reais durante vários quadros da partida, além de conferir a ativação manual com movimento reduzido e sua persistência após F5.
+
 - A animação de aquecimento usa o SVG original, com referência na sequência de dez imagens editadas pelo usuário. Pulos alternados ficam dentro do espaço reservado à batata; o lugar da peça na mesa permanece fixo. Cores, manchas, sobrancelhas, boca, olhos e suor mudam progressivamente. O calor visual deriva de `started`, `deadline` e `cycle` publicados pelo servidor. A extensão de prazo ao passar não reduz o calor já observado nesse ciclo; uma nova queima reinicia a aparência no aquecimento seguinte. As quatro fases visuais são uma escolha de apresentação, sem mudar regras ou relógio. Movimento reduzido desativa os pulos e preserva as mudanças de aparência. Não há imagens externas, novos serviços ou dependências.
 
 - Reutilizamos Python/Starlette, WebSockets nativos e frontend JavaScript do Fun. Não adicionamos Socket.IO, React, processos, bibliotecas nativas ou serviços de validação externos.
