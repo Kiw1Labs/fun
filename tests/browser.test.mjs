@@ -612,7 +612,11 @@ test('auditoria: espectador, expulsão durante partida e encerramento nos result
   assert.equal(await biaRow.getAttribute('role'),'button');
   await biaRow.click();
   await host.getByRole('dialog').getByText('Você está removendo Bia da sala. Confirma a remoção?',{exact:true}).waitFor();
+  await host.locator('#kick-dialog').evaluate(dialog=>{
+    window.kickCancellation=new Promise(resolve=>dialog.addEventListener('close',()=>resolve(),{once:true}));
+  });
   await host.getByRole('dialog').getByRole('button',{name:'Cancelar',exact:true}).click();
+  await host.evaluate(()=>window.kickCancellation);
   await host.locator('#kick-dialog').waitFor({state:'hidden'});
   await host.getByText('Bia',{exact:true}).waitFor();
   await biaRow.focus(); await biaRow.press('Enter');

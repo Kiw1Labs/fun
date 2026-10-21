@@ -6,6 +6,8 @@ A execução de CI [`39644966559`](https://github.com/Kiw1Labs/fun/actions/runs/
 
 O teste agora aguarda explicitamente a troca da sílaba na tela do anfitrião e mantém a comparação e as demais verificações. O cenário corrigido passou localmente em 15,09 s; capturas em `artifacts/batata-browser-1792605999688/`. Backup anterior em `artifacts/batata-public-fix-backup/`. A publicação deve continuar pelo fluxo normal, com CI aprovado e verificações no Android e no domínio público.
 
+A execução seguinte encontrou outra corrida no teste de expulsão de Sabe Essa?: a confirmação era reaberta depois de ficar invisível, antes de terminar o evento nativo `close` do cancelamento anterior. O teste passou a aguardar esse evento, preservando a verificação da expulsão por teclado. O caso isolado corrigido passou localmente. O auxiliar específico do Fun no Android foi atualizado para incluir assets e dicionário do novo jogo, após 14 testes locais de deploy/atualizador; backup e rollback em `/root/fun/backups/batata-helper-20261021T181221Z/`. Nenhum serviço foi reiniciado nessa preparação e os hashes dos arquivos compartilhados foram preservados.
+
 ## Remoção dos textos e da coluna de ajuda
 
 Removidos, a pedido do usuário, os resumos de vidas/tempos e ciclo de dificuldade do lobby e os blocos completos “Como jogar” e “Passou pela roda”. A mesa ocupa a largura disponível. Alterações restritas à apresentação, à documentação e à remoção de expectativas antigas do teste de navegador.
