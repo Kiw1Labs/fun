@@ -8,6 +8,8 @@ Implementada a referência do usuário: inclinação e pulos alternados no mesmo
 
 Backup local anterior em `artifacts/batata-heat-backup/`; inventários remotos em `artifacts/batata-heat-before-activation.json` e `artifacts/batata-heat-runtime-before.json`. Publicação somente de assets, após CI e backup/rollback, com conferência posterior em `artifacts/batata-heat-preservation.json` e teste público em `artifacts/batata-public-*/result.json`.
 
+O primeiro CI da animação passou nos testes Python, nos 33 cenários gerais e nas verificações de expressão/movimento, mas detectou falta de espaço para “MMM” com oito pessoas em 320 px. O recipiente da batata voltou à largura anterior nessa faixa. A correção passou localmente em 19,55 s; evidências finais em `artifacts/batata-browser-1792615860614/`. As verificações de espaço e a composição com letras largas foram mantidas.
+
 ## Roda circular e indicação junto ao avatar
 
 A roda usa um raio único nos dois eixos e se adapta à largura disponível. A batata permanece junto à sílaba no centro; a seta tem espaço ao lado do avatar da pessoa da vez, sem girar sobre o conteúdo. Removidos os textos centrais “Sua vez!” e “Vez de …”. O contorno e o estado textual do participante continuam indicando o turno.

@@ -124,7 +124,7 @@
   .potato-center h2 { font-size: .95rem; }
   .potato-center .fragment { font-size: 2rem; }
   .is-playing .potato-center { gap: 4px; }
-  .is-playing .potato-token { width: 24px; height: 28px; }
+  .is-playing .potato-token { width: 18px; height: 21px; }
   .is-playing .fragment { font-size: 1.4rem; letter-spacing: .1em; }
 }
 @media (prefers-reduced-motion: reduce) {
