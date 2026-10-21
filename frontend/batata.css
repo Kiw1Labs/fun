@@ -32,6 +32,7 @@
 .potato-token { width: 64px; height: 72px; margin: 0 auto 8px; pointer-events: none; }
 .potato-token > .potato-art { animation: potato-breathe 3s ease-in-out infinite; }
 .turn-pointer { position: absolute; left: calc(50% - 31px); top: 17px; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid var(--accent); pointer-events: none; }
+.seat-right .turn-pointer { left: calc(50% + 24px); transform: rotate(180deg); }
 .is-hot .potato-token > .potato-art { animation: potato-shake .2s infinite alternate; filter: sepia(.3) saturate(1.8); }
 .potato-center { position: absolute; top: 50%; left: 20%; right: 20%; transform: translateY(-50%); text-align: center; pointer-events: none; }
 .potato-center h2 { margin: 10px 0; font-size: 1.25rem; line-height: 1.4; letter-spacing: -.025em; }
@@ -87,6 +88,7 @@
   .potato-center .potato-eyebrow { font-size: .625rem; }
   .potato-token { width: 47px; height: 53px; }
   .turn-pointer { left: calc(50% - 25px); top: 11px; border-top-width: 4px; border-bottom-width: 4px; border-left-width: 6px; }
+  .seat-right .turn-pointer { left: calc(50% + 19px); }
   .potato-input-area { padding: 24px 14px; }
   .potato-answer .answer-row { gap: 6px; }
   .potato-answer button { padding: 10px 12px; font-size: .8125rem; }
@@ -108,6 +110,7 @@
   .potato-seat { min-height: 62px; }
   .seat-avatar { width: 20px; height: 20px; }
   .turn-pointer { left: calc(50% - 22px); top: 9px; }
+  .seat-right .turn-pointer { left: calc(50% + 16px); }
 }
 @media (prefers-reduced-motion: reduce) {
   .potato-token > .potato-art, .is-hot .potato-token > .potato-art { animation: none; }

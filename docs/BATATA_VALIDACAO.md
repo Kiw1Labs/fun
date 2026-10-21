@@ -8,6 +8,8 @@ A roda usa um raio único nos dois eixos e se adapta à largura disponível. A b
 
 Inventário anterior à publicação em `artifacts/batata-circle-before-activation.json` e `artifacts/batata-circle-runtime-before.json`. A publicação segue o fluxo de assets com CI aprovado, comparação integral de runtime, backup e rollback, preservando o processo do Fun e os serviços compartilhados. O resultado público fica em `artifacts/batata-public-*/result.json` e a conferência de preservação em `artifacts/batata-circle-preservation.json`.
 
+A primeira execução no CI detectou sobreposição na diagonal direita em 320 px. A seta agora ocupa o lado externo do avatar, alternando seu lado conforme a posição na roda. A correção passou localmente nas oito posições e três larguras; capturas em `artifacts/batata-browser-1792610675960/`. Build final de 289.553 bytes.
+
 ## Remoção pelo participante e simplificação da mesa
 
 Removidos o texto “Boa de palavra? Mostre na roda.”, o contador visível de voltas/dificuldade e o botão “×” de cada participante. O anfitrião clica na pessoa para abrir o popup de confirmação compartilhado com Sabe Essa?, também acessível por Enter/Espaço. O servidor mantém as mesmas permissões e a progressão de dificuldade.

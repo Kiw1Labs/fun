@@ -46,6 +46,7 @@
     arena.style.setProperty('--orbit-radius',`${radius}px`);
     for(const seat of seats) {
       const angle=Number(seat.dataset.seat)/Math.max(seats.length,2)*Math.PI*2-Math.PI/2;
+      seat.classList.toggle('seat-right',Math.cos(angle)>.01);
       seat.style.left=`${arena.clientWidth/2+Math.cos(angle)*radius}px`;
       seat.style.top=`${arena.clientHeight/2+Math.sin(angle)*radius}px`;
     }
