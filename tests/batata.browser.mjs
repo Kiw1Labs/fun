@@ -171,6 +171,15 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
           const orbit=arena.querySelector('.potato-orbit').getBoundingClientRect();
           const pointer=arena.querySelector('.turn-pointer').getBoundingClientRect();
           const overlaps=r=>pointer.left<r.right&&pointer.right>r.left&&pointer.top<r.bottom&&pointer.bottom>r.top;
+          const fragment=arena.querySelector('.fragment'),original=fragment.textContent;
+          fragment.textContent='MMM';
+          const letters=document.createRange();letters.selectNodeContents(fragment);
+          const center=[letters.getBoundingClientRect(),arena.querySelector('.potato-token').getBoundingClientRect()];
+          const centerClear=[...arena.querySelectorAll('.potato-seat')].every(seat=>{
+            const r=seat.getBoundingClientRect();
+            return center.every(c=>c.right<=r.left||c.left>=r.right||c.bottom<=r.top||c.top>=r.bottom);
+          });
+          fragment.textContent=original;
           return {
             circle:Math.abs(orbit.width-orbit.height)<1,
             inside:[...arena.querySelectorAll('.potato-seat')].every(seat=>{const r=seat.getBoundingClientRect();return r.left>=bounds.left-1&&r.right<=bounds.right+1&&r.top>=bounds.top-1&&r.bottom<=bounds.bottom+1;}),
@@ -178,10 +187,10 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
               const range=document.createRange();range.selectNodeContents(node);
               return !overlaps(node.matches('.fragment')?range.getBoundingClientRect():node.getBoundingClientRect());
             }),
-            centralTurnAbsent:!arena.querySelector('#potato-turn')
+            centralTurnAbsent:!arena.querySelector('#potato-turn'),centerClear
           };
         });
-        assert.deepEqual(geometry,{circle:true,inside:true,pointerClear:true,centralTurnAbsent:true},`Roda/indicação na posição ${turnIndex}, ${width}px`);
+        assert.deepEqual(geometry,{circle:true,inside:true,pointerClear:true,centralTurnAbsent:true,centerClear:true},`Roda/indicação na posição ${turnIndex}, ${width}px`);
         if(!turnIndex||width===320)await host.screenshot({path:resolve(folder,turnIndex?`turn-${turnIndex}-${width}.png`:`eight-${width}.png`),fullPage:true});
       }
     }

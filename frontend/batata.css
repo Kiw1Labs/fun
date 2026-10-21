@@ -87,6 +87,9 @@
   .potato-center .fragment { font-size: 2.2rem; }
   .potato-center .potato-eyebrow { font-size: .625rem; }
   .potato-token { width: 47px; height: 53px; }
+  .is-playing .potato-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .is-playing .potato-token { flex-shrink: 0; width: 32px; height: 36px; margin: 0; }
+  .is-playing .fragment { margin: 0; font-size: 1.8rem; }
   .turn-pointer { left: calc(50% - 25px); top: 11px; border-top-width: 4px; border-bottom-width: 4px; border-left-width: 6px; }
   .seat-right .turn-pointer { left: calc(50% + 19px); }
   .potato-input-area { padding: 24px 14px; }
@@ -103,14 +106,9 @@
   .potato-seat small { font-size: .42rem; }
   .potato-center h2 { font-size: .95rem; }
   .potato-center .fragment { font-size: 2rem; }
-}
-@media (max-height: 550px) and (max-width: 600px) {
-  .potato-center .fragment { font-size: 1.8rem; }
-  .potato-token { width: 38px; height: 43px; }
-  .potato-seat { min-height: 62px; }
-  .seat-avatar { width: 20px; height: 20px; }
-  .turn-pointer { left: calc(50% - 22px); top: 9px; }
-  .seat-right .turn-pointer { left: calc(50% + 16px); }
+  .is-playing .potato-center { gap: 4px; }
+  .is-playing .potato-token { width: 18px; height: 21px; }
+  .is-playing .fragment { font-size: 1.4rem; letter-spacing: .1em; }
 }
 @media (prefers-reduced-motion: reduce) {
   .potato-token > .potato-art, .is-hot .potato-token > .potato-art { animation: none; }

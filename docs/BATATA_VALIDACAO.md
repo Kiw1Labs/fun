@@ -10,6 +10,8 @@ Inventário anterior à publicação em `artifacts/batata-circle-before-activati
 
 A primeira execução no CI detectou sobreposição na diagonal direita em 320 px. A seta agora ocupa o lado externo do avatar, alternando seu lado conforme a posição na roda. A correção passou localmente nas oito posições e três larguras; capturas em `artifacts/batata-browser-1792610675960/`. Build final de 289.553 bytes.
 
+A revisão final também reserva o centro no celular: batata e sílaba ficam lado a lado, com escala menor em 320 px. O teste verifica que os cartões não cobrem o centro, usando “MMM” para exercitar letras largas em todas as posições. Essa revisão passou localmente, com build de 289.626 bytes e capturas em `artifacts/batata-browser-1792610824786/`. O CI da correção anterior da seta passou; a revisão final recebe uma nova execução completa antes da publicação.
+
 ## Remoção pelo participante e simplificação da mesa
 
 Removidos o texto “Boa de palavra? Mostre na roda.”, o contador visível de voltas/dificuldade e o botão “×” de cada participante. O anfitrião clica na pessoa para abrir o popup de confirmação compartilhado com Sabe Essa?, também acessível por Enter/Espaço. O servidor mantém as mesmas permissões e a progressão de dificuldade.
