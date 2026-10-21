@@ -1,5 +1,7 @@
 # Fun — arquitetura e plano de implantação
 
+Batata Quente (21/10/2026): usa o mesmo processo Python/Starlette e canal WebSocket, com política em `fun/games/batata_quente.py`, léxico local e interface própria. Códigos, sessões e limpeza continuam compartilhados no Engine. A partida interrompida é cancelada após reinício. O dicionário é compilado no PC e distribuído com o release; não exige dependências de runtime adicionais. Ver [regras, licença e limites](BATATA_QUENTE.md).
+
 ## Infraestrutura pré-existente (validar ao vivo)
 O dispositivo Kiwiki Lab é celular Android 10 Xiaomi M2006C3LII (dandelion), Termux 0.118.3, ~3,7 GiB RAM, swap ~2 GiB, Debian 12 proot armhf disponível. Já opera apps Flask, Django, Nginx, PostgreSQL, Cloudflare Tunnel, Tailscale, SSH e monitoramento. Há histórico de pressão de memória/carga e interrupções matinais. Não alterar ou interromper esses serviços.
 

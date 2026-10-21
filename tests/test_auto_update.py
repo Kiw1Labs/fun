@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import shutil
 from pathlib import Path
 import sqlite3
 import tarfile
@@ -67,6 +68,29 @@ def test_build_matches_existing_asset_hashes(updater, tmp_path):
     assert (tmp_path/'dist/brand/fun-logo.png').read_bytes() == logo
     assert (tmp_path/'dist/brand/fun-favicon.png').read_bytes() == favicon_png
     assert (tmp_path/'dist/favicon.svg').read_bytes() == favicon
+
+
+def test_dictionary_and_potato_assets_survive_release_preparation(updater, tmp_path):
+    data = io.BytesIO()
+    files = {'content/dictionary/words.tsv.gz': b'compressed lexicon',
+             'content/dictionary/COPYING.LESSER': b'license',
+             'content/dictionary/secrets.txt': b'never extract',
+             'content/dictionary/nested/words.tsv.gz': b'never extract'}
+    with tarfile.open(fileobj=data, mode='w') as archive:
+        for name, contents in files.items():
+            member = tarfile.TarInfo(name)
+            member.size = len(contents)
+            archive.addfile(member, io.BytesIO(contents))
+    updater.safe_extract(data.getvalue(), tmp_path/'candidate')
+    assert (tmp_path/'candidate/content/dictionary/words.tsv.gz').is_file()
+    assert (tmp_path/'candidate/content/dictionary/COPYING.LESSER').is_file()
+    assert not (tmp_path/'candidate/content/dictionary/secrets.txt').exists()
+    assert not (tmp_path/'candidate/content/dictionary/nested').exists()
+    shutil.copytree(Path('frontend'), tmp_path/'assets/frontend')
+    updater.build_frontend(tmp_path/'assets')
+    html = (tmp_path/'assets/dist/index.html').read_text(encoding='utf-8')
+    assert '/assets/batata.js' not in html and '/assets/batata.css' not in html
+    assert '/assets/batata.' in html
 
 
 def test_consistent_backup_and_modified_release_are_preserved(updater, tmp_path):

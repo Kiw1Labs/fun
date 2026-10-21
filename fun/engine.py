@@ -9,6 +9,8 @@ import time
 from .catalog import Challenge, export
 from .games import GAMES
 from .games.sabe_essa import points as points
+from .games.batata_quente import BatataQuente, DEFAULTS, settings
+from .games.lexicon import default_lexicon
 
 
 class RuleError(ValueError):
@@ -20,8 +22,9 @@ def token_hash(token):
 
 
 class Engine:
-    def __init__(self, store, catalog, clock=time.time):
+    def __init__(self, store, catalog, clock=time.time, lexicon=None):
         self.store, self.catalog, self.clock = store, catalog, clock
+        self._lexicon = lexicon
         self.rooms = {r['code']: r for r in store.all()}
         self.connections = {}
         self.catalog_cache = {}
@@ -30,7 +33,7 @@ class Engine:
             r.setdefault('room_name', 'Sala de Sabe Essa?')
             r.setdefault('visibility', 'private')
             # Falha/reinício encerra uma partida sem vencedor e reabre a janela de retomada.
-            if r['phase'] in ('question', 'reveal'):
+            if r['phase'] in ('question', 'reveal', 'playing'):
                 self.finish(r, 'cancelled', None, now)
             r['empty_since'] = now
             for p in r['people'].values():
@@ -38,6 +41,12 @@ class Engine:
                 if p['active']:
                     p['offline_since'] = now
             self.save(r)
+
+    @property
+    def potato(self):
+        if self._lexicon is None:
+            self._lexicon = default_lexicon()
+        return BatataQuente(self._lexicon)
 
     def save(self, r):
         self.store.save(r['code'], r)
@@ -70,8 +79,10 @@ class Engine:
             raise RuleError('Use um nome de 1 a 24 caracteres.')
         return name.strip()
 
-    def create(self, name, room_name='', visibility='private'):
+    def create(self, name, room_name='', visibility='private', game='sabe-essa'):
         name = self.name(name)
+        if game not in ('sabe-essa', 'batata-quente'):
+            raise RuleError('Jogo inválido.')
         if not isinstance(room_name, str) or len(room_name.strip()) > 48 or any(ord(c) < 32 or ord(c) == 127 for c in room_name):
             raise RuleError('Use um nome de sala com até 48 caracteres.')
         if visibility not in ('public', 'private'):
@@ -83,11 +94,13 @@ class Engine:
             if code not in self.rooms:
                 break
         now = self.clock()
-        r = dict(code=code, game='sabe-essa', room_name=room_name.strip() or f'Sala do {name}',
+        r = dict(code=code, game=game, room_name=room_name.strip() or f'Sala do {name}',
                  visibility=visibility, phase='lobby', people={}, host=None,
                  roster=[], history=[], deck=[], index=-1, round_id=None, started=None,
                  deadline=None, reveal_until=None, result=None, winner=None,
                  activity=now, warning=None, empty_since=now, closed_at=None, revision=0, join_seq=0)
+        if game == 'batata-quente':
+            r['settings'] = dict(DEFAULTS)
         self.rooms[code] = r
         return self.join(code, name)
 
@@ -108,8 +121,9 @@ class Engine:
         name = self.name(name)
         if r['phase'] == 'lobby':
             self.prune_departed(r)
-        if len(self.members(r)) >= 16:
-            raise RuleError('Sala cheia: o limite é de 16 pessoas.')
+        limit = 8 if r['game'] == 'batata-quente' else 16
+        if len(self.members(r)) >= limit:
+            raise RuleError(f'Sala cheia: o limite é de {limit} pessoas.')
         now = self.clock()
         r['join_seq'] += 1
         token, pid = secrets.token_urlsafe(32), secrets.token_hex(12)
@@ -183,6 +197,20 @@ class Engine:
         r.update(phase='results', result=result, winner=winner, activity=now, warning=None, deadline=None)
 
     def check_outcome(self, r, now):
+        if r['game'] == 'batata-quente':
+            if r['phase'] != 'playing':
+                return
+            eligible = self.potato.eligible(r)
+            if not any(self.online(r['code'], pid) for pid in eligible):
+                self.finish(r, 'cancelled', None, now)
+            elif len(eligible) == 1:
+                self.finish(r, 'survivor', eligible[0], now)
+            elif r['potato']['turn'] not in eligible:
+                self.potato.next(r)
+                self.potato.challenge(r, now)
+                if r['phase'] == 'playing':
+                    self.potato.heat(r, now)
+            return
         if r['phase'] not in ('question', 'reveal'):
             return
         eligible = self.competitors(r)
@@ -206,6 +234,12 @@ class Engine:
         online = [p for p in self.members(r) if self.online(r['code'], p['id'])]
         if len(online) < 2:
             raise RuleError('São necessários pelo menos dois competidores conectados.')
+        if r['game'] == 'batata-quente':
+            if not len(self.potato.lexicon):
+                raise RuleError('Dicionário indisponível.')
+            r['people'] = {p['id']: p for p in self.members(r)}
+            self.potato.start(r, now, online)
+            return
         try:
             deck = GAMES[r['game']].prepare(self.catalog, r['history'])
         except ValueError as exc:
@@ -225,7 +259,7 @@ class Engine:
         p = r['people'].get(pid)
         if not p or not p['active'] or not self.online(code, pid):
             raise RuleError('Sua sessão não está ativa.')
-        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target', 'room_name', 'name'}:
+        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target', 'room_name', 'name', 'settings'}:
             raise RuleError('Mensagem inválida.')
         eid = event.get('id')
         if not isinstance(eid, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,80}', eid):
@@ -239,9 +273,13 @@ class Engine:
         now, action = self.clock(), event.get('action')
         reply = dict(type='ack', id=eid, ok=True)
         try:
-            if action in ('start', 'lobby', 'kick', 'close', 'rename') and r['host'] != pid:
+            if action in ('start', 'lobby', 'kick', 'close', 'rename', 'configure') and r['host'] != pid:
                 raise RuleError('Somente o anfitrião pode realizar esta ação.')
-            if action == 'rename_player':
+            if action == 'configure':
+                if r['game'] != 'batata-quente' or r['phase'] != 'lobby':
+                    raise RuleError('Altere as configurações no lobby de Batata Quente.')
+                r['settings'] = settings(event.get('settings'))
+            elif action == 'rename_player':
                 if 'target' in event:
                     raise RuleError('Altere apenas o seu próprio nome.')
                 p['name'] = self.name(event.get('name'))
@@ -257,27 +295,14 @@ class Engine:
                     raise RuleError('Já existe uma partida em andamento.')
                 self.start(r, now)
             elif action == 'answer':
-                if r['phase'] != 'question' or event.get('round_id') != r['round_id'] or pid not in r['roster']:
-                    raise RuleError('Você não pode responder a este desafio.')
-                answer = event.get('answer')
-                if not isinstance(answer, str) or not 1 <= len(answer) <= 200:
-                    raise RuleError('Resposta inválida: limite de 200 caracteres.')
-                if p['answered']:
-                    raise RuleError('Você já acertou este desafio.')
-                if now < p['cooldown']:
-                    raise RuleError('Aguarde 0,5 segundo entre erros.')
-                c = r['deck'][r['index']]
-                correct = GAMES[r['game']].accepts(c, answer)
-                reply['correct'] = correct
-                if correct:
-                    p['answered'] = True
-                    reply['points'] = GAMES[r['game']].score(now - r['started'])
-                    p['score'] += reply['points']
+                if r['game'] == 'batata-quente':
+                    if r['phase'] != 'playing':
+                        raise RuleError('A partida não está em andamento.')
+                    reply.update(self.potato.answer(r, pid, event, now))
                     self.check_outcome(r, now)
+                    # O ramo do Sabe Essa? permanece independente.
                 else:
-                    p['last_wrong_answer'] = answer
-                    p['cooldown'] = now + .5
-                    reply['retry_at'] = p['cooldown']
+                    self.answer_sabe_essa(r, p, pid, event, now, reply)
             elif action == 'leave':
                 self.remove(r, pid, 'left')
             elif action == 'kick':
@@ -293,6 +318,8 @@ class Engine:
                 for player in r['people'].values():
                     player['last_wrong_answer'] = None
                 r.update(phase='lobby', activity=now, warning=None)
+                if r['game'] == 'batata-quente':
+                    r.pop('potato', None)
             elif action == 'presence':
                 if r['phase'] not in ('lobby', 'results'):
                     raise RuleError('A presença só é necessária no lobby e nos resultados.')
@@ -300,7 +327,7 @@ class Engine:
                 raise RuleError('Ação desconhecida.')
             if action not in ('answer',):
                 r['activity'], r['warning'] = now, None
-        except RuleError as exc:
+        except ValueError as exc:
             reply.update(ok=False, error=str(exc))
         p['events'][eid] = dict(fingerprint=fingerprint, reply=reply)
         p['events'] = dict(list(p['events'].items())[-256:])
@@ -308,6 +335,29 @@ class Engine:
             self.prune_departed(r)
         self.touch(r)
         return reply
+
+    def answer_sabe_essa(self, r, p, pid, event, now, reply):
+        if r['phase'] != 'question' or event.get('round_id') != r['round_id'] or pid not in r['roster']:
+            raise RuleError('Você não pode responder a este desafio.')
+        answer = event.get('answer')
+        if not isinstance(answer, str) or not 1 <= len(answer) <= 200:
+            raise RuleError('Resposta inválida: limite de 200 caracteres.')
+        if p['answered']:
+            raise RuleError('Você já acertou este desafio.')
+        if now < p['cooldown']:
+            raise RuleError('Aguarde 0,5 segundo entre erros.')
+        c = r['deck'][r['index']]
+        correct = GAMES[r['game']].accepts(c, answer)
+        reply['correct'] = correct
+        if correct:
+            p['answered'] = True
+            reply['points'] = GAMES[r['game']].score(now - r['started'])
+            p['score'] += reply['points']
+            self.check_outcome(r, now)
+        else:
+            p['last_wrong_answer'] = answer
+            p['cooldown'] = now + .5
+            reply['retry_at'] = p['cooldown']
 
     def tick(self):
         now = self.clock()
@@ -327,6 +377,10 @@ class Engine:
                 changed = True
             if r['empty_since'] is not None and now - r['empty_since'] >= 300:
                 r.update(phase='closed', result='cancelled', winner=None, closed_at=now)
+                changed = True
+            elif r['phase'] == 'playing' and now >= r['deadline']:
+                self.potato.expire(r, now)
+                self.check_outcome(r, now)
                 changed = True
             elif r['phase'] == 'question' and now >= r['deadline']:
                 self.reveal(r, now)
@@ -349,6 +403,8 @@ class Engine:
 
     def snapshot(self, code, pid):
         r = self.rooms[code]
+        if r['game'] == 'batata-quente':
+            return self.potato_snapshot(r, pid)
         now = self.clock()
         people = []
         scores = sorted((r['people'][i]['score'] for i in r['roster'] if r['people'][i]['active']), reverse=True)
@@ -376,6 +432,8 @@ class Engine:
                     catalog_available=self.catalog_available(r))
 
     def catalog_available(self, r):
+        if r['game'] == 'batata-quente':
+            return bool(len(self.potato.lexicon))
         key = (id(self.catalog), tuple(tuple(match) for match in r['history'][-3:]))
         cached = self.catalog_cache.get(r['code'])
         if cached and cached[0] == key:
@@ -387,3 +445,16 @@ class Engine:
             result = False
         self.catalog_cache[r['code']] = key, result
         return result
+
+    def potato_snapshot(self, r, pid):
+        potato = self.potato.snapshot(r)
+        return dict(type='state', code=r['code'], game=r['game'], phase=r['phase'],
+                    room_name=r['room_name'], visibility=r['visibility'], revision=r['revision'],
+                    you=pid, host=r['host'], server_now=self.clock(), deadline=r['deadline'],
+                    started=r['started'], warning=r['warning'], round_id=r['round_id'],
+                    result=r['result'], winner=r['winner'], catalog_available=True, potato=potato,
+                    people=[dict(id=p['id'], name=p['name'], active=p['active'],
+                                 online=self.online(r['code'], p['id']), host=p['id'] == r['host'],
+                                 spectator=r['phase'] != 'lobby' and p['id'] not in r['roster'],
+                                 lives=potato['lives'].get(p['id']), joined=p['joined'])
+                            for p in r['people'].values()])

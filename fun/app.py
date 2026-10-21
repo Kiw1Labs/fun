@@ -124,7 +124,7 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             data = json.loads(raw)
         except (ValueError, UnicodeDecodeError) as exc:
             raise RuleError('JSON inválido.') from exc
-        fields = {'name'} if request.path_params.get('code') else {'name', 'room_name', 'visibility'}
+        fields = {'name'} if request.path_params.get('code') else {'name', 'room_name', 'visibility', 'game'}
         if not isinstance(data, dict) or 'name' not in data or set(data) - fields:
             raise RuleError('Informe somente os campos permitidos para a sala.')
         return data
@@ -143,7 +143,7 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
                 if code and not re.fullmatch('[A-Z]{4}', code):
                     raise RuleError('O código precisa ter quatro letras.')
                 result = engine.join(code, data['name']) if code else engine.create(
-                    data['name'], data.get('room_name', ''), data.get('visibility', 'private'))
+                    data['name'], data.get('room_name', ''), data.get('visibility', 'private'), data.get('game', 'sabe-essa'))
                 publish()
             return JSONResponse(result, status_code=201, headers={'Cache-Control': 'no-store'})
         except RuleError as exc:

@@ -27,6 +27,8 @@ def test_bundle_never_contains_catalog_tokens_or_fixtures():
     with tarfile.open(root / 'artifacts/fun-release.tar.gz') as bundle:
         names = bundle.getnames()
         assert 'MANIFEST.json' in names and 'dist/index.html' in names
+        assert 'content/dictionary/words.tsv.gz' in names
+        assert 'content/dictionary/COPYING.LESSER' in names
         assert not any(name.startswith(('tests/', 'data/', '.venv/', 'node_modules/')) or name.endswith(('.sqlite3', '.pyc')) or name == '.env' for name in names)
         manifest = json.load(bundle.extractfile('MANIFEST.json'))
         assert set(manifest) == set(names) - {'MANIFEST.json'}

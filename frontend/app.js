@@ -154,12 +154,15 @@ function status() { return `<span class="connection ${online ? 'connected' : ''}
 function portal() {
   activeNav('portal-nav');
   main.innerHTML = `<section class="portal workspace"><header class="portal-heading"><h1>Vamos jogar?</h1><p>Escolha um jogo e junte a turma.</p></header><div class="portal-panels"><section class="portal-panel create-panel" aria-labelledby="create-title"><h2 id="create-title">Criar uma nova sala</h2><form id="create-room-form"><label class="game-tile"><input type="radio" name="game" value="sabe-essa" checked><span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span></label><div class="create-controls"><div class="room-name-field"><label class="sr-only" for="room-name">Nome da sala</label><input id="room-name" name="room_name" maxlength="48" autocomplete="off" placeholder="Nome da sala"></div><fieldset class="visibility"><legend class="sr-only">Visibilidade da sala</legend><label><input type="radio" name="visibility" value="public"><span>Público</span></label><label><input type="radio" name="visibility" value="private" checked><span>Privado</span></label></fieldset><button type="submit">Jogar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><p class="panel-note"></p></form></section><section class="portal-panel join-panel" aria-labelledby="join-title"><h2 id="join-title">Entrar em sala privada</h2><p>Já tem um convite?</p><form id="join-code-form"><label for="join-code">Código da sala</label><div class="code-entry"><input id="join-code" name="code" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-describedby="join-help" required><button type="submit">Entrar</button></div><p id="join-help" class="panel-note">Use as quatro letras do código.</p></form></section></div><section class="public-rooms" aria-labelledby="public-title"><header><div><h2 id="public-title">Salas públicas</h2><p>Encontre uma turma para jogar.</p></div><button id="refresh-rooms" class="quiet" aria-label="Atualizar salas públicas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18A8 8 0 0 1 5 15"/></svg><span>Atualizar</span></button></header><div id="public-room-list" aria-live="polite"><p class="directory-message" role="status">Buscando salas…</p></div></section></section>`;
+  window.Batata.portal(main);
   loadPublicRooms();
 }
 function home(joinCode = '') {
   if (!joinCode) { portal(); return; }
   activeNav(null);
   main.innerHTML = `<section class="welcome game-home"><span class="eyebrow">Sala ${esc(joinCode)}</span><h1>Sabe Essa?</h1><p>15 desafios. 20 segundos para cada resposta.</p><form id="room-form"><div id="join-name-field"><label for="name">Como podemos chamar você?</label><input id="name" name="name" maxlength="24" autocomplete="nickname" required placeholder="Seu nome"></div><p id="known-identity" hidden>Você vai entrar como <strong></strong>.</p><div class="join-fields"><label for="code">Código da sala</label><input id="code" name="code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" value="${esc(joinCode)}" required></div><div class="actions"><button type="submit" name="mode" value="join" class="secondary">Entrar na sala</button></div></form></section>`;
+  const heading=main.querySelector('h1'); heading.textContent='Entre na turma';
+  heading.nextElementSibling.textContent='Sabe Essa? ou Batata Quente: o código leva você ao jogo.';
   document.querySelector('#name').value = playerName;
   syncJoinIdentity();
 }
@@ -179,7 +182,11 @@ async function loadPublicRooms() {
     const result = await requestJSON('/api/rooms', {cache:'no-store'});
     if (!Array.isArray(result.rooms)) throw new ApiError(versionMessage);
     if (request !== directoryRequest || !list.isConnected || identityDialog.open) return;
-    list.innerHTML = result.rooms.length ? `<ul class="directory-list">${result.rooms.map(room => `<li><span class="directory-icon">${gameIcon}</span><div><strong>${esc(room.room_name)}</strong><span>Sabe Essa? · ${['question','reveal'].includes(room.phase) ? 'Em partida · entre para acompanhar' : room.phase==='results' ? 'Nos resultados' : 'No lobby'}</span></div><span class="room-count">${room.people}/16</span><button class="secondary" data-join-code="${esc(room.code)}" aria-label="Entrar na sala ${esc(room.room_name)}" ${room.people>=16 ? 'disabled' : ''}>${room.people>=16 ? 'Lotada' : 'Entrar'}</button></li>`).join('')}</ul>` : '<p class="directory-message">Nenhuma sala pública por aqui ainda.<br>Crie uma e convide a turma.</p>';
+    list.innerHTML = result.rooms.length ? `<ul class="directory-list">${result.rooms.map(room => {
+      const potato=room.game==='batata-quente', limit=potato?8:16;
+      const phase=['question','reveal','playing'].includes(room.phase) ? 'Em partida · entre para acompanhar' : room.phase==='results' ? 'Nos resultados' : 'No lobby';
+      return `<li><span class="directory-icon">${gameIcon}</span><div><strong>${esc(room.room_name)}</strong><span>${potato?'Batata Quente':'Sabe Essa?'} · ${phase}</span></div><span class="room-count">${room.people}/${limit}</span><button class="secondary" data-join-code="${esc(room.code)}" aria-label="Entrar na sala ${esc(room.room_name)}" ${room.people>=limit?'disabled':''}>${room.people>=limit?'Lotada':'Entrar'}</button></li>`;
+    }).join('')}</ul>` : '<p class="directory-message">Nenhuma sala pública por aqui ainda.<br>Crie uma e convide a turma.</p>';
   } catch (error) {
     const message = userError(error,'Não foi possível carregar as salas. Verifique sua conexão e tente atualizar.');
     if (request === directoryRequest && list.isConnected) list.innerHTML = `<p class="directory-message" role="status">${esc(message)}</p>`;
@@ -195,7 +202,7 @@ function requestIdentity(intent, button) {
   const name = knownPlayerName();
   if (name) { enterRoom(intent, name, button); return; }
   roomIntent = intent;
-  document.querySelector('#identity-description').textContent = intent.mode==='create' ? `Criar ${intent.room_name || 'uma sala de Sabe Essa?'} · ${intent.visibility==='public' ? 'Pública' : 'Privada'}` : `Entrar na sala ${intent.code}`;
+  document.querySelector('#identity-description').textContent = intent.mode==='create' ? `Criar ${intent.room_name || (intent.game==='batata-quente' ? 'uma sala de Batata Quente' : 'uma sala de Sabe Essa?')} · ${intent.visibility==='public' ? 'Pública' : 'Privada'}` : `Entrar na sala ${intent.code}`;
   document.querySelector('#identity-submit').textContent = intent.mode==='create' ? 'Jogar' : 'Entrar';
   document.querySelector('#identity-error').textContent = '';
   document.querySelector('#player-name').value = playerName;
@@ -214,7 +221,7 @@ async function enterRoom(intent, name, button) {
     if (!name) throw new ApiError('Digite seu nome para continuar.');
     requireStorage();
     await requireCurrentAPI();
-    const body = intent.mode==='create' ? {name,room_name:intent.room_name,visibility:intent.visibility} : {name};
+    const body = intent.mode==='create' ? {name,room_name:intent.room_name,visibility:intent.visibility,game:intent.game || 'sabe-essa'} : {name};
     const result = await requestJSON(intent.mode==='create'?'/api/rooms':`/api/rooms/${intent.code}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if (!stored(`fun:${result.code}`,JSON.stringify(result))) throw new ApiError('Não foi possível salvar sua sessão. Libere espaço no armazenamento do navegador.');
     code = result.code;
@@ -245,6 +252,10 @@ function render() {
     stopped = true;
     stored(`fun:${code}`, null);
     main.innerHTML = `<section class="welcome"><span class="eyebrow">SALA ${esc(code)}</span><h1>${state.phase === 'closed' ? 'Até a próxima.' : 'Você saiu da sala.'}</h1><p>A sessão foi encerrada.</p><a class="button" href="/">Voltar ao início</a></section>`;
+    return;
+  }
+  if (state.game==='batata-quente') {
+    window.Batata.render({main,state,online,feedback,send,status,esc});
     return;
   }
   const host = state.host === state.you;
@@ -308,6 +319,10 @@ function render() {
   updateTimer();
 }
 function updateTimer() {
+  if (state?.game==='batata-quente') {
+    window.Batata.timer(state, serverAt + (performance.now()-receivedAt)/1000);
+    return;
+  }
   const timer = document.querySelector('#timer');
   if (!timer || !state) return;
   const now = serverAt + (performance.now()-receivedAt)/1000;
@@ -353,6 +368,7 @@ function openKickConfirmation(target) {
 function connect() {
   const identity = session();
   if (!identity || stopped) return;
+  if(!state) main.innerHTML='<section class="welcome" role="status"><h1>Entrando na sala…</h1><p>A turma já vai aparecer por aqui.</p></section>';
   clearTimeout(reconnect);
   ws = new WebSocket(`${location.protocol==='https:'?'wss:':'ws:'}//${location.host}/ws/${code}`);
   ws.onopen = () => { ws.send(JSON.stringify({token:identity.token})); };
@@ -362,6 +378,7 @@ function connect() {
       const wasOnline=online;
       if(state?.round_id!==msg.round_id) {
         feedback='';
+        if(msg.game==='batata-quente') toast('');
         const input=document.querySelector('#answer');
         if(input) input.value='';
       }
@@ -377,10 +394,17 @@ function connect() {
         if (msg.ok) setPlayerName(event.name.trim());
         finishProfileSave(msg.ok ? '' : msg.error || 'Não foi possível alterar seu nome. Tente novamente.');
       }
-      else if (!msg.ok) toast(msg.error);
+      else if (!msg.ok) {
+        if(event?.action!=='answer' || state?.game!=='batata-quente') toast(msg.error);
+        if(event?.action==='answer') {
+          feedback=msg.error;
+          const el=document.querySelector('#answer-feedback'); if(el) el.textContent=feedback;
+        }
+      }
       else if(event?.action==='rename') renameDialog.close();
+      else if(event?.action==='configure') toast('Ajustes salvos.');
       else if(event?.action==='answer') {
-        feedback=msg.correct ? `Acertou! +${msg.points} pontos.` : '';
+        feedback=msg.correct ? (state?.game==='batata-quente' ? `${msg.word} valeu! Batata passada.` : `Acertou! +${msg.points} pontos.`) : '';
         const input=document.querySelector('#answer'); if(input && input.value===event.answer) input.value='';
         const el=document.querySelector('#answer-feedback'); if(el) el.textContent=feedback;
       }
@@ -408,6 +432,12 @@ function connect() {
   ws.onerror = () => toast('Conexão interrompida. Tentando retomar sua sessão.');
 }
 document.addEventListener('submit', async event => {
+  if(event.target.id==='potato-settings') {
+    event.preventDefault();
+    const data=Object.fromEntries(new FormData(event.target));
+    for(const key of ['lives','min_seconds','max_seconds','floor_seconds']) data[key]=Number(data[key]);
+    send('configure',{settings:data}); return;
+  }
   if(event.target.id==='profile-form') {
     event.preventDefault();
     saveProfile(event.target.elements.name.value.trim()); return;
@@ -419,7 +449,7 @@ document.addEventListener('submit', async event => {
   if(event.target.id==='create-room-form') {
     event.preventDefault();
     const form=event.target;
-    requestIdentity({mode:'create',room_name:form.elements.room_name.value.trim(),visibility:form.elements.visibility.value},event.submitter || form.querySelector('button[type="submit"]'));
+    requestIdentity({mode:'create',game:form.elements.game.value,room_name:form.elements.room_name.value.trim(),visibility:form.elements.visibility.value},event.submitter || form.querySelector('button[type="submit"]'));
     return;
   }
   if(event.target.id==='join-code-form') {
