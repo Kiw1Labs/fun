@@ -1,5 +1,13 @@
 # Batata Quente — validação local de 21/10/2026
 
+## Aquecimento animado da batata
+
+Implementada a referência do usuário: inclinação e pulos alternados no mesmo lugar, com cor progressivamente mais queimada, manchas, boca séria, sobrancelhas tensas, olhos semicerrados e suor. O desenho continua em SVG. A aparência usa os prazos autoritativos, não esfria com a extensão de prazo ao passar e reinicia a cada novo aquecimento. A velocidade dos pulos aumenta preservando a fase da animação entre atualizações; a preferência de movimento reduzido cancela os pulos, inclusive quando alterada durante a partida.
+
+`npm.cmd run check`, `npm.cmd run build` e `npm.cmd run test:batata` passaram. Build de 294.407 bytes. Além do jogo completo e da roda de oito pessoas em 1440/390/320 px, o cenário verifica as quatro expressões/cores, olhos semicerrados, inclinação nos dois sentidos, posição fixa do recipiente, calor preservado na extensão de prazo, reinício e movimento reduzido. Capturas e vídeo de prévia em `artifacts/batata-browser-1792615549482/`, incluindo `potato-heat-preview.webm`. Fases tranquila, séria e estressada inspecionadas visualmente.
+
+Backup local anterior em `artifacts/batata-heat-backup/`; inventários remotos em `artifacts/batata-heat-before-activation.json` e `artifacts/batata-heat-runtime-before.json`. Publicação somente de assets, após CI e backup/rollback, com conferência posterior em `artifacts/batata-heat-preservation.json` e teste público em `artifacts/batata-public-*/result.json`.
+
 ## Roda circular e indicação junto ao avatar
 
 A roda usa um raio único nos dois eixos e se adapta à largura disponível. A batata permanece junto à sílaba no centro; a seta tem espaço ao lado do avatar da pessoa da vez, sem girar sobre o conteúdo. Removidos os textos centrais “Sua vez!” e “Vez de …”. O contorno e o estado textual do participante continuam indicando o turno.

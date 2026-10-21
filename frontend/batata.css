@@ -14,6 +14,16 @@
 .game-picker .game-tile:not(:has(input:checked)) .selected-game { visibility: hidden; }
 .potato-tile .game-icon .potato-art { filter: grayscale(1); }
 .potato-art { display: block; width: 100%; height: 100%; stroke: none; flex-shrink: 1; overflow: visible; }
+.potato-skin-light { stop-color: var(--potato-light, #ffdb92); }
+.potato-skin-dark { stop-color: var(--potato-dark, #d58a3b); }
+.potato-body, .potato-limbs { stroke: var(--potato-outline, #6a3c20); }
+.potato-spots { fill: var(--potato-outline, #ad6c32); opacity: .65; }
+.potato-cheeks { fill: var(--potato-cheeks, #ff9772); }
+.potato-char { fill: #241915; opacity: var(--potato-char, 0); }
+.potato-face { fill: var(--potato-ink, #432c25); }
+.potato-mouth, .potato-brows { stroke: var(--potato-ink, #432c25); }
+.potato-brows { opacity: var(--potato-brows, 0); }
+.potato-sweat { opacity: var(--potato-sweat, 0); }
 
 .potato-room { max-width: 1120px; margin: 0 auto; color: var(--accent); }
 .potato-room h1 { margin: 12px 0 0; font-size: clamp(1.5rem, 2.6vw, 2rem); overflow-wrap: anywhere; }
@@ -29,11 +39,11 @@
 
 .potato-arena { position: relative; width: min(calc(100% - 12px), 560px); aspect-ratio: 1; margin: 16px auto; }
 .potato-orbit { position: absolute; left: 50%; top: 50%; width: calc(var(--orbit-radius) * 2); height: calc(var(--orbit-radius) * 2); transform: translate(-50%, -50%); border: 1px dashed var(--line); border-radius: 50%; }
-.potato-token { width: 64px; height: 72px; margin: 0 auto 8px; pointer-events: none; }
-.potato-token > .potato-art { animation: potato-breathe 3s ease-in-out infinite; }
+.potato-token { width: 80px; height: 90px; margin: 0 auto 8px; pointer-events: none; }
+.potato-token .potato-motion { transform-box: fill-box; transform-origin: 50% 90%; animation: potato-breathe 3s ease-in-out infinite; }
+.is-playing .potato-motion { animation: potato-hop 1s linear infinite; }
 .turn-pointer { position: absolute; left: calc(50% - 31px); top: 17px; width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid var(--accent); pointer-events: none; }
 .seat-right .turn-pointer { left: calc(50% + 24px); transform: rotate(180deg); }
-.is-hot .potato-token > .potato-art { animation: potato-shake .2s infinite alternate; filter: sepia(.3) saturate(1.8); }
 .potato-center { position: absolute; top: 50%; left: 20%; right: 20%; transform: translateY(-50%); text-align: center; pointer-events: none; }
 .potato-center h2 { margin: 10px 0; font-size: 1.25rem; line-height: 1.4; letter-spacing: -.025em; }
 .potato-center p { margin: 12px 0; font-size: .8125rem; }
@@ -69,7 +79,14 @@
 .potato-room .room-footer { align-items: center; justify-content: flex-end; }
 
 @keyframes potato-breathe { 50% { transform: translateY(-5px) rotate(3deg); } }
-@keyframes potato-shake { to { transform: translateX(2px) rotate(3deg); } }
+@keyframes potato-hop {
+  0%, 50%, 100% { transform: translate(0, 0) rotate(0) scale(1.025, .96); }
+  10%, 60% { transform: translate(0, -2px) rotate(0) scale(.98, 1.025); }
+  25% { transform: translate(-3px, -16px) rotate(calc(var(--hop-tilt, 8deg) * -1)); }
+  40% { transform: translate(-1px, -4px) rotate(-3deg); }
+  75% { transform: translate(3px, -16px) rotate(var(--hop-tilt, 8deg)); }
+  90% { transform: translate(1px, -4px) rotate(3deg); }
+}
 @media (max-width: 760px) {
   .potato-room h1 { font-size: 1.5rem; }
   .potato-room .room-header { align-items: flex-start; gap: 12px; margin-bottom: 24px; }
@@ -88,7 +105,7 @@
   .potato-center .potato-eyebrow { font-size: .625rem; }
   .potato-token { width: 47px; height: 53px; }
   .is-playing .potato-center { display: flex; align-items: center; justify-content: center; gap: 6px; }
-  .is-playing .potato-token { flex-shrink: 0; width: 32px; height: 36px; margin: 0; }
+  .is-playing .potato-token { flex-shrink: 0; width: 40px; height: 45px; margin: 0; }
   .is-playing .fragment { margin: 0; font-size: 1.8rem; }
   .turn-pointer { left: calc(50% - 25px); top: 11px; border-top-width: 4px; border-bottom-width: 4px; border-left-width: 6px; }
   .seat-right .turn-pointer { left: calc(50% + 19px); }
@@ -107,9 +124,9 @@
   .potato-center h2 { font-size: .95rem; }
   .potato-center .fragment { font-size: 2rem; }
   .is-playing .potato-center { gap: 4px; }
-  .is-playing .potato-token { width: 18px; height: 21px; }
+  .is-playing .potato-token { width: 24px; height: 28px; }
   .is-playing .fragment { font-size: 1.4rem; letter-spacing: .1em; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .potato-token > .potato-art, .is-hot .potato-token > .potato-art { animation: none; }
+  .potato-token .potato-motion { animation: none; }
 }

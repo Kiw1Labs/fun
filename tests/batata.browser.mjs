@@ -28,6 +28,52 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
     const desktop=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
     const mobile=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
     const host=await desktop.newPage(),guest=await mobile.newPage();
+    // Exercita o mesmo SVG/CSS/relógio visual sem alterar o tempo nem as regras da partida.
+    const animationContext=await browser.newContext({viewport:{width:640,height:640},reducedMotion:'no-preference',recordVideo:{dir:folder,size:{width:640,height:640}}});
+    const demo=await animationContext.newPage(),video=demo.video();
+    const artSource=await readFile('frontend/batata.js','utf8');
+    const mascot=artSource.match(/const mascot = `([\s\S]+?)`;/)[1];
+    await demo.setContent(`<html><body><div class="potato-arena is-playing"><div class="potato-token">${mascot}</div></div></body></html>`);
+    await demo.addStyleTag({content:await readFile('frontend/batata.css','utf8')});
+    await demo.addStyleTag({content:'html,body{margin:0;background:#151515;color:#fff}body{display:grid;place-items:center;height:100vh}.potato-arena{width:400px;margin:0;display:grid;place-items:center}.potato-token{width:200px;height:225px;margin:0}'});
+    await demo.addScriptTag({content:artSource});
+    const stages=[];
+    for(const now of [0,9,14.4,19]) {
+      stages.push(await demo.evaluate(now=>{
+        window.Batata.timer({phase:'playing',code:'DEMO',started:0,deadline:20,potato:{cycle:1}},now);
+        const art=document.querySelector('.potato-art');
+        return {mood:art.dataset.heat,color:getComputedStyle(art.querySelector('.potato-skin-dark')).stopColor,mouth:art.querySelector('.potato-mouth').getAttribute('d'),eye:Number(art.querySelector('.potato-eye').getAttribute('ry'))};
+      },now));
+      await demo.screenshot({path:resolve(folder,`heat-${now}.png`)});
+      await demo.waitForTimeout(650);
+    }
+    assert.deepEqual(stages.map(stage=>stage.mood),['calm','warm','serious','stressed']);
+    assert.equal(new Set(stages.map(stage=>stage.color)).size,4);
+    assert.notEqual(stages[0].mouth,stages[2].mouth);
+    assert.ok(stages[3].eye<stages[0].eye);
+    const movement=await demo.evaluate(()=>{
+      const token=document.querySelector('.potato-token'),motion=document.querySelector('.potato-motion');
+      const before=token.getBoundingClientRect().toJSON(),animation=motion.getAnimations()[0];
+      animation.pause();animation.currentTime=250;
+      const left=new DOMMatrix(getComputedStyle(motion).transform);
+      animation.currentTime=750;
+      const right=new DOMMatrix(getComputedStyle(motion).transform);
+      const art=document.querySelector('.potato-art'),hot=art.style.getPropertyValue('--potato-dark');
+      window.Batata.timer({phase:'playing',code:'DEMO',started:0,deadline:40,potato:{cycle:1}},19);
+      const passKeptHeat=art.style.getPropertyValue('--potato-dark')===hot;
+      window.Batata.timer({phase:'playing',code:'DEMO',started:20,deadline:40,potato:{cycle:2}},20);
+      animation.play();
+      return {left:left.b<0,right:right.b>0,fixed:JSON.stringify(before)===JSON.stringify(token.getBoundingClientRect().toJSON()),passKeptHeat,reset:art.dataset.heat==='calm'};
+    });
+    assert.deepEqual(movement,{left:true,right:true,fixed:true,passKeptHeat:true,reset:true});
+    await demo.emulateMedia({reducedMotion:'reduce'});
+    await demo.waitForFunction(()=>{
+      const motion=document.querySelector('.potato-motion');
+      return getComputedStyle(motion).animationName==='none'&&motion.getAnimations().length===0;
+    });
+    assert.equal(await demo.locator('.potato-motion').evaluate(motion=>motion.getAnimations().length),0);
+    await animationContext.close();
+    await video.saveAs(resolve(folder,'potato-heat-preview.webm'));
     for(const page of [host,guest]) {
       page.on('pageerror',error=>errors.push(error.message));
       page.on('console',message=>{if(message.type()==='error'&&message.text().includes('Content Security Policy'))errors.push(message.text());});

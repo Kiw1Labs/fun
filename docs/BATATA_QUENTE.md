@@ -32,6 +32,8 @@ Para acesso pela rede local, o processo precisa escutar na interface autorizada,
 
 ## Decisões técnicas desta versão
 
+- A animação de aquecimento usa o SVG original, com referência na sequência de dez imagens editadas pelo usuário. Pulos alternados ficam dentro do espaço reservado à batata; o lugar da peça na mesa permanece fixo. Cores, manchas, sobrancelhas, boca, olhos e suor mudam progressivamente. O calor visual deriva de `started`, `deadline` e `cycle` publicados pelo servidor. A extensão de prazo ao passar não reduz o calor já observado nesse ciclo; uma nova queima reinicia a aparência no aquecimento seguinte. As quatro fases visuais são uma escolha de apresentação, sem mudar regras ou relógio. Movimento reduzido desativa os pulos e preserva as mudanças de aparência. Não há imagens externas, novos serviços ou dependências.
+
 - Reutilizamos Python/Starlette, WebSockets nativos e frontend JavaScript do Fun. Não adicionamos Socket.IO, React, processos, bibliotecas nativas ou serviços de validação externos.
 - O limite de oito inclui quem acompanha. Entrada após o início ocupa vaga de espectador, sem receber vidas; a pessoa pode jogar a próxima partida. Somente participantes conectados no início entram na ordem de jogo.
 - Desconexão reserva a identidade e a vaga por 60 segundos. O relógio continua e a pessoa desconectada pode perder vidas até a reconexão ou abandono. Todas as pessoas ainda elegíveis desconectadas cancelam imediatamente, sem vencedor. Saída definitiva ou expulsão pode dar vitória por permanência.

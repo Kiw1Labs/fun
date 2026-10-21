@@ -1,9 +1,26 @@
 /* Interface do Batata Quente. Regras, palavras e relógio pertencem ao servidor. */
 (() => {
-  const mascot = `<svg class="potato-art" viewBox="0 0 160 180" aria-hidden="true"><defs><linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffdb92"/><stop offset="1" stop-color="#d58a3b"/></linearGradient></defs><path d="M40 36C48 10 100 10 118 34c19 25 8 35 20 61 17 38-9 68-43 69-40 2-74-11-76-43-2-28 14-50 21-85Z" fill="url(#skin)" stroke="#6a3c20" stroke-width="4"/><g fill="#ad6c32" opacity=".65"><ellipse cx="48" cy="55" rx="5" ry="3"/><ellipse cx="113" cy="63" rx="3" ry="5"/><ellipse cx="38" cy="120" rx="4" ry="3"/><ellipse cx="108" cy="142" rx="5" ry="3"/></g><g fill="#432c25"><ellipse cx="60" cy="87" rx="5" ry="7"/><ellipse cx="101" cy="84" rx="5" ry="7"/></g><g fill="#ff9772"><ellipse cx="48" cy="102" rx="10" ry="6"/><ellipse cx="113" cy="100" rx="10" ry="6"/></g><path d="M73 105q10 13 20-1" fill="none" stroke="#432c25" stroke-width="4" stroke-linecap="round"/><path d="M24 86 9 74m126 13 15-15M55 160l-5 11m51-10 5 10" stroke="#6a3c20" stroke-width="5" stroke-linecap="round"/></svg>`;
-  let muted = false, audio, previousTurn, previousPhase, lastEvent, seenState=false, currentCycle, lastAlert=0;
+  const mascot = `<svg class="potato-art" viewBox="-24 -30 208 240" aria-hidden="true">
+    <defs><linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop class="potato-skin-light"/><stop class="potato-skin-dark" offset="1"/></linearGradient></defs>
+    <g class="potato-motion">
+      <path class="potato-body" d="M40 36C48 10 100 10 118 34c19 25 8 35 20 61 17 38-9 68-43 69-40 2-74-11-76-43-2-28 14-50 21-85Z" fill="url(#skin)" stroke-width="4"/>
+      <g class="potato-spots"><ellipse cx="48" cy="55" rx="5" ry="3"/><ellipse cx="113" cy="63" rx="3" ry="5"/><ellipse cx="38" cy="120" rx="4" ry="3"/><ellipse cx="108" cy="142" rx="5" ry="3"/></g>
+      <g class="potato-char"><path d="M41 40q13-13 17 0t-15 17q-13-3-2-17M112 119q21-13 21 4t-20 16q-12-5-1-20M42 139q14-9 18 3t-14 12q-11-3-4-15"/></g>
+      <g class="potato-cheeks"><ellipse cx="48" cy="102" rx="10" ry="6"/><ellipse cx="113" cy="100" rx="10" ry="6"/></g>
+      <g class="potato-face"><ellipse class="potato-eye" cx="60" cy="87" rx="5" ry="7"/><ellipse class="potato-eye" cx="101" cy="84" rx="5" ry="7"/>
+        <g class="potato-brows" fill="none" stroke-width="4" stroke-linecap="round"><path class="potato-brow-left" d="M51 73L68 73"/><path class="potato-brow-right" d="M93 70L110 70"/></g>
+        <path class="potato-mouth" d="M70 105Q83 125 96 104" fill="none" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g class="potato-sweat" fill="#bce5ed"><path d="M119 53q-9 13-2 15t2-15M130 73q-7 10-2 12t2-12"/></g>
+      <path class="potato-limbs" d="M24 86 9 74m126 13 15-15M55 160l-5 11m51-10 5 10" fill="none" stroke-width="5" stroke-linecap="round"/>
+    </g>
+  </svg>`;
+  let muted = false, audio, previousTurn, previousPhase, lastEvent, seenState=false, currentCycle, lastAlert=0, heatIdentity='', heatLevel=0;
   try { muted=localStorage.getItem('fun:potato-muted')==='1'; } catch {}
   const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',event=>{
+    if(event.matches)for(const motion of document.querySelectorAll('.potato-motion'))for(const animation of motion.getAnimations())animation.cancel();
+  });
   function unlock() {
     if(muted) return;
     try { audio ||= new (window.AudioContext || window.webkitAudioContext)(); audio.resume().catch(()=>{}); } catch {}
@@ -58,6 +75,7 @@
     const p=state.potato, playing=state.phase==='playing', lobby=state.phase==='lobby', host=state.host===state.you;
     const me=state.people.find(person=>person.id===state.you);
     const yourTurn=playing&&p.turn===state.you;
+    const motionTime=main.querySelector('.potato-motion')?.getAnimations()[0]?.currentTime;
     const focus=document.activeElement?.id, input=main.querySelector('#answer'), value=input?.value || '', selection=input?.selectionStart;
     const winner=state.people.find(person=>person.id===state.winner);
     const roster=state.people.filter(person=>person.active || person.lives!==undefined).sort((a,b)=>a.joined-b.joined);
@@ -91,11 +109,48 @@
     } else if(yourTurn&&previousTurn!==p.turn&&!matchMedia('(pointer: coarse)').matches) main.querySelector('#answer')?.focus({preventScroll:true});
     previousTurn=p.turn;
     timer(state,state.server_now);
+    const motion=arena.querySelector('.potato-motion').getAnimations()[0];
+    if(playing&&motion&&motionTime!=null)motion.currentTime=motionTime;
+  }
+  function mix(from,to,amount) {
+    const a=from.match(/\w\w/g).map(value=>parseInt(value,16));
+    const b=to.match(/\w\w/g).map(value=>parseInt(value,16));
+    return '#'+a.map((value,index)=>Math.round(value+(b[index]-value)*amount).toString(16).padStart(2,'0')).join('');
+  }
+  function appearance(art,heat) {
+    const palette=[['ffdb92','d58a3b','6a3c20','ff9772'],['f3ae72','cf693c','74352b','e77765'],['cf784f','97432e','522b24','c45749'],['775039','3e2923','a56d48','95533e']];
+    const step=Math.min(2,Math.floor(heat*3)),amount=heat*3-step;
+    for(const [index,name] of ['light','dark','outline','cheeks'].entries())art.style.setProperty(`--potato-${name}`,mix(palette[step][index],palette[step+1][index],amount));
+    art.style.setProperty('--potato-ink',mix('432c25','ffe1b3',Math.max(0,(heat-.65)/.35)));
+    art.style.setProperty('--potato-char',Math.max(0,(heat-.3)/.7)*.7);
+    art.style.setProperty('--potato-sweat',Math.max(0,(heat-.6)/.4));
+    art.style.setProperty('--potato-brows',Math.min(1,heat*2));
+    art.style.setProperty('--hop-tilt',`${8+heat*9}deg`);
+    const mood=heat<.3?'calm':heat<.6?'warm':heat<.82?'serious':'stressed';
+    art.dataset.heat=mood;
+    const names={calm:'Batata tranquila',warm:'Batata esquentando',serious:'Batata séria',stressed:'Batata estressada e queimada'};
+    art.parentElement.setAttribute('role','img');art.parentElement.setAttribute('aria-label',names[mood]);
+    const serious=Math.min(1,heat/.65),stress=Math.max(0,(heat-.65)/.35);
+    art.querySelector('.potato-mouth').setAttribute('d',`M70 ${105+serious*5+stress*6}Q83 ${125-serious*15-stress*8} 96 ${104+serious*6+stress*6}`);
+    art.querySelector('.potato-brow-left').setAttribute('d',`M51 ${74-heat*7}L68 ${74+heat*3}`);
+    art.querySelector('.potato-brow-right').setAttribute('d',`M93 ${71+heat*3}L110 ${71-heat*7}`);
+    for(const eye of art.querySelectorAll('.potato-eye'))eye.setAttribute('ry',String(7-stress*3));
+    const motion=art.querySelector('.potato-motion').getAnimations()[0];
+    if(motion) {
+      if(reduced())motion.cancel();
+      else motion.updatePlaybackRate(.7+heat*1.8);
+    }
   }
   function timer(state,now) {
     if(state.phase!=='playing') return;
-    const left=Math.max(0,state.deadline-now);
-    document.querySelector('.potato-arena')?.classList.toggle('is-hot',left<=5);
+    const left=Math.max(0,state.deadline-now),identity=`${state.code}:${state.potato.cycle}:${state.started}`;
+    if(identity!==heatIdentity) {heatIdentity=identity;heatLevel=0;}
+    // O piso de passagem pode estender o prazo; isso não esfria a batata no mesmo aquecimento.
+    const duration=Math.max(1,state.deadline-state.started);
+    heatLevel=Math.max(heatLevel,Math.max(0,Math.min(1,(now-state.started)/duration)));
+    const arena=document.querySelector('.potato-arena'),art=arena?.querySelector('.potato-art');
+    arena?.classList.toggle('is-hot',left<=5);
+    if(art)appearance(art,heatLevel);
     if(left>0&&left<=5&&Math.ceil(left)!==lastAlert) {lastAlert=Math.ceil(left);tone('alert');}
   }
   window.Batata={render,timer,portal};
