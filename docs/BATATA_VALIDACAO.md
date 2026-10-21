@@ -1,5 +1,11 @@
 # Batata Quente — validação local de 21/10/2026
 
+## Sincronização do teste que bloqueava a atualização pública
+
+A execução de CI [`39644966559`](https://github.com/Kiw1Labs/fun/actions/runs/39644966559), do commit `caa9b83`, passou nos testes Python e nos 33 cenários gerais de navegador, mas falhou no cenário de Batata Quente: a confirmação da vez no celular era recebida antes da atualização da sílaba no navegador do anfitrião. A comparação imediata lia o estado anterior nessa outra conexão. O atualizador manteve a versão pública antiga por exigir CI aprovado.
+
+O teste agora aguarda explicitamente a troca da sílaba na tela do anfitrião e mantém a comparação e as demais verificações. O cenário corrigido passou localmente em 15,09 s; capturas em `artifacts/batata-browser-1792605999688/`. Backup anterior em `artifacts/batata-public-fix-backup/`. A publicação deve continuar pelo fluxo normal, com CI aprovado e verificações no Android e no domínio público.
+
 ## Remoção dos textos e da coluna de ajuda
 
 Removidos, a pedido do usuário, os resumos de vidas/tempos e ciclo de dificuldade do lobby e os blocos completos “Como jogar” e “Passou pela roda”. A mesa ocupa a largura disponível. Alterações restritas à apresentação, à documentação e à remoção de expectativas antigas do teste de navegador.

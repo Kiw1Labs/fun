@@ -102,6 +102,10 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
     await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill(wordFor(heldFragment.toLowerCase()));
     await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
     await guest.getByText('Sua vez!',{exact:true}).waitFor();
+    await host.waitForFunction(previous=>{
+      const fragment=document.querySelector('.fragment');
+      return fragment&&fragment.textContent!==previous;
+    },heldFragment);
     assert.notEqual(await currentFragment(),heldFragment);
     assert.equal(await host.locator('.fragment-retention').count(),0);
     await host.getByText('Volta 2 · Fácil',{exact:true}).waitFor();
