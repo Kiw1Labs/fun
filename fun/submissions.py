@@ -8,7 +8,7 @@ import struct
 import tempfile
 from pathlib import Path
 
-from .catalog import CATEGORIES, normalize
+from .catalog import normalize
 
 MAX_IMAGE = 512 * 1024
 MAX_BODY = 768 * 1024
@@ -92,11 +92,9 @@ def validate_submission(payload):
                 prompt=text(payload.get('prompt', ''), 'Título', 300, required=True),
                 reference=text(payload.get('reference', ''), 'Texto de referência', 2000, multiline=True),
                 answer=text(payload.get('answer', ''), 'Resposta', 200, required=True),
-                category=payload.get('category'), tag='Contribuição')
+                category=text(payload.get('category', ''), 'Categorias sugeridas', 300, required=True), tag='Contribuição')
     if not normalize(data['answer']):
         raise SubmissionError('Informe uma resposta com letras ou números.')
-    if data['category'] not in CATEGORIES:
-        raise SubmissionError('Selecione uma categoria válida.')
     raw_image = payload.get('image')
     if raw_image is not None and data['reference']:
         raise SubmissionError('Escolha apenas um formato: imagem ou texto de referência.')

@@ -165,6 +165,12 @@ body.question-open { overflow: hidden; }
 .question-reference { margin: 0 0 24px; padding: 16px 20px; border-left: 2px solid var(--muted); background: var(--soft); border-radius: 0 12px 12px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.7; }
 .submission-review { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
 .submission-review h3 { margin: 0 0 20px; font-size: 1rem; font-weight: 500; }
+.review-categories { min-width: 0; margin: 0 0 24px; padding: 0; border: 0; }
+.review-categories legend { color: var(--muted); font-size: .8125rem; }
+.category-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.category-choice { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; color: var(--accent); cursor: pointer; }
+.category-choice:has(input:checked) { border-color: var(--muted); background: var(--soft); }
+.category-choice input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--accent); }
 .submission-review select, .submission-review textarea { display: block; width: 100%; min-width: 0; margin: 8px 0 22px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--accent); font: inherit; font-size: 1rem; }
 .submission-review textarea { resize: vertical; }
 .submission-review select:focus-visible, .submission-review textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
@@ -207,6 +213,7 @@ body.question-open { overflow: hidden; }
   .question-answer { padding: 16px; }
   .dashboard-options { grid-template-columns: repeat(2, minmax(0, 148px)); }
   .review-actions button { width: 100%; }
+  .category-choices { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 380px) {
   .questions-grid { grid-template-columns: minmax(0, 1fr); }

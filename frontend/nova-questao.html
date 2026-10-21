@@ -54,8 +54,9 @@
         </fieldset>
         <label for="contribution-answer">Resposta</label>
         <input id="contribution-answer" name="answer" maxlength="200" required autocomplete="off" placeholder="A resposta correta">
-        <label for="contribution-category">Categoria</label>
-        <select id="contribution-category" name="category" required><option value="">Selecione uma categoria</option></select>
+        <label for="contribution-category">Categorias sugeridas</label>
+        <input id="contribution-category" name="category" maxlength="300" required aria-describedby="category-help" placeholder="Música, cinema, anos 90…">
+        <p id="category-help" class="field-help">Escreva uma ou mais sugestões. A administração definirá as categorias finais na revisão.</p>
         <p class="field-help">O nickname é opcional e acompanha a contribuição na análise da administração.</p>
         <p id="contribution-error" class="login-error" role="alert" hidden></p>
         <button id="contribution-submit" type="submit" disabled>Enviar para análise</button>

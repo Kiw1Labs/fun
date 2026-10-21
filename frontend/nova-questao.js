@@ -41,10 +41,10 @@ document.addEventListener('keydown', event => {
   }
 });
 
-let image = null, previewURL = '', requestId = crypto.randomUUID(), busy = false, preparing = false, categoriesReady = false;
+let image = null, previewURL = '', requestId = crypto.randomUUID(), busy = false, preparing = false;
 let selectedFormat = 'image';
 function error(message = '') { byId('contribution-error').textContent = message; byId('contribution-error').hidden = !message; }
-function updateSubmit() { byId('contribution-submit').disabled = busy || preparing || !categoriesReady; }
+function updateSubmit() { byId('contribution-submit').disabled = busy || preparing; }
 function selectFormat(format, focus = false) {
   if (busy) return;
   if (selectedFormat !== format) { requestId = crypto.randomUUID(); error(); }
@@ -97,11 +97,12 @@ byId('contribution-image').addEventListener('change', async event => {
 });
 byId('contribution-form').addEventListener('input', () => { requestId = crypto.randomUUID(); });
 byId('contribution-form').addEventListener('submit', async event => {
-  event.preventDefault(); if (busy || preparing || !categoriesReady) return;
+  event.preventDefault(); if (busy || preparing) return;
   const payload = {request_id:requestId, image:selectedFormat === 'image' ? image : null,
     reference:selectedFormat === 'text' ? byId('contribution-reference').value.trim() : ''};
   for (const field of ['nickname', 'prompt', 'answer', 'category']) payload[field] = byId(`contribution-${field}`).value.trim();
   if (!payload.prompt || !payload.answer) { error('Preencha o título e a resposta.'); return; }
+  if (!payload.category) { error('Escreva as categorias sugeridas.'); byId('contribution-category').focus(); return; }
   if (selectedFormat === 'image' && !image) { error('Adicione a imagem da pergunta.'); byId('choose-image').focus(); return; }
   if (selectedFormat === 'text' && !payload.reference) { error('Preencha o texto de referência.'); byId('contribution-reference').focus(); return; }
   busy = true; updateSubmit(); error(); byId('contribution-submit').textContent = 'Enviando…';
@@ -122,9 +123,4 @@ byId('send-another').addEventListener('click', () => {
   clearImage(); requestId = crypto.randomUUID(); error(); selectFormat(selectedFormat); byId('contribution-success').hidden = true; byId('contribution-form').hidden = false; byId('contribution-prompt').focus();
 });
 selectFormat(selectedFormat);
-try {
-  const response = await fetch('/api/question-submissions/categories'); if (!response.ok) throw new Error();
-  const result = await response.json();
-  for (const category of result.categories) { const option = document.createElement('option'); option.value = category; option.textContent = category; byId('contribution-category').append(option); }
-  categoriesReady = true; updateSubmit();
-} catch { error('Não foi possível carregar as categorias. Atualize a página para tentar novamente.'); }
+updateSubmit();

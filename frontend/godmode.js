@@ -147,6 +147,22 @@ function questionMedia(question, large = false) {
   return media;
 }
 
+function categoriesOf(question) {
+  return Array.isArray(question.categories) && question.categories.length ? question.categories : question.category ? [question.category] : [];
+}
+
+function renderReviewCategories(categories) {
+  const container = byId('submission-categories');
+  if (JSON.stringify([...container.querySelectorAll('input')].map(input => input.value)) === JSON.stringify(categories)) return;
+  container.replaceChildren();
+  for (const category of categories) {
+    const label = document.createElement('label'); label.className = 'category-choice';
+    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.name = 'categories'; checkbox.value = category;
+    const text = document.createElement('span'); text.textContent = category;
+    label.append(checkbox, text); container.append(label);
+  }
+}
+
 function renderQuestionDetails(question) {
   byId('submission-review').hidden = !activeSubmission;
   const contributed = !!(question.submission_id || activeSubmission);
@@ -166,7 +182,9 @@ function renderQuestionDetails(question) {
   }
   aliases.hidden = !aliases.childElementCount;
   byId('question-no-aliases').hidden = !!aliases.childElementCount;
-  for (const field of ['category', 'subcategory', 'difficulty', 'kind', 'status']) {
+  byId('question-detail-category-label').textContent = activeSubmission ? 'Categorias sugeridas' : 'Categorias';
+  byId('question-detail-category').textContent = (activeSubmission ? question.category : categoriesOf(question).join(' · ')) || '—';
+  for (const field of ['subcategory', 'difficulty', 'kind', 'status']) {
     const value = question[field];
     byId(`question-detail-${field}`).textContent = (['difficulty', 'kind', 'status'].includes(field) ? labels[value] : '') || value || '—';
   }
@@ -206,7 +224,7 @@ byId('question-dialog').addEventListener('close', () => {
 
 function renderQuestions() {
   const query = byId('question-filter').value.trim().toLocaleLowerCase('pt-BR');
-  const filtered = questions.filter(q => [q.id,q.category,q.subcategory,q.prompt,q.reference,q.answer,...(q.aliases || [])].join(' ').toLocaleLowerCase('pt-BR').includes(query));
+  const filtered = questions.filter(q => [q.id,...categoriesOf(q),q.subcategory,q.prompt,q.reference,q.answer,...(q.aliases || [])].join(' ').toLocaleLowerCase('pt-BR').includes(query));
   byId('question-count').textContent = query ? `${filtered.length} / ${questions.length}` : String(questions.length);
   const body = byId('questions'); body.replaceChildren();
   if (!filtered.length) {
@@ -220,7 +238,7 @@ function renderQuestions() {
     card.setAttribute('aria-haspopup', 'dialog'); card.setAttribute('aria-controls', 'question-dialog');
     const copy = document.createElement('span'); copy.className = 'question-card-copy';
     const category = document.createElement('span'); category.className = 'question-category';
-    category.textContent = q.category || 'Sem categoria';
+    category.textContent = categoriesOf(q).join(' · ') || 'Sem categoria';
     const prompt = document.createElement('span'); prompt.className = 'question-card-prompt';
     prompt.textContent = q.prompt || 'Sem enunciado';
     const meta = document.createElement('span'); meta.className = 'question-card-meta';
@@ -306,7 +324,16 @@ async function loadSubmissions() {
 async function moderateSubmission(action) {
   if (moderationBusy || !activeSubmission) return;
   const payload = {action};
-  if (action === 'approve') { payload.difficulty = byId('submission-difficulty').value; payload.rights = byId('submission-rights').value.trim(); }
+  if (action === 'approve') {
+    payload.categories = [...byId('submission-categories').querySelectorAll('input:checked')].map(input => input.value);
+    if (!payload.categories.length) {
+      byId('submission-review-error').textContent = 'Selecione uma ou mais categorias antes de aprovar.';
+      byId('submission-review-error').hidden = false;
+      byId('submission-categories').querySelector('input')?.focus();
+      return;
+    }
+    payload.difficulty = byId('submission-difficulty').value; payload.rights = byId('submission-rights').value.trim();
+  }
   moderationBusy = true; byId('submission-review-error').hidden = true;
   for (const control of byId('submission-review').elements) control.disabled = true;
   byId('question-close').disabled = true;
@@ -328,14 +355,16 @@ byId('submissions-next').addEventListener('click', () => { submissionPage++; loa
 async function refresh() {
   byId('notice').textContent = 'Atualizando dados…';
   try {
-    const [roomResponse, questionResponse] = await Promise.all([
-      request('/api/godmode/rooms'), request('/api/godmode/questions')
+    const [roomResponse, questionResponse, categoryResponse] = await Promise.all([
+      request('/api/godmode/rooms'), request('/api/godmode/questions'), request('/api/question-submissions/categories')
     ]);
     if (roomResponse.status === 401 || questionResponse.status === 401) { showLogin('Sua sessão expirou. Entre novamente.'); return; }
     if (roomResponse.status === 429 || questionResponse.status === 429) throw new Error('Muitas tentativas. Aguarde um minuto e tente novamente.');
-    if (!roomResponse.ok || !questionResponse.ok) throw new Error('Não foi possível consultar os dados administrativos.');
+    if (!roomResponse.ok || !questionResponse.ok || !categoryResponse.ok) throw new Error('Não foi possível consultar os dados administrativos.');
     const roomData = await roomResponse.json();
     const questionData = await questionResponse.json();
+    const categoryData = await categoryResponse.json();
+    renderReviewCategories(categoryData.categories);
     questions = questionData.questions;
     renderRooms(roomData.rooms); renderQuestions();
     byId('notice').textContent = `Atualizado às ${new Date().toLocaleTimeString('pt-BR')}.`;

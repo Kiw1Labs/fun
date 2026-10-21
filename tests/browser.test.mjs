@@ -892,7 +892,7 @@ test('contribuições: abas exigem imagem ou texto e enviam somente o formato se
     const imageTab=page.getByRole('tab',{name:'Imagem',exact:true}),textTab=page.getByRole('tab',{name:'Texto',exact:true});
     await page.getByLabel('Título da pergunta',{exact:true}).fill('Qual é a referência artificial?');
     await page.getByLabel('Resposta',{exact:true}).fill('Resposta artificial');
-    await page.getByLabel('Categoria',{exact:true}).selectOption('Games');
+    await page.getByLabel('Categorias sugeridas',{exact:true}).fill('Videogame, anos 90');
     assert.equal(await imageTab.getAttribute('aria-selected'),'true');
     assert.equal(await page.locator('#image-panel').isVisible(),true);
     assert.equal(await page.locator('#text-panel').isVisible(),false);
@@ -923,7 +923,7 @@ test('contribuições: abas exigem imagem ou texto e enviam somente o formato se
     await page.getByRole('button',{name:'Enviar outra questão',exact:true}).click();
     await page.getByLabel('Título da pergunta',{exact:true}).fill('Outra referência artificial');
     await page.getByLabel('Resposta',{exact:true}).fill('Resposta artificial');
-    await page.getByLabel('Categoria',{exact:true}).selectOption('Música');
+    await page.getByLabel('Categorias sugeridas',{exact:true}).fill('Música, trilhas sonoras');
     await page.getByLabel('Imagem da pergunta',{exact:true}).setInputFiles({name:'outro-rascunho.png',mimeType:'image/png',buffer:await readFile('frontend/brand/fun-favicon.png')});
     await page.waitForFunction(()=>!document.querySelector('#contribution-submit').disabled);
     await textTab.click();
@@ -936,6 +936,7 @@ test('contribuições: abas exigem imagem ou texto e enviam somente o formato se
     await page.getByRole('button',{name:'Enviar para análise',exact:true}).click();
     await page.getByRole('heading',{name:'Questão enviada para análise.',exact:true}).waitFor();
     assert.equal(payloads.length,2);assert.equal(payloads[1].image,null);assert.equal(payloads[1].reference,'Referência artificial em texto.');
+    assert.equal(payloads[1].category,'Música, trilhas sonoras');
   } finally {await context.close();}
 });
 
@@ -952,7 +953,7 @@ test('contribuições: envio anônimo, revisão e aprovação sem duplicar a que
     await author.getByRole('tab',{name:'Texto',exact:true}).click();
     await author.getByLabel('Texto de referência',{exact:true}).fill(reference);
     await author.getByLabel('Resposta',{exact:true}).fill(answer);
-    await author.getByLabel('Categoria',{exact:true}).selectOption('Cultura e nostalgia');
+    await author.getByLabel('Categorias sugeridas',{exact:true}).fill('<b>Frases famosas</b>, anos 90');
     assert.equal(await author.getByLabel('Nickname (opcional)',{exact:true}).inputValue(),'');
     let release,started,posts=0;
     const barrier=new Promise(resolve=>{release=resolve;}),requested=new Promise(resolve=>{started=resolve;});
@@ -972,19 +973,31 @@ test('contribuições: envio anônimo, revisão e aprovação sem duplicar a que
     const dialog=admin.getByRole('dialog',{name:'Detalhes da questão',exact:true});
     assert.equal(await dialog.locator('#question-detail-reference').textContent(),reference);
     assert.equal(await dialog.locator('#question-detail-answer').textContent(),answer);
+    assert.equal(await dialog.locator('#question-detail-category-label').textContent(),'Categorias sugeridas');
+    assert.equal(await dialog.locator('#question-detail-category').textContent(),'<b>Frases famosas</b>, anos 90');
     assert.equal(await dialog.locator('b,#question-detail-reference img').count(),0);
+    assert.equal(await dialog.locator('#submission-categories input:checked').count(),0);
     await dialog.getByLabel('Dificuldade',{exact:true}).selectOption('medium');
     await dialog.getByLabel('Direitos e fonte de uso',{exact:true}).fill('Texto artificial escrito para este teste.');
+    await dialog.getByRole('button',{name:'Aprovar e adicionar ao jogo',exact:true}).click();
+    await dialog.getByRole('alert').getByText('Selecione uma ou mais categorias antes de aprovar.',{exact:true}).waitFor();
+    await dialog.getByRole('checkbox',{name:'Games',exact:true}).check();
+    await dialog.getByRole('checkbox',{name:'Música',exact:true}).check();
+    assert.equal(await dialog.locator('#submission-categories input:checked').count(),2);
     await admin.screenshot({path:'artifacts/nova-questao/revisao-texto-desktop.png'});
     await dialog.getByRole('button',{name:'Aprovar e adicionar ao jogo',exact:true}).click();
     await admin.getByText('Questão aprovada e adicionada ao acervo.',{exact:true}).waitFor();
     assert.equal(await card.count(),0);
     await admin.getByRole('button',{name:'Sabe Essa?',exact:true}).click();
-    await admin.getByLabel('Buscar no acervo',{exact:true}).fill('Uma referência artificial.');
+    await admin.getByLabel('Buscar no acervo',{exact:true}).fill('Música');
     const approved=admin.locator('#questions .question-card').filter({hasText:prompt});
     await approved.getByText('Contribuição',{exact:true}).waitFor();await approved.click();
     assert.equal(await dialog.locator('#question-detail-reference').textContent(),reference);
+    assert.equal(await dialog.locator('#question-detail-category-label').textContent(),'Categorias');
+    assert.equal(await dialog.locator('#question-detail-category').textContent(),'Games · Música');
     await admin.keyboard.press('Escape');
+    await admin.getByLabel('Buscar no acervo',{exact:true}).fill('Uma referência artificial.');
+    assert.equal(await approved.count(),1);
     await author.getByRole('button',{name:'Enviar outra questão',exact:true}).click();
     assert.equal(await author.getByLabel('Título da pergunta',{exact:true}).inputValue(),'');
     assert.deepEqual(pageErrors,[]);
@@ -1001,7 +1014,7 @@ test('contribuições: foto, nickname opcional, falha de rede recuperável e rec
     await author.getByLabel('Nickname (opcional)',{exact:true}).fill(nickname);
     await author.getByLabel('Título da pergunta',{exact:true}).fill(prompt);
     await author.getByLabel('Resposta',{exact:true}).fill('Imagem artificial');
-    await author.getByLabel('Categoria',{exact:true}).selectOption('Games');
+    await author.getByLabel('Categorias sugeridas',{exact:true}).fill('Jogos, diversão');
     await author.getByLabel('Imagem da pergunta',{exact:true}).setInputFiles({name:'foto-teste.png',mimeType:'image/png',buffer:await readFile('frontend/brand/fun-favicon.png')});
     await author.locator('#image-preview').waitFor();
     await author.waitForFunction(()=>document.querySelector('#preview-image').naturalWidth>0);

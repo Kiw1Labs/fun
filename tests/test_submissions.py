@@ -28,7 +28,7 @@ def setup(tmp_path, monkeypatch):
 def payload(**changes):
     data = dict(request_id='submission-request-123456', nickname='', prompt='Quem disse esta frase?',
                 reference='Referência artificial\nSegunda linha', answer='Resposta artificial',
-                category='Cultura e nostalgia', image=None)
+                category='Música, videogame, anos 90', image=None)
     if changes.get('image') is not None:
         data['reference'] = ''
     return data | changes
@@ -69,6 +69,7 @@ def test_anonymous_submission_stays_separate_private_and_retry_is_idempotent(set
         assert listing['total'] == 1
         submission = listing['submissions'][0]
         assert submission['nickname'] == '' and submission['reference'] == payload()['reference']
+        assert submission['category'] == 'Música, videogame, anos 90'
         assert submission['tag'] == 'Contribuição' and submission['status'] == 'pending'
         assert not {'request_id', 'fingerprint', 'image_bytes'} & submission.keys()
         assert client.get('/api/question-submissions').status_code == 404
@@ -83,7 +84,7 @@ def test_approval_is_authenticated_origin_checked_durable_and_keeps_legacy_catal
     with TestClient(app) as client:
         identifier = client.post('/api/question-submissions', headers=ORIGIN, json=payload(nickname='<b>Kiwi</b>')).json()['id']
         review = f'/api/godmode/submissions/{identifier}/review'
-        decision = dict(action='approve', difficulty='medium', rights='Conteúdo artificial próprio para teste.')
+        decision = dict(action='approve', categories=['Música', 'Games'], difficulty='medium', rights='Conteúdo artificial próprio para teste.')
         assert client.post(review, headers=ORIGIN, json=decision).status_code == 401
         assert client.post(review, auth=AUTH, json=decision).status_code == 403
         assert client.post(review, auth=AUTH, headers=ORIGIN, json={'action': 'approve'}).status_code == 400
@@ -102,10 +103,19 @@ def test_approval_is_authenticated_origin_checked_durable_and_keeps_legacy_catal
         assert not {'answer', 'aliases', 'submitted_by', 'submission_id'} & public.keys()
         listed = next(question for question in client.get('/api/godmode/questions', auth=AUTH).json()['questions'] if question['id'] == question_id)
         assert listed['submission_id'] == identifier and listed['submitted_by'] == '<b>Kiwi</b>'
+        assert listed['categories'] == ['Games', 'Música'] and listed['category'] == 'Games'
+        assert approved.classification == ['Games', 'Música']
+        assert 'categories' not in public and 'category' not in public
     with TestClient(create_app(database=str(setup), origins=['http://testserver'])) as restarted:
         assert restarted.get('/health').json()['catalog_count'] == len(catalog) + 1
         approved = next(question for question in restarted.app.state.engine.catalog if question.id == question_id)
         assert approved.difficulty == 'medium' and approved.reference == payload()['reference']
+        assert approved.classification == ['Games', 'Música'] and approved.category == 'Games'
+        assert next(question for question in restarted.get('/api/godmode/questions', auth=AUTH).json()['questions']
+                    if question['id'] == question_id)['categories'] == ['Games', 'Música']
+    store = Store(str(setup))
+    assert store.submission(identifier)['category'] == payload()['category']
+    store.close()
 
 
 def test_photo_is_private_until_approval_and_rejection_never_publishes(setup, tmp_path):
@@ -119,7 +129,7 @@ def test_photo_is_private_until_approval_and_rejection_never_publishes(setup, tm
         assert response.content == data and response.headers['content-type'] == 'image/png'
         assert response.headers['cache-control'] == 'no-store'
         assert not list((tmp_path / 'media').rglob('*'))
-        decision = dict(action='approve', difficulty='easy', rights='Imagem artificial de autoria do teste.')
+        decision = dict(action='approve', categories=['Games'], difficulty='easy', rights='Imagem artificial de autoria do teste.')
         assert client.post(f'/api/godmode/submissions/{identifier}/review', auth=AUTH, headers=ORIGIN, json=decision).status_code == 200
         approved = client.get('/api/godmode/questions', auth=AUTH).json()['questions'][0]
         assert approved['image'].startswith('/media/community/')
@@ -136,7 +146,8 @@ def test_photo_is_private_until_approval_and_rejection_never_publishes(setup, tm
     store.close()
 
 
-@pytest.mark.parametrize('change', [dict(prompt='  '), dict(answer='...'), dict(category='Outra'),
+@pytest.mark.parametrize('change', [dict(prompt='  '), dict(answer='...'), dict(category='  '), dict(category=['Games']),
+    dict(category='x' * 301), dict(category='Música\x00Games'),
     dict(nickname='n' * 25), dict(reference='x' * 2001), dict(status='active'),
     dict(image=base64.b64encode(b'<svg xmlns="http://www.w3.org/2000/svg"></svg>').decode()),
     dict(image='%%%'), dict(image=base64.b64encode(b'x' * (512 * 1024 + 1)).decode()), dict(request_id='../outside')])
@@ -190,9 +201,27 @@ def test_concurrent_approvals_insert_once(setup):
         identifier = client.post('/api/question-submissions', headers=ORIGIN, json=payload()).json()['id']
         def approve(_):
             return client.post(f'/api/godmode/submissions/{identifier}/review', auth=AUTH, headers=ORIGIN,
-                               json=dict(action='approve', difficulty='easy', rights='Autoria artificial do teste.'))
+                               json=dict(action='approve', categories=['Games'], difficulty='easy', rights='Autoria artificial do teste.'))
         with ThreadPoolExecutor(max_workers=2) as pool:
             responses = list(pool.map(approve, range(2)))
         assert all(response.status_code == 200 for response in responses)
         assert responses[0].json() == responses[1].json()
         assert client.get('/health').json()['catalog_count'] == 1
+
+
+@pytest.mark.parametrize('categories', [None, [], 'Games', ['Outra'], ['Games', 'Games'], [1], [['Games']], list(CATEGORIES) + ['Games']])
+def test_approval_requires_official_categories_chosen_by_admin(setup, tmp_path, categories):
+    with TestClient(create_app(database=str(setup), catalog=[], origins=['http://testserver'])) as client:
+        identifier = client.post('/api/question-submissions', headers=ORIGIN,
+                                 json=payload(category='<b>Cinema, trilhas sonoras</b>', image=base64.b64encode(image_bytes()).decode())).json()['id']
+        review = f'/api/godmode/submissions/{identifier}/review'
+        decision = dict(action='approve', difficulty='easy', rights='Autoria artificial do teste.')
+        if categories is not None:
+            decision['categories'] = categories
+        response = client.post(review, auth=AUTH, headers=ORIGIN, json=decision)
+        assert response.status_code == 400 and 'categorias' in response.json()['error']
+        pending = client.get('/api/godmode/submissions', auth=AUTH).json()
+        assert pending['total'] == 1 and pending['submissions'][0]['category'] == '<b>Cinema, trilhas sonoras</b>'
+        assert client.get('/health').json()['catalog_count'] == 0
+        assert not list((tmp_path / 'media').rglob('*'))
+        assert client.post(review, auth=AUTH, headers=ORIGIN, json={'action': 'reject'}).status_code == 200

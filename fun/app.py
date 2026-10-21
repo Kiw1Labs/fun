@@ -274,6 +274,10 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
                      answer=q['answer'], aliases=q['aliases'], status=q['status'], image=q['image'])
                 for q in questions]
         for item, question in zip(safe, questions):
+            categories = [category for category in CATEGORIES
+                          if category == question.get('category') or category in question.get('classification', [])]
+            if len(categories) > 1:
+                item['categories'] = categories
             for field in ('reference', 'submission_id', 'submitted_by'):
                 if question.get(field):
                     item[field] = question[field]
@@ -356,10 +360,16 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             return JSONResponse({'error': 'Origem não autorizada.'}, status_code=403)
         try:
             payload = await submission_body(request, 4096)
-            if not isinstance(payload, dict) or set(payload) - {'action', 'difficulty', 'rights'} or payload.get('action') not in ('approve', 'reject'):
+            if not isinstance(payload, dict) or set(payload) - {'action', 'difficulty', 'rights', 'categories'} or payload.get('action') not in ('approve', 'reject'):
                 raise SubmissionError('Selecione aprovar ou recusar.')
             action = payload['action']
             if action == 'approve':
+                selected = payload.get('categories')
+                if (not isinstance(selected, list) or not 1 <= len(selected) <= len(CATEGORIES)
+                        or not all(isinstance(category, str) and category in CATEGORIES for category in selected)
+                        or len(set(selected)) != len(selected)):
+                    raise SubmissionError('Selecione uma ou mais categorias válidas antes de aprovar.')
+                categories = [category for category in CATEGORIES if category in selected]
                 if payload.get('difficulty') not in ('easy', 'medium', 'hard'):
                     raise SubmissionError('Defina a dificuldade antes de aprovar.')
                 rights = text(payload.get('rights', ''), 'Direitos e fonte de uso', 1000, required=True)
@@ -373,8 +383,8 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
                     image_url, digest = publish_image(submission, media) if submission['image_bytes'] else (None, '')
                     challenge = validate([dict(id='community_' + identifier, kind=submission['kind'],
                         difficulty=payload['difficulty'], prompt=submission['prompt'], reference=submission['reference'],
-                        answer=submission['answer'], aliases=[], classification=[submission['category']],
-                        rights=rights, image=image_url, category=submission['category'], status='active',
+                        answer=submission['answer'], aliases=[], classification=categories,
+                        rights=rights, image=image_url, category=categories[0], status='active',
                         submission_id=identifier, submitted_by=submission['nickname'],
                         media_type=submission['media_type'], media_sha256=digest,
                         verified_at=time.strftime('%Y-%m-%d', time.gmtime(clock())),

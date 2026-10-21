@@ -109,7 +109,7 @@
         <h4>Outras respostas aceitas</h4><ul id="question-detail-aliases"></ul><p id="question-no-aliases" class="section-copy" hidden>Nenhuma alternativa cadastrada.</p>
       </section>
       <dl class="question-facts">
-        <div><dt>Categoria</dt><dd id="question-detail-category"></dd></div>
+        <div><dt id="question-detail-category-label">Categorias</dt><dd id="question-detail-category"></dd></div>
         <div><dt>Subcategoria</dt><dd id="question-detail-subcategory"></dd></div>
         <div><dt>Dificuldade</dt><dd id="question-detail-difficulty"></dd></div>
         <div><dt>Formato</dt><dd id="question-detail-kind"></dd></div>
@@ -117,6 +117,11 @@
       </dl>
       <form id="submission-review" class="submission-review" hidden>
         <h3>Revisar contribuição</h3>
+        <fieldset class="review-categories" aria-describedby="submission-categories-help">
+          <legend>Categorias finais</legend>
+          <p id="submission-categories-help" class="section-copy">Escolha uma ou mais categorias para o acervo. As sugestões acima não são aplicadas automaticamente.</p>
+          <div id="submission-categories" class="category-choices"></div>
+        </fieldset>
         <label for="submission-difficulty">Dificuldade</label><select id="submission-difficulty" required><option value="">Selecione a dificuldade</option><option value="easy">Fácil</option><option value="medium">Médio</option><option value="hard">Difícil</option></select>
         <label for="submission-rights">Direitos e fonte de uso</label><textarea id="submission-rights" maxlength="1000" rows="3" required placeholder="Informe autoria, licença ou autorização de uso verificada na revisão."></textarea>
         <p id="submission-review-error" class="login-error" role="alert" hidden></p>
