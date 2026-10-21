@@ -1,5 +1,21 @@
 # Batata Quente — validação local de 21/10/2026
 
+## Partida sem mensagens auxiliares e sem cronômetro visível
+
+Removidos a dica abaixo da sílaba, o texto de manutenção da sílaba, o aviso textual de perda de vida e o cronômetro com segundos e barra, conforme solicitado. A apresentação deixa de consultar esses elementos; sons e animações continuam recebendo o tempo autoritativo. O relógio do servidor e as regras não foram alterados.
+
+`npm.cmd run check`, `npm.cmd run build` e `npm.cmd run test:batata` passaram. O cenário de navegador continua verificando a perda de vida pelo estado das pessoas e a mesma sílaba após queimar, sem depender dos textos removidos. Build local de 291.447 bytes sem compressão; capturas em `artifacts/batata-browser-1792608641579/`. Backup anterior em `artifacts/batata-clean-game-backup-20261021-155027/`. A publicação desta revisão deve preservar a partida encontrada em andamento, com troca apenas da release de assets após comprovar que o backend é idêntico.
+
+## Publicação verificada
+
+Release `7b839a37cb79599cd5dbe7a8e4f0a3a90fd1953a`, enviada para `main` e ativada pelo atualizador existente em 21/10/2026 às **15:31:03** (America/Sao_Paulo). [CI completo aprovado](https://github.com/Kiw1Labs/fun/actions/runs/39652817748): **207 testes Python**, 33 cenários gerais de navegador, cenário de Batata Quente, servidor de desenvolvimento e catálogo. Nenhuma verificação foi desabilitada.
+
+Às **15:32:43**, o teste de produção confirmou HTTPS 200, os dois cartões de jogo, lista de salas carregada, duas pessoas em contextos independentes desktop/celular via WSS, palavra aceita pelo dicionário, queima publicada pelo ticker real, sílaba mantida após a queima, ausência dos textos removidos e encerramento da sala temporária. Não houve erro JavaScript. Capturas de portal e partida foram inspecionadas visualmente. Resultado e imagens: `artifacts/batata-public-1792607521641/`.
+
+O manifesto da release está íntegro. Os hashes de `auto_update.py`, `services.py`, `nginx-local.conf` e `tunnel.py` compartilhados foram preservados, assim como dez identidades de processos compartilhados, incluindo nascimento do PID. Evidências em `artifacts/batata-public-before-activation.json`, `artifacts/batata-public-inventory-result.json` e `artifacts/batata-public-preservation.json`. As sondagens locais dos outros serviços mantiveram os códigos anteriores.
+
+O auxiliar exclusivo `/root/fun/auto_update.py` recebeu duas atualizações pequenas com backup/rollback, sem reinício de serviços nessa preparação: assets/dicionário e equivalência dos três campos opcionais vazios. A segunda cópia está em `/root/fun/backups/batata-helper-20261021T182619Z/`. O catálogo real passou na comparação antes da ativação, e o novo backend mantém 90 questões ativas. O atualizador fez a troca e o reinício somente do Fun pelo procedimento existente.
+
 ## Sincronização do teste que bloqueava a atualização pública
 
 A execução de CI [`39644966559`](https://github.com/Kiw1Labs/fun/actions/runs/39644966559), do commit `caa9b83`, passou nos testes Python e nos 33 cenários gerais de navegador, mas falhou no cenário de Batata Quente: a confirmação da vez no celular era recebida antes da atualização da sílaba no navegador do anfitrião. A comparação imediata lia o estado anterior nessa outra conexão. O atualizador manteve a versão pública antiga por exigir CI aprovado.

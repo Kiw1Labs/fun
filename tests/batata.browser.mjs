@@ -95,7 +95,6 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
     await burn();
     await host.getByText('Sua vez!',{exact:true}).waitFor();
     assert.equal(await currentFragment(),heldFragment);
-    await host.getByText('A sílaba segue até a pessoa anterior a Bia, incluindo a vez dela. Bia recebe outra ao voltar.',{exact:true}).waitFor();
     await guest.evaluate(()=>scrollTo(0,0));
     await host.screenshot({path:resolve(folder,'held-desktop.png'),fullPage:true});
     await guest.screenshot({path:resolve(folder,'held-mobile.png'),fullPage:true});
@@ -107,12 +106,10 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
       return fragment&&fragment.textContent!==previous;
     },heldFragment);
     assert.notEqual(await currentFragment(),heldFragment);
-    assert.equal(await host.locator('.fragment-retention').count(),0);
     await host.getByText('Volta 2 · Fácil',{exact:true}).waitFor();
     for(let remaining=0;remaining<3;remaining++)await burn();
     await host.getByRole('heading',{name:'Você venceu!',exact:true}).waitFor();
     await guest.getByRole('heading',{name:'Ana venceu!',exact:true}).waitFor();
-    await host.getByText('A batata queimou!',{exact:false}).waitFor();
     await host.screenshot({path:resolve(folder,'results-desktop.png'),fullPage:true});
     await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
     await host.getByText('Sua vez!',{exact:true}).waitFor();

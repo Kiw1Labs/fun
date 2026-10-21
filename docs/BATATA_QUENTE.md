@@ -1,10 +1,12 @@
 # Batata Quente
 
-Segundo jogo do Fun, integrado ao portal `/` e às salas de quatro letras. Implementação local de 21/10/2026. O pedido desta versão amplia o escopo anterior de um único jogo; as regras de Sabe Essa? continuam próprias daquele jogo.
+Segundo jogo do Fun, integrado ao portal `/` e às salas de quatro letras. Publicado em [fun.kw1.com.br](https://fun.kw1.com.br/) em 21/10/2026, com verificação pública concluída às 15:32:43 (America/Sao_Paulo). O pedido desta versão amplia o escopo anterior de um único jogo; as regras de Sabe Essa? continuam próprias daquele jogo.
 
 Resultados reais, comandos e evidências em [BATATA_VALIDACAO.md](BATATA_VALIDACAO.md).
 
 Revisão visual solicitada em 21/10/2026: manter o mesmo design dos outros jogos do Fun. Portal, sala, formulários, botões e cronômetro usam a paleta neutra, a tipografia, as bordas e os temas claro/escuro compartilhados. A batata e a roda permanecem elementos próprios da partida.
+
+Revisão seguinte de 21/10/2026: removidos da partida a dica abaixo da sílaba, a explicação de manutenção da sílaba, a mensagem textual de perda de vida e o cronômetro visível, incluindo segundos e barra. O servidor continua controlando o tempo e publicando as queimas; vidas, turno, sons e animações continuam funcionando.
 
 ## Jogar e desenvolver
 
@@ -64,4 +66,4 @@ npm.cmd run test:browser
 
 `tests/test_batata.py` cobre regras fixas, dois ciclos completos de dificuldade, manutenção da sigla após queima incluindo a vez da pessoa anterior em uma roda de quatro, mudança de referência após nova queima, eliminação/saída da pessoa de referência, dicionário real, relógio, repetição, mensagens concorrentes, isolamento, reconexão, permissões, abandono e reinício. `tests/batata.browser.mjs` abre dois contextos independentes de Chromium, desktop e celular; verifica o lobby sem ajustes, a mensagem que explicita a última pessoa a usar a sílaba e a revanche na primeira volta fácil. Usa HTTP e WebSocket reais e um relógio controlável exclusivo do servidor de fixtures para evitar dependência da duração dos screenshots. Evidências ficam em `artifacts/batata-browser-*`. O servidor de teste e suas rotas não entram no pacote.
 
-O build inclui os assets próprios; o pacote e o preparador do atualizador incluem dicionário e licença. `FUN_DICTIONARY` pode apontar para outro diretório compilado; se ausente, usa o dicionário do release. Produção continua exigindo HTTP/HTTPS com upgrade WebSocket, um worker e backup/rollback conforme [DEPLOY.md](DEPLOY.md). Esta entrega não ativa nem reinicia serviços remotos.
+O build inclui os assets próprios; o pacote e o preparador do atualizador incluem dicionário e licença. `FUN_DICTIONARY` pode apontar para outro diretório compilado; se ausente, usa o dicionário do release. Produção exige HTTP/HTTPS com upgrade WebSocket, um worker e backup/rollback conforme [DEPLOY.md](DEPLOY.md). A release `7b839a3` foi ativada pelo fluxo existente, com preservação dos serviços compartilhados e verificações públicas registradas em [BATATA_VALIDACAO.md](BATATA_VALIDACAO.md).

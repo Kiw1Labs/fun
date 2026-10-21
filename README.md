@@ -2,7 +2,7 @@
 
 Portal de jogos multiplayer em pt-BR. Primeiro jogo: **Sabe Essa?**. O portal e a home do jogo usam `/`; salas usam exatamente quatro letras, por exemplo `/ABCD`.
 
-**Novo, implementação local de 21/10/2026: [Batata Quente](docs/BATATA_QUENTE.md).** Escolha o jogo na criação de sala, convide de 2 a 8 pessoas e passe a batata com palavras em português. Inclui 3 vidas, relógio compartilhado autoritativo, dificuldade automática por volta, sigla mantida por uma volta após queimar, espectadores, reconexão, sons e revanche. O dicionário VERO é local e acompanha fonte/licença; nenhuma API paga valida jogadas. A implementação preserva o Sabe Essa? e não foi ativada no servidor público.
+**Novo, publicado em 21/10/2026: [Batata Quente](docs/BATATA_QUENTE.md).** Escolha o jogo na criação de sala em [fun.kw1.com.br](https://fun.kw1.com.br/), convide de 2 a 8 pessoas e passe a batata com palavras em português. Inclui 3 vidas, relógio compartilhado autoritativo, dificuldade automática por volta, sigla mantida por uma volta após queimar, espectadores, reconexão, sons e revanche. O dicionário VERO é local e acompanha fonte/licença; nenhuma API paga valida jogadas. Publicação verificada com HTTPS, duas sessões WSS, palavra válida e queima pelo servidor; [evidências](docs/BATATA_VALIDACAO.md).
 
 Para iniciar, use os comandos de desenvolvimento abaixo. Para testar o novo jogo: `npm.cmd run test:batata` e `python -m pytest -q tests/test_batata.py`. Regras, decisões, limites do dicionário e preparação de implantação estão em [BATATA_QUENTE.md](docs/BATATA_QUENTE.md).
 

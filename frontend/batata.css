@@ -40,7 +40,6 @@
 .potato-center .potato-eyebrow { font-size: .6875rem; }
 .potato-center .fragment { margin: 8px 0 0; color: var(--accent); font-size: 3.4rem; font-weight: 600; letter-spacing: .14em; }
 .potato-center .turn-message { margin: 0; color: var(--accent); font-size: .8125rem; font-weight: 500; }
-.fragment-help { max-width: 220px; margin: 8px auto !important; font-size: .6875rem !important; }
 .potato-arena:not(.is-playing) .potato-center { top: 47%; }
 
 .potato-seats { margin: 0; padding: 0; list-style: none; }
@@ -65,16 +64,10 @@
 .potato-answer button { flex-shrink: 0; min-height: 51px; margin: 8px 0; }
 .potato-answer input:disabled { opacity: .5; }
 .potato-answer #answer-feedback { min-height: 20px; margin: 8px 0 0; color: var(--muted); font-size: .75rem; }
-.potato-clock { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 28px 18px; color: var(--muted); font-size: .75rem; }
-.potato-clock strong { margin-left: auto; color: var(--accent); font-size: 1rem; font-weight: 500; font-variant-numeric: tabular-nums; }
-.heat-track { width: 100%; height: 3px; overflow: hidden; border-radius: 3px; background: var(--line); }
-.heat-track > div { height: 100%; background: var(--accent); transition: width .1s linear; }
 
 
 .potato-start { margin-top: 12px; }
-.fragment-retention { margin: 16px 0 0; }
 .potato-room .fine { text-align: center; }
-.burn-message { margin: 0 !important; padding: 16px 24px; border-top: 1px solid var(--line); color: var(--accent); font-size: .8125rem; }
 .potato-room .room-footer { align-items: center; }
 .potato-room .room-footer > span { color: var(--muted); font-size: .75rem; }
 
@@ -111,13 +104,12 @@
   .potato-answer .answer-row { gap: 6px; }
   .potato-answer button { padding: 10px 12px; font-size: .8125rem; }
   .potato-answer input { padding: 11px; font-size: 16px; }
-  .potato-clock { margin: 0 14px 16px; }
   .potato-room .actions { flex-wrap: wrap; }
   .potato-room .actions button { font-size: .8125rem; }
   .potato-seat .seat-kick { right: 0; top: 0; width: 19px; min-height: 19px; font-size: 12px; opacity: 1; }
   .is-playing .potato-token { left: calc(50% - 26px); top: calc(50% - 76px); width: 53px; height: 60px; }
   .is-playing .potato-center { top: 50%; left: 27%; right: 27%; }
-  .fragment-help, .potato-arena:not(.is-playing) .potato-center p { display: none; }
+  .potato-arena:not(.is-playing) .potato-center p { display: none; }
 }
 @media (max-width: 350px) {
   .potato-arena { height: 345px; }
@@ -137,5 +129,4 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .potato-token > .potato-art, .is-hot .potato-token > .potato-art { animation: none; }
-  .heat-track > div { transition: none; }
 }
