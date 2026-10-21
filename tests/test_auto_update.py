@@ -142,6 +142,28 @@ def test_initial_catalog_cannot_overwrite_preexisting_same_id(updater, tmp_path)
         updater.catalog_conflicts(candidate, tmp_path/'release-without-catalog')
 
 
+@pytest.mark.parametrize('local_change', [{}, {'reference': 'Texto local'}, {'submission_id': 'local-id'},
+                                       {'submitted_by': 'Pessoa'}, {'unknown_field': ''}])
+def test_legacy_optional_defaults_are_equivalent_without_hiding_local_edits(updater, tmp_path, local_change):
+    original = {'id': 'q1', 'answer': 'Original'}
+    for name in ('old', 'new'):
+        directory = tmp_path/name/'content/questions'
+        directory.mkdir(parents=True)
+        (directory/'catalog.json').write_text(json.dumps([original]))
+    (tmp_path/'shared').mkdir()
+    stored = dict(original, reference='', submission_id='', submitted_by='') | local_change
+    with sqlite3.connect(tmp_path/'shared/fun.sqlite3') as db:
+        db.execute('CREATE TABLE questions(id TEXT PRIMARY KEY,data TEXT)')
+        db.execute('INSERT INTO questions VALUES (?,?)', ('q1', json.dumps(stored)))
+    if local_change:
+        with pytest.raises(RuntimeError, match='local_catalog_edits_preserved'):
+            updater.catalog_conflicts(tmp_path/'new', tmp_path/'old')
+    else:
+        updater.catalog_conflicts(tmp_path/'new', tmp_path/'old')
+    with sqlite3.connect(tmp_path/'shared/fun.sqlite3') as db:
+        assert json.loads(db.execute('SELECT data FROM questions').fetchone()[0]) == stored
+
+
 def test_first_catalog_supports_legacy_database_without_migration(updater, tmp_path):
     candidate = tmp_path/'new'
     (candidate/'content/questions').mkdir(parents=True)

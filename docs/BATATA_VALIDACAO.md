@@ -8,6 +8,8 @@ O teste agora aguarda explicitamente a troca da sílaba na tela do anfitrião e 
 
 A execução seguinte encontrou outra corrida no teste de expulsão de Sabe Essa?: a confirmação era reaberta depois de ficar invisível, antes de terminar o evento nativo `close` do cancelamento anterior. O teste passou a aguardar esse evento, preservando a verificação da expulsão por teclado. O caso isolado corrigido passou localmente. O auxiliar específico do Fun no Android foi atualizado para incluir assets e dicionário do novo jogo, após 14 testes locais de deploy/atualizador; backup e rollback em `/root/fun/backups/batata-helper-20261021T181221Z/`. Nenhum serviço foi reiniciado nessa preparação e os hashes dos arquivos compartilhados foram preservados.
 
+O CI da revisão `722a802` passou. A preparação automática identificou depois um falso conflito no catálogo: o SQLite inclui os campos opcionais `reference`, `submission_id` e `submitted_by`, enquanto o JSON legado os omite. A comparação passa a considerar o padrão vazio desses três campos. Valores preenchidos, campos desconhecidos e edições reais continuam bloqueados. Os 19 testes locais de deploy/atualizador passaram, incluindo os cinco casos que verificam essa distinção e que o banco não é alterado pela comparação.
+
 ## Remoção dos textos e da coluna de ajuda
 
 Removidos, a pedido do usuário, os resumos de vidas/tempos e ciclo de dificuldade do lobby e os blocos completos “Como jogar” e “Passou pela roda”. A mesa ocupa a largura disponível. Alterações restritas à apresentação, à documentação e à remoção de expectativas antigas do teste de navegador.

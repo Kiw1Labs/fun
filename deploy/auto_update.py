@@ -142,6 +142,7 @@ def import_command(release, database, media):
 
 
 def catalog_conflicts(release, before):
+    defaults = dict(reference='', submission_id='', submitted_by='')
     old = before/'content/questions/catalog.json'
     previous = ({r['id']: r for r in json.loads(old.read_text(encoding='utf-8'))} if old.exists() else {})
     incoming = json.loads((release/'content/questions/catalog.json').read_text(encoding='utf-8'))
@@ -154,7 +155,7 @@ def catalog_conflicts(release, before):
         if row['id'] in previous:
             if set(row) != set(previous[row['id']]):
                 raise RuntimeError('fun_catalog_schema_change_requires_review')
-            if row['id'] in stored and stored[row['id']] != previous[row['id']]:
+            if row['id'] in stored and {**defaults, **stored[row['id']]} != {**defaults, **previous[row['id']]}:
                 raise RuntimeError('fun_local_catalog_edits_preserved')
 
 
