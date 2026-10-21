@@ -402,7 +402,6 @@ function connect() {
         }
       }
       else if(event?.action==='rename') renameDialog.close();
-      else if(event?.action==='configure') toast('Ajustes salvos.');
       else if(event?.action==='answer') {
         feedback=msg.correct ? (state?.game==='batata-quente' ? `${msg.word} valeu! Batata passada.` : `Acertou! +${msg.points} pontos.`) : '';
         const input=document.querySelector('#answer'); if(input && input.value===event.answer) input.value='';
@@ -432,12 +431,6 @@ function connect() {
   ws.onerror = () => toast('Conexão interrompida. Tentando retomar sua sessão.');
 }
 document.addEventListener('submit', async event => {
-  if(event.target.id==='potato-settings') {
-    event.preventDefault();
-    const data=Object.fromEntries(new FormData(event.target));
-    for(const key of ['lives','min_seconds','max_seconds','floor_seconds']) data[key]=Number(data[key]);
-    send('configure',{settings:data}); return;
-  }
   if(event.target.id==='profile-form') {
     event.preventDefault();
     saveProfile(event.target.elements.name.value.trim()); return;

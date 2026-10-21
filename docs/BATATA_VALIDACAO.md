@@ -1,5 +1,41 @@
 # Batata Quente — validação local de 21/10/2026
 
+## Remoção dos textos e da coluna de ajuda
+
+Removidos, a pedido do usuário, os resumos de vidas/tempos e ciclo de dificuldade do lobby e os blocos completos “Como jogar” e “Passou pela roda”. A mesa ocupa a largura disponível. Alterações restritas à apresentação, à documentação e à remoção de expectativas antigas do teste de navegador.
+
+`npm.cmd run check`, `npm.cmd run build`, `npm.cmd run test:batata` e `git diff --check` passaram. Build de 293.486 bytes sem compressão. O cenário real de navegador verificou partida, queima, reconexão, revanche e oito pessoas em 1440/390/320 px; nenhum erro JavaScript/CSP foi registrado. Evidências em `artifacts/batata-browser-1792603818598/`, com lobby desktop e mesa de oito em 320 px inspecionados visualmente.
+
+A prévia em `http://127.0.0.1:5055` retornou HTTP 200 e serviu os assets com os textos removidos. Backup anterior à alteração em `artifacts/batata-texts-backup-20261021-142922/`. Nenhum processo ou serviço remoto foi alterado.
+
+## Esclarecimento sobre a última pessoa a usar a sílaba
+
+O usuário confirmou o exemplo Ana → Bia → Caio → Dani: se Ana queimar, Dani também usa a sílaba e Ana recebe outra ao voltar. Se Bia também queimar, a referência passa a ser Bia. O motor já realizava a troca nesse ponto; esta revisão explicita o limite na mensagem da tela e na especificação, e amplia os testes para quatro pessoas, inclusive queima na última pessoa do ciclo.
+
+Verificações executadas nesta revisão: **33 testes de Batata Quente passaram em 13,46 s**, com o aviso preexistente Starlette/httpx; `npm.cmd run check`, `npm.cmd run build`, Ruff e `git diff --check` passaram. O cenário real de navegador também passou, sem erros JavaScript/CSP, com evidências em `artifacts/batata-browser-1792602920903/`. A captura de celular com a mensagem completa foi inspecionada. O build tem 296.439 bytes sem compressão.
+
+A prévia `http://127.0.0.1:5055` retornou HTTP 200 e serviu o JavaScript com a mensagem atualizada. Não foi necessário reiniciar o backend. Inventário e backup anteriores à revisão em `artifacts/batata-cycle-anchor-backup-20261021-141307/`. Nenhuma alteração remota foi feita.
+
+## Revisão das regras fixas e do visual
+
+Revisão local sobre `main`, após a integração inicial. Mantém o design compartilhado do Fun e remove os ajustes do lobby. As regras são 3 vidas, aquecimento de 10–30 segundos e piso de passagem de 5 segundos. O ciclo repete 3 voltas fáceis, 1 média, 2 fáceis e 1 difícil. Somente a queima mantém a sigla por uma volta.
+
+| Verificação desta revisão | Resultado |
+| --- | --- |
+| `npm.cmd run check` e `npm.cmd run build` | Passaram; build de 296.354 bytes sem compressão |
+| `.venv/Scripts/python.exe -m ruff check fun tests tools deploy` | Passou |
+| Suíte Python completa com `FUN_MEDIA=artifacts/media-batata-rules-full`, `-p no:cacheprovider --basetemp=artifacts/pytest-batata-rules-full` | **200 passaram em 49,90 s**, com o aviso preexistente Starlette/httpx |
+| `npm.cmd run test:batata` | Passou; dois contextos independentes, palavras recusadas/válidas, queima, sigla mantida até o retorno, revanche, F5 e transferência de anfitrião |
+| Prévia atualizada em `http://127.0.0.1:5055` | `/` HTTP **200**, `/health` saudável e WebSocket autenticado com duas pessoas; primeira volta fácil, 3 vidas e ajustes legados recusados |
+
+Os testes das regras incluem dois ciclos completos de dificuldade, alteração da ordem por eliminação/saída/expulsão, nova queima durante manutenção, reconexão, token novo mesmo com sigla mantida e esgotamento de respostas. O ticker também foi verificado com relógio real, esperando a queima após o mínimo fixo de 10 segundos.
+
+Evidências finais em `artifacts/batata-browser-1792602156527/`, incluindo lobby sem formulário, sigla mantida em desktop/celular e oito pessoas em 1440/390/320 px. Capturas inspecionadas visualmente; nenhum erro JavaScript ou de CSP foi detectado. Registro HTTP/WS da prévia em `artifacts/batata-rules-preview.json`.
+
+Inventário e cópias dos arquivos anteriores em `artifacts/batata-rules-backup/`; o banco isolado da prévia foi copiado com a API de backup SQLite para `preview-before-rules.sqlite3`. Somente o processo identificado como a prévia local na porta 5055 foi reiniciado. Nenhuma alteração remota ou implantação pública foi feita. As fontes anteriores e esse banco permitem reverter a revisão local após encerrar somente a prévia.
+
+## Registro da entrega inicial
+
 Checkout: `C:\Users\eduar\Documents\github\fun`, branch `feat/batata-quente`. Inventário inicial sem mudanças no Git; cópias dos arquivos de implementação anteriores em `artifacts/batata-backup`. Não houve acesso ou alteração no Android, Nginx, túneis, bancos remotos ou serviços de outros projetos.
 
 ## Resultados executados

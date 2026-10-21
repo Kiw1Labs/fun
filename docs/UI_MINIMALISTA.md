@@ -2,6 +2,16 @@
 
 Este documento registra a validação do redesenho. As correções e os resultados funcionais mais recentes estão em [AUDITORIA_FUNCIONAL.md](AUDITORIA_FUNCIONAL.md).
 
+Revisão de Batata Quente em 21/10/2026: removidos os resumos de regras do lobby e os blocos completos “Como jogar” e “Passou pela roda”, conforme solicitado. A mesa usa a largura antes compartilhada com a coluna lateral. A aparência neutra, os controles de jogo e as regras foram preservados. Backup em `artifacts/batata-texts-backup-20261021-142922/`.
+
+## Batata Quente no mesmo padrão do Fun — 21/10/2026
+
+A pedido do usuário, o jogo passou a usar a paleta neutra e as variáveis compartilhadas do portal. Cartões de seleção, títulos, botões, campos, controles e cronômetro seguem os mesmos padrões do Sabe Essa?, nos temas claro e escuro. A ajuda lateral usa o título “Como jogar” e o compartilhamento usa o mesmo ícone da outra sala. A batata e os jogadores em roda permanecem elementos do jogo.
+
+Inventário inicial: branch `main`, commit `f3d843d`, sem mudanças locais. Backup anterior ao ajuste em `artifacts/batata-design-backup/`. Alteração restrita ao frontend e à documentação, sem modificar regras, backend ou infraestrutura.
+
+Validação: `npm.cmd run check`, `npm.cmd run build`, `npm.cmd run test:batata` e `git diff --check` passaram. O cenário abre duas sessões independentes, joga, reconecta, chega ao resultado e inicia revanche; também verifica oito conexões em 1440/390/320 px. Capturas em `artifacts/batata-browser-1792600509166/`, com portal, lobby, partida, resultado e tema claro, inspecionadas visualmente. Nenhum erro JavaScript ou violação de CSP foi registrado. Prévia local atualizada na porta 5055; nenhuma publicação remota foi realizada nesta revisão.
+
 ## Nickname salvo sem identificação repetida — 20/10/2026
 
 O nickname definido no perfil agora é reutilizado diretamente ao criar uma sala, entrar por código ou selecionar uma sala pública. Abrir um convite por link também entra com esse nickname, retomando primeiro uma sessão existente quando disponível. A identificação continua disponível para quem ainda não definiu um nickname válido. Falhas de entrada permitem tentar novamente sem redigitar o nome; pedidos repetidos durante a mesma operação não cadastram outra pessoa. Na página de convite, salvar o perfil substitui a pergunta de nome por “Você vai entrar como …”.

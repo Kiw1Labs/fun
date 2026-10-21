@@ -4,22 +4,25 @@ Segundo jogo do Fun, integrado ao portal `/` e às salas de quatro letras. Imple
 
 Resultados reais, comandos e evidências em [BATATA_VALIDACAO.md](BATATA_VALIDACAO.md).
 
+Revisão visual solicitada em 21/10/2026: manter o mesmo design dos outros jogos do Fun. Portal, sala, formulários, botões e cronômetro usam a paleta neutra, a tipografia, as bordas e os temas claro/escuro compartilhados. A batata e a roda permanecem elementos próprios da partida.
+
 ## Jogar e desenvolver
 
 Execute `npm.cmd run dev` e abra `http://127.0.0.1:5050`. Escolha **Batata Quente**, mantenha a sala privada, clique **Jogar** e informe seu apelido se ainda não houver um salvo. Compartilhe o link ou código. Outra pessoa deve entrar em um navegador ou perfil independente; abas do mesmo navegador retomam a mesma identidade.
 
-O anfitrião ajusta as regras no lobby e inicia a partida com 2 a 8 pessoas. O padrão é 3 vidas, aquecimento aleatório inteiro entre 10 e 30 segundos e garantia de 5 segundos ao passar. A interface indica o turno por texto, contorno, seta e posição da batata. O campo aceita Enter. O som pode ser silenciado, com preferência salva no navegador; os sons são sintetizados localmente após interação do usuário. Animações respeitam movimento reduzido.
+O anfitrião inicia a partida com 2 a 8 pessoas. As regras são fixas: 3 vidas, aquecimento aleatório inteiro entre 10 e 30 segundos e garantia de 5 segundos ao passar. A dificuldade começa fácil e segue automaticamente o ciclo de voltas abaixo. A pedido do usuário, o lobby não exibe os resumos de vidas/tempos e dificuldade, nem formulário de ajustes. Os blocos “Como jogar” e “Passou pela roda” foram removidos da interface; a mesa ocupa a largura disponível. A interface indica o turno por texto, contorno, seta e posição da batata. O campo aceita Enter. O som pode ser silenciado, com preferência salva no navegador; os sons são sintetizados localmente após interação do usuário. Animações respeitam movimento reduzido.
 
 Para acesso pela rede local, o processo precisa escutar na interface autorizada, com `FUN_ORIGINS` contendo a origem exata. O launcher padrão escuta somente em loopback. Não expor portas de desenvolvimento ou habilitar origens genéricas em produção.
 
 ## Regras confirmadas
 
-- O servidor define ordem, trecho, vidas, prazo e vencedor. Cada palavra válida avança ao próximo jogador elegível e troca o trecho.
+- O servidor define ordem, trecho (sigla), vidas, prazo, volta, dificuldade e vencedor. Cada palavra válida avança ao próximo jogador elegível. O trecho muda na passagem, exceto durante a volta de manutenção após uma queima.
+- O ciclo automático é **3 voltas fáceis → 1 média → 2 fáceis → 1 difícil**, repetindo desde as 3 fáceis. A interface mostra a volta e a dificuldade atuais.
 - O prazo do aquecimento é compartilhado: passa junto com a batata. Se faltarem menos de 5 segundos, o padrão garante 5 segundos à próxima pessoa.
 - Palavra inválida informa o motivo e mantém o turno e o prazo. A palavra precisa existir nesta edição do dicionário e conter o trecho contínuo, em qualquer posição.
 - Letras maiúsculas, acentos e cedilha são equivalentes: `Braço` e `braco` contam como a mesma palavra. Não há correção aproximada. Uma palavra normalizada não pode se repetir na partida.
-- Na expiração, somente a pessoa da vez perde uma vida. O servidor avança, troca o trecho e sorteia um aquecimento novo. Zero vidas elimina; a pessoa continua assistindo. A última pessoa com vidas vence.
-- O anfitrião pode iniciar outra partida ou retornar todos ao lobby. A revanche zera vidas, palavras usadas e histórico de passagens. As configurações são mantidas.
+- Na expiração, somente a pessoa da vez perde uma vida. O servidor avança e sorteia um aquecimento novo. **Só quando a batata queima**, a mesma sílaba segue até a pessoa anterior à que queimou, **incluindo a vez dela**; quem queimou recebe outra ao retornar. Exemplo confirmado: Ana → Bia → Caio → Dani; se Ana queimar, Bia, Caio e Dani usam a mesma sílaba, e Ana recebe outra. Se Bia também queimar, a referência passa a ser Bia: Caio, Dani e Ana usam a mesma sílaba, e Bia recebe outra ao voltar. Palavra recusada mantém o turno e não inicia essa manutenção. Zero vidas elimina; a pessoa continua assistindo. A última pessoa com vidas vence.
+- O anfitrião pode iniciar outra partida ou retornar todos ao lobby. A revanche restaura 3 vidas, zera palavras e histórico e recomeça na primeira volta fácil.
 
 ## Decisões técnicas desta versão
 
@@ -30,8 +33,11 @@ Para acesso pela rede local, o processo precisa escutar na interface autorizada,
 - Salas vazias expiram em 5 minutos; lobby/resultados têm aviso após 30 minutos mais 2 minutos para confirmar presença. Uma partida ativa não expira por inatividade.
 - O motor síncrono fica separado do adaptador HTTP/WS e todas as mutações passam pelo mesmo lock. Eventos têm identidade e resposta idempotente; o turno tem token novo a cada passagem/queima. Envio tardio ou referente a um turno anterior é rejeitado. Duas abas não podem passar duas vezes com o mesmo turno.
 - O Fun já persiste snapshots em SQLite exclusivo. Reiniciar o processo **encerra a partida sem vencedor**, preservando a sala e abrindo nova janela de reconexão. A partida interrompida não é retomada. Usar exatamente um worker.
-- Limites do anfitrião: 1–5 vidas; aquecimento mínimo/máximo entre 5 e 60 segundos, mínimo ≤ máximo; garantia de passagem entre 3 e 10 segundos, nunca superior ao mínimo. Configurações são aplicadas somente no lobby.
-- Trechos de três letras: Tranquila ≥ 1.000 respostas; No ponto 200–5.000; Fervendo 30–500. A contagem considera palavras normalizadas ainda não usadas. O trecho anterior é evitado quando há alternativas. Se a faixa esgotar, usa outro trecho com respostas, inclusive duas letras; se todo o léxico esgotar, encerra sem vencedor.
+- Uma volta termina quando todas as pessoas ainda elegíveis naquela volta concluíram sua vez por palavra válida, queima ou saída definitiva. Palavra recusada não conta; espectadores e eliminados não entram nas próximas voltas. A desconexão temporária mantém a pessoa na ordem durante a janela de reconexão.
+- Se a pessoa de referência for eliminada ou sair, a sigla permanece até todas as outras pessoas elegíveis concluírem uma vez. Essa decisão cobre os casos em que a vez não pode retornar à pessoa original.
+- O token de turno muda mesmo com a sigla mantida. Se todas as palavras disponíveis dessa sigla já tiverem sido usadas, a manutenção termina antes da volta para evitar um turno impossível.
+- Ajustes enviados por clientes antigos são recusados. Salas persistidas recebem os valores fixos ao carregar; iniciar/reiniciar a partida também restaura esses valores.
+- Trechos de três letras: fácil ≥ 1.000 respostas; média 200–5.000; difícil 30–500. A contagem considera palavras normalizadas ainda não usadas. A faixa da volta é aplicada ao sortear a próxima sigla; uma sigla em manutenção continua até terminar sua volta. O trecho anterior é evitado quando há alternativas. Se a faixa esgotar, usa outro trecho com respostas, inclusive duas letras; se todo o léxico esgotar, encerra sem vencedor.
 
 ## Dicionário e licença
 
@@ -56,6 +62,6 @@ npm.cmd run test:batata
 npm.cmd run test:browser
 ```
 
-`tests/test_batata.py` cobre regras, dicionário real, relógio, repetição, mensagens concorrentes, isolamento, reconexão, permissões, abandono e reinício. `tests/batata.browser.mjs` abre dois contextos independentes de Chromium, desktop e celular; usa HTTP e WebSocket reais e um relógio controlável exclusivo do servidor de fixtures para evitar dependência da duração dos screenshots. Evidências ficam em `artifacts/batata-browser-*`. O servidor de teste e suas rotas não entram no pacote.
+`tests/test_batata.py` cobre regras fixas, dois ciclos completos de dificuldade, manutenção da sigla após queima incluindo a vez da pessoa anterior em uma roda de quatro, mudança de referência após nova queima, eliminação/saída da pessoa de referência, dicionário real, relógio, repetição, mensagens concorrentes, isolamento, reconexão, permissões, abandono e reinício. `tests/batata.browser.mjs` abre dois contextos independentes de Chromium, desktop e celular; verifica o lobby sem ajustes, a mensagem que explicita a última pessoa a usar a sílaba e a revanche na primeira volta fácil. Usa HTTP e WebSocket reais e um relógio controlável exclusivo do servidor de fixtures para evitar dependência da duração dos screenshots. Evidências ficam em `artifacts/batata-browser-*`. O servidor de teste e suas rotas não entram no pacote.
 
 O build inclui os assets próprios; o pacote e o preparador do atualizador incluem dicionário e licença. `FUN_DICTIONARY` pode apontar para outro diretório compilado; se ausente, usa o dicionário do release. Produção continua exigindo HTTP/HTTPS com upgrade WebSocket, um worker e backup/rollback conforme [DEPLOY.md](DEPLOY.md). Esta entrega não ativa nem reinicia serviços remotos.

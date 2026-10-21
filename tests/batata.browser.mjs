@@ -45,16 +45,12 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
     await guest.getByRole('textbox',{name:'Como podemos chamar você?',exact:true}).fill('Bia');
     await guest.getByRole('button',{name:'Entrar na sala',exact:true}).click();
     await guest.getByText('Bia (você)',{exact:true}).waitFor();
-    await host.getByLabel('Vidas',{exact:true}).fill('1');
-    await host.getByLabel('Mínimo (s)',{exact:true}).fill('10');
-    await host.getByLabel('Máximo (s)',{exact:true}).fill('10');
-    await host.getByLabel('Ao passar (s)',{exact:true}).fill('5');
-    await host.getByRole('button',{name:'Salvar ajustes',exact:true}).click();
-    await host.waitForFunction(()=>document.querySelector('#potato-lives')?.value==='1');
+    assert.equal(await host.locator('#potato-settings').count(),0);
     await host.screenshot({path:resolve(folder,'lobby-desktop.png'),fullPage:true});
     await guest.screenshot({path:resolve(folder,'lobby-mobile.png'),fullPage:true});
     await host.getByRole('button',{name:/Começar a esquentar/}).click();
     await host.getByText('Sua vez!',{exact:true}).waitFor();
+    await host.getByText('Volta 1 · Fácil',{exact:true}).waitFor();
     await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill('zzqqww');
     await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
     await host.locator('#answer-feedback').filter({hasText:'dicionário'}).waitFor();
@@ -89,7 +85,27 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
       const answer=guest.locator('#answer');await answer.scrollIntoViewIfNeeded();
       assert.ok((await answer.boundingBox()).width>100);
     }
-    await host.evaluate(()=>fetch('/_fixture/advance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds:31})}));
+    const currentFragment=()=>host.getByRole('heading',{name:'Trecho de letras'}).textContent();
+    const heldFragment=await currentFragment();
+    async function burn() {
+      const total=await host.locator('.seat-hearts').evaluateAll(seats=>seats.reduce((sum,seat)=>sum+Number.parseInt(seat.getAttribute('aria-label')),0));
+      await host.evaluate(()=>fetch('/_fixture/advance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds:31})}));
+      await host.waitForFunction(before=>[...document.querySelectorAll('.seat-hearts')].reduce((sum,seat)=>sum+Number.parseInt(seat.getAttribute('aria-label')),0)===before-1,total);
+    }
+    await burn();
+    await host.getByText('Sua vez!',{exact:true}).waitFor();
+    assert.equal(await currentFragment(),heldFragment);
+    await host.getByText('A sílaba segue até a pessoa anterior a Bia, incluindo a vez dela. Bia recebe outra ao voltar.',{exact:true}).waitFor();
+    await guest.evaluate(()=>scrollTo(0,0));
+    await host.screenshot({path:resolve(folder,'held-desktop.png'),fullPage:true});
+    await guest.screenshot({path:resolve(folder,'held-mobile.png'),fullPage:true});
+    await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill(wordFor(heldFragment.toLowerCase()));
+    await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
+    await guest.getByText('Sua vez!',{exact:true}).waitFor();
+    assert.notEqual(await currentFragment(),heldFragment);
+    assert.equal(await host.locator('.fragment-retention').count(),0);
+    await host.getByText('Volta 2 · Fácil',{exact:true}).waitFor();
+    for(let remaining=0;remaining<3;remaining++)await burn();
     await host.getByRole('heading',{name:'Você venceu!',exact:true}).waitFor();
     await guest.getByRole('heading',{name:'Ana venceu!',exact:true}).waitFor();
     await host.getByText('A batata queimou!',{exact:false}).waitFor();
@@ -97,6 +113,7 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
     await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
     await host.getByText('Sua vez!',{exact:true}).waitFor();
     await host.getByText('0 palavras na roda',{exact:true}).waitFor();
+    await host.getByText('Volta 1 · Fácil',{exact:true}).waitFor();
     await host.getByRole('button',{name:'Sair da sala',exact:true}).click();
     await host.getByText('Você saiu da sala.',{exact:true}).waitFor();
     await guest.getByRole('heading',{name:'Você venceu!',exact:true}).waitFor();

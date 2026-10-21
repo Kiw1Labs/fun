@@ -3,20 +3,12 @@ import secrets
 
 from .lexicon import normalize
 
-DEFAULTS = dict(lives=3, min_seconds=10, max_seconds=30, floor_seconds=5, difficulty='normal')
+DEFAULTS = dict(lives=3, min_seconds=10, max_seconds=30, floor_seconds=5, difficulty='easy')
+DIFFICULTY_PATTERN = ('easy', 'easy', 'easy', 'normal', 'easy', 'easy', 'hard')
 
 
-def settings(value):
-    if not isinstance(value, dict) or set(value) != set(DEFAULTS):
-        raise ValueError('Configurações inválidas.')
-    for field, low, high in [('lives', 1, 5), ('min_seconds', 5, 60), ('max_seconds', 5, 60), ('floor_seconds', 3, 10)]:
-        if type(value[field]) is not int or not low <= value[field] <= high:
-            raise ValueError(f'Configuração {field} deve ficar entre {low} e {high}.')
-    if value['min_seconds'] > value['max_seconds'] or value['floor_seconds'] > value['min_seconds']:
-        raise ValueError('Use mínimo ≤ máximo e tempo de passagem ≤ mínimo.')
-    if value['difficulty'] not in ('easy', 'normal', 'hard'):
-        raise ValueError('Dificuldade inválida.')
-    return dict(value)
+def difficulty(lap):
+    return DIFFICULTY_PATTERN[(lap - 1) % len(DIFFICULTY_PATTERN)]
 
 
 class BatataQuente:
@@ -27,9 +19,11 @@ class BatataQuente:
         return [pid for pid in r['roster'] if r['people'][pid]['active'] and r['potato']['lives'][pid] > 0]
 
     def start(self, r, now, players):
+        r['settings'] = dict(DEFAULTS)
         r['roster'] = [p['id'] for p in players]
         r['potato'] = dict(lives={p['id']: r['settings']['lives'] for p in players}, used={}, spent={},
-                           turn=players[0]['id'], fragment=None, log=[], cycle=0, event=None)
+                           turn=players[0]['id'], fragment=None, log=[], cycle=0, event=None,
+                           lap=1, lap_remaining=list(r['roster']), hold=None)
         r.update(phase='playing', result=None, winner=None, warning=None)
         self.challenge(r, now)
         if r['phase'] == 'playing':
@@ -37,7 +31,7 @@ class BatataQuente:
 
     def challenge(self, r, now):
         game = r['potato']
-        game['fragment'] = self.lexicon.pick(game['spent'], r['settings']['difficulty'], game['fragment'])
+        game['fragment'] = self.lexicon.pick(game['spent'], difficulty(game['lap']), game['fragment'])
         r['round_id'] = secrets.token_hex(12)
         if game['fragment'] is None:
             r.update(phase='results', result='dictionary_exhausted', winner=None, deadline=None, activity=now, warning=None)
@@ -50,13 +44,32 @@ class BatataQuente:
 
     def next(self, r):
         game, roster = r['potato'], r['roster']
+        previous = game['turn']
         index = roster.index(game['turn'])
         eligible = set(self.eligible(r))
+        game['lap_remaining'] = [pid for pid in game['lap_remaining'] if pid in eligible and pid != previous]
+        if not game['lap_remaining']:
+            game['lap'] += 1
+            game['lap_remaining'] = self.eligible(r)
+        if game['hold']:
+            game['hold']['remaining'] = [pid for pid in game['hold']['remaining'] if pid in eligible and pid != previous]
+            if not game['hold']['remaining']:
+                game['hold'] = None
         for offset in range(1, len(roster) + 1):
             candidate = roster[(index + offset) % len(roster)]
             if candidate in eligible:
                 game['turn'] = candidate
                 return
+
+    def next_challenge(self, r, now):
+        game = r['potato']
+        available = self.lexicon.counts.get(game['fragment'], 0) - game['spent'].get(game['fragment'], 0) if game['hold'] else 0
+        if game['hold'] and available > 0:
+            # Mesmo trecho, nova identidade de turno para rejeitar mensagens atrasadas.
+            r['round_id'] = secrets.token_hex(12)
+        else:
+            game['hold'] = None
+            self.challenge(r, now)
 
     def answer(self, r, pid, event, now):
         game = r['potato']
@@ -80,7 +93,7 @@ class BatataQuente:
         game['log'] = (game['log'] + [dict(player=r['people'][pid]['name'], word=display)])[-8:]
         game['event'] = dict(id=r['round_id'], kind='pass', player=pid, word=display)
         self.next(r)
-        self.challenge(r, now)
+        self.next_challenge(r, now)
         if r['phase'] == 'playing':
             r['deadline'] = max(r['deadline'], now + r['settings']['floor_seconds'])
         return dict(correct=True, word=display)
@@ -90,16 +103,22 @@ class BatataQuente:
         pid = game['turn']
         game['lives'][pid] = max(0, game['lives'][pid] - 1)
         game['event'] = dict(id=r['round_id'], kind='burn', player=pid)
+        game['hold'] = dict(player=pid, remaining=[other for other in self.eligible(r) if other != pid])
         self.next(r)
         if len(self.eligible(r)) >= 2:
-            self.challenge(r, now)
+            self.next_challenge(r, now)
             if r['phase'] == 'playing':
                 self.heat(r, now)
 
     def snapshot(self, r):
         game = r.get('potato')
+        lap = game.get('lap', 1) if game else 1
+        hold = game.get('hold') if game else None
         return dict(settings=r['settings'], turn=game['turn'] if game else None,
                     fragment=game['fragment'].upper() if game and game['fragment'] else None,
                     lives=dict(game['lives']) if game else {}, cycle=game['cycle'] if game else 0,
+                    lap=lap, difficulty=difficulty(lap), lap_in_cycle=(lap - 1) % len(DIFFICULTY_PATTERN) + 1,
+                    fragment_hold=(dict(player=hold['player'] if hold['player'] in self.eligible(r) else None)
+                                   if hold and r['phase'] == 'playing' else None),
                     used_count=len(game['used']) if game else 0,
                     recent=game['log'] if game else [], event=game['event'] if game else None)

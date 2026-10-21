@@ -9,7 +9,7 @@ import time
 from .catalog import Challenge, export
 from .games import GAMES
 from .games.sabe_essa import points as points
-from .games.batata_quente import BatataQuente, DEFAULTS, settings
+from .games.batata_quente import BatataQuente, DEFAULTS
 from .games.lexicon import default_lexicon
 
 
@@ -30,6 +30,8 @@ class Engine:
         self.catalog_cache = {}
         now = clock()
         for r in self.rooms.values():
+            if r['game'] == 'batata-quente':
+                r['settings'] = dict(DEFAULTS)
             r.setdefault('room_name', 'Sala de Sabe Essa?')
             r.setdefault('visibility', 'private')
             # Falha/reinício encerra uma partida sem vencedor e reabre a janela de retomada.
@@ -207,7 +209,7 @@ class Engine:
                 self.finish(r, 'survivor', eligible[0], now)
             elif r['potato']['turn'] not in eligible:
                 self.potato.next(r)
-                self.potato.challenge(r, now)
+                self.potato.next_challenge(r, now)
                 if r['phase'] == 'playing':
                     self.potato.heat(r, now)
             return
@@ -276,9 +278,7 @@ class Engine:
             if action in ('start', 'lobby', 'kick', 'close', 'rename', 'configure') and r['host'] != pid:
                 raise RuleError('Somente o anfitrião pode realizar esta ação.')
             if action == 'configure':
-                if r['game'] != 'batata-quente' or r['phase'] != 'lobby':
-                    raise RuleError('Altere as configurações no lobby de Batata Quente.')
-                r['settings'] = settings(event.get('settings'))
+                raise RuleError('As regras do jogo são fixas e a dificuldade muda automaticamente por volta.')
             elif action == 'rename_player':
                 if 'target' in event:
                     raise RuleError('Altere apenas o seu próprio nome.')
