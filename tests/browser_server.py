@@ -20,7 +20,8 @@ def app():
         add_user(accounts_path(), 'browser-third', 'browser-third-password')
     catalog = synthetic_catalog() if os.getenv('FUN_TEST_FIXTURES') == '1' else []
     epoch, monotonic, offset = time.time(), time.monotonic(), [0]
-    application = create_app(catalog=catalog, clock=lambda: epoch + time.monotonic() - monotonic + offset[0])
+    frozen = bool(catalog) and os.getenv('FUN_TEST_FROZEN_CLOCK') == '1'
+    application = create_app(catalog=catalog, clock=lambda: epoch + (0 if frozen else time.monotonic() - monotonic) + offset[0])
     async def process_metrics(request):
         return JSONResponse(metrics())
     application.router.routes.insert(0, Route('/_fixture_metrics', process_metrics))

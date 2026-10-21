@@ -68,7 +68,9 @@ def verify_manifest(path):
 
 
 def safe_extract(data, destination):
-    allowed = ('fun/','frontend/','deploy/','media/questions/','content/questions/')
+    allowed = ('fun/','frontend/','deploy/','media/questions/','content/questions/','content/dictionary/')
+    dictionary_files = {'pt_BR.dic', 'pt_BR.aff', 'README_VERO.txt', 'COPYING', 'COPYING.LESSER',
+                        'words.tsv.gz', 'fragments.json', 'manifest.json'}
     specific = {'requirements.lock','.env.example','tools/import_catalog.py','tools/validate_catalog.py','tools/backup.py'}
     total = 0
     with tarfile.open(fileobj=io.BytesIO(data)) as archive:
@@ -84,7 +86,10 @@ def safe_extract(data, destination):
             # Only optimized images and the reviewed JSON content enter the runtime.
             if member.name.startswith('media/') and not member.name.endswith('.webp'):
                 continue
-            if member.name.startswith('content/') and Path(member.name).name not in ('catalog.json','provenance.json'):
+            if member.name.startswith('content/dictionary/'):
+                if member.name not in {'content/dictionary/' + name for name in dictionary_files}:
+                    continue
+            elif member.name.startswith('content/') and Path(member.name).name not in ('catalog.json','provenance.json'):
                 continue
             path.parent.mkdir(parents=True, exist_ok=True)
             with archive.extractfile(member) as source, path.open('xb') as output:
@@ -97,7 +102,9 @@ def build_frontend(path):
     assets.mkdir(parents=True,exist_ok=True)
     brand = path/'dist/brand'
     brand.mkdir(parents=True,exist_ok=True)
-    for name in ('app.js','style.css'):
+    for name in ('app.js','style.css','batata.js','batata.css'):
+        if name.startswith('batata.') and '/assets/' + name not in html:
+            continue
         data = (path/'frontend'/name).read_bytes()
         stem, suffix = name.rsplit('.',1)
         target = f'{stem}.{hashlib.sha256(data).hexdigest()[:12]}.{suffix}'

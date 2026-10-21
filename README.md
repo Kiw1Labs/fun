@@ -1,6 +1,10 @@
-# Fun · Sabe Essa?
+# Fun · Sabe Essa? e Batata Quente
 
 Portal de jogos multiplayer em pt-BR. Primeiro jogo: **Sabe Essa?**. O portal e a home do jogo usam `/`; salas usam exatamente quatro letras, por exemplo `/ABCD`.
+
+**Novo, implementação local de 21/10/2026: [Batata Quente](docs/BATATA_QUENTE.md).** Escolha o jogo na criação de sala, convide de 2 a 8 pessoas e passe a batata com palavras em português. Inclui vidas, relógio compartilhado autoritativo, configurações do anfitrião, espectadores, reconexão, sons e revanche. O dicionário VERO é local e acompanha fonte/licença; nenhuma API paga valida jogadas. A implementação preserva o Sabe Essa? e não foi ativada no servidor público.
+
+Para iniciar, use os comandos de desenvolvimento abaixo. Para testar o novo jogo: `npm.cmd run test:batata` e `python -m pytest -q tests/test_batata.py`. Regras, decisões, limites do dicionário e preparação de implantação estão em [BATATA_QUENTE.md](docs/BATATA_QUENTE.md).
 
 Implementação com motor autoritativo, HTTP/WebSocket, frontend responsivo claro/escuro e persistência privada. **Acervo inicial real: 90 perguntas, 48 imagens WebP locais e 42 textos.** Ver [banco de perguntas](docs/BANCO_DE_PERGUNTAS.md) para importação, fontes e licenças. A interface impede iniciar quando o catálogo não satisfaz composição e histórico. Fixtures artificiais existem somente nos testes, fora do pacote de produção.
 
@@ -41,6 +45,7 @@ npm.cmd run build
 .\.venv\Scripts\python.exe -m pytest -q
 npx.cmd playwright install chromium
 npm.cmd run test:browser
+npm.cmd run test:batata
 npm.cmd run test:dev
 .\.venv\Scripts\python.exe -m tools.measure
 .\.venv\Scripts\python.exe -m tools.bundle

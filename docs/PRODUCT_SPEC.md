@@ -1,5 +1,7 @@
 # Fun / Sabe Essa? — especificação funcional
 
+Atualização de escopo em 21/10/2026: o pedido de **Batata Quente** autoriza o segundo jogo no mesmo portal. As regras abaixo continuam específicas de Sabe Essa?. As regras do novo jogo e as decisões de implementação estão em [BATATA_QUENTE.md](BATATA_QUENTE.md); não se aplicam ao Sabe Essa?.
+
 Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?” é provisório (antes PopSauce BR / Party Games BR). Não substituir essas decisões por suposições.
 
 ## Plataforma e URLs

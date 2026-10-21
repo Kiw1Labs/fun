@@ -43,7 +43,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Testar o jogo em navegadores
         id: browser
-        run: npm run test:browser
+        run: npm run test:browser && npm run test:batata
         env:
           FUN_TEST_PYTHON: python
       - name: Testar o servidor de desenvolvimento
