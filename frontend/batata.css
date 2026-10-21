@@ -51,8 +51,8 @@
 .current-seat { outline: 2px solid var(--accent); background: var(--soft); }
 .current-seat .seat-avatar { background: var(--accent); color: var(--bg); }
 .out-seat { opacity: .45; }
-.potato-seat .seat-kick { position: absolute; right: -5px; top: -5px; width: 22px; min-height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--bg); color: var(--muted); font-size: 15px; opacity: 0; }
-.potato-seat:hover .seat-kick, .potato-seat:focus-within .seat-kick { opacity: 1; }
+.potato-seat[data-kick-target] { cursor: pointer; }
+.potato-seat[data-kick-target]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 .potato-input-area { padding: 24px 28px; border-top: 1px solid var(--line); text-align: center; }
 .potato-input-area form { text-align: left; }
@@ -68,8 +68,7 @@
 
 .potato-start { margin-top: 12px; }
 .potato-room .fine { text-align: center; }
-.potato-room .room-footer { align-items: center; }
-.potato-room .room-footer > span { color: var(--muted); font-size: .75rem; }
+.potato-room .room-footer { align-items: center; justify-content: flex-end; }
 
 .is-playing .potato-token { left: calc(50% - 32px); top: calc(50% - 95px); width: 64px; height: 72px; }
 @keyframes potato-breathe { 50% { transform: translateY(-5px) rotate(3deg); } }
@@ -81,8 +80,6 @@
   .potato-room h1 { font-size: 1.5rem; }
   .potato-room .room-header { align-items: flex-start; gap: 12px; margin-bottom: 24px; }
   .potato-eyebrow, .potato-room-meta, .potato-tools button { font-size: .6875rem; }
-  .potato-room .room-footer > span { display: none; }
-  .potato-room .room-footer { justify-content: flex-end; }
 }
 @media (max-width: 600px) {
   .table-caption { padding: 16px 14px; font-size: .6875rem; }
@@ -106,7 +103,6 @@
   .potato-answer input { padding: 11px; font-size: 16px; }
   .potato-room .actions { flex-wrap: wrap; }
   .potato-room .actions button { font-size: .8125rem; }
-  .potato-seat .seat-kick { right: 0; top: 0; width: 19px; min-height: 19px; font-size: 12px; opacity: 1; }
   .is-playing .potato-token { left: calc(50% - 26px); top: calc(50% - 76px); width: 53px; height: 60px; }
   .is-playing .potato-center { top: 50%; left: 27%; right: 27%; }
   .potato-arena:not(.is-playing) .potato-center p { display: none; }

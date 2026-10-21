@@ -7,7 +7,7 @@ import {gunzipSync} from 'node:zlib';
 import {chromium} from '@playwright/test';
 
 const origin='http://127.0.0.1:15056';
-test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e transferência', {timeout:240000}, async()=>{
+test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, transferência e remoção confirmada', {timeout:240000}, async()=>{
   const folder=resolve(`artifacts/batata-browser-${Date.now()}`);
   await mkdir(folder,{recursive:true});
   try {await fetch(`${origin}/health`);throw new Error('Porta 15056 já ocupada.');} catch(error) {if(error.message.startsWith('Porta'))throw error;}
@@ -45,12 +45,24 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
     await guest.getByRole('textbox',{name:'Como podemos chamar você?',exact:true}).fill('Bia');
     await guest.getByRole('button',{name:'Entrar na sala',exact:true}).click();
     await guest.getByText('Bia (você)',{exact:true}).waitFor();
+    const biaSeat=host.getByRole('button',{name:'Abrir confirmação para remover Bia',exact:true});
+    await biaSeat.click();
+    await host.locator('#kick-dialog').waitFor({state:'visible'});
+    await host.screenshot({path:resolve(folder,'remove-popup-desktop.png'),fullPage:true});
+    await host.locator('#kick-dialog').evaluate(dialog=>{
+      window.kickCancellation=new Promise(resolve=>dialog.addEventListener('close',()=>resolve(),{once:true}));
+    });
+    await host.locator('#kick-dialog').getByRole('button',{name:'Cancelar',exact:true}).click();
+    await host.evaluate(()=>window.kickCancellation);
+    assert.equal(await biaSeat.count(),1);
+    assert.equal(await guest.locator('[data-kick-target]').count(),0);
+    assert.equal(await host.locator('.seat-kick').count(),0);
     assert.equal(await host.locator('#potato-settings').count(),0);
     await host.screenshot({path:resolve(folder,'lobby-desktop.png'),fullPage:true});
     await guest.screenshot({path:resolve(folder,'lobby-mobile.png'),fullPage:true});
     await host.getByRole('button',{name:/Começar a esquentar/}).click();
     await host.getByText('Sua vez!',{exact:true}).waitFor();
-    await host.getByText('Volta 1 · Fácil',{exact:true}).waitFor();
+    await host.getByText('Em partida',{exact:true}).waitFor();
     await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill('zzqqww');
     await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
     await host.locator('#answer-feedback').filter({hasText:'dicionário'}).waitFor();
@@ -106,7 +118,6 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
       return fragment&&fragment.textContent!==previous;
     },heldFragment);
     assert.notEqual(await currentFragment(),heldFragment);
-    await host.getByText('Volta 2 · Fácil',{exact:true}).waitFor();
     for(let remaining=0;remaining<3;remaining++)await burn();
     await host.getByRole('heading',{name:'Você venceu!',exact:true}).waitFor();
     await guest.getByRole('heading',{name:'Ana venceu!',exact:true}).waitFor();
@@ -114,7 +125,7 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
     await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
     await host.getByText('Sua vez!',{exact:true}).waitFor();
     await host.getByText('0 palavras na roda',{exact:true}).waitFor();
-    await host.getByText('Volta 1 · Fácil',{exact:true}).waitFor();
+    await host.getByText('Em partida',{exact:true}).waitFor();
     await host.getByRole('button',{name:'Sair da sala',exact:true}).click();
     await host.getByText('Você saiu da sala.',{exact:true}).waitFor();
     await guest.getByRole('heading',{name:'Você venceu!',exact:true}).waitFor();
@@ -163,6 +174,14 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5 e tr
     await host.getByRole('button',{name:'Alternar tema',exact:true}).click();
     await host.getByRole('button',{name:'Abrir navegação',exact:true}).click();
     await host.screenshot({path:resolve(folder,'eight-light-mobile.png'),fullPage:true});
+    const removable=host.getByRole('button',{name:'Abrir confirmação para remover Bia',exact:true});
+    await removable.focus();
+    await removable.press('Enter');
+    await host.locator('#kick-dialog').waitFor({state:'visible'});
+    await host.screenshot({path:resolve(folder,'remove-popup-mobile.png'),fullPage:true});
+    await host.locator('#kick-dialog').getByRole('button',{name:'Remover jogador',exact:true}).click();
+    await host.locator('.potato-seat').filter({hasText:'Bia'}).getByText('Saiu',{exact:true}).waitFor();
+    assert.equal(await removable.count(),0);
     assert.deepEqual(errors,[]);
     await writeFile(resolve(folder,'result.json'),JSON.stringify({ok:true,errors,word,fragment},null,2));
     console.log(`Evidências: ${folder}`);

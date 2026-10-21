@@ -57,6 +57,8 @@ Testes cobrem regras, distribuição simultânea dos desafios, tempo e pontuaç�
 
 ## Organização e operação
 
+Em Batata Quente, o anfitrião abre a confirmação de remoção clicando no participante da roda; Enter/Espaço também funcionam. A mesa usa o visual compartilhado do portal e mantém a progressão de dificuldade sem contador visível. Regras e evidências: [Batata Quente](docs/BATATA_QUENTE.md) e [validação](docs/BATATA_VALIDACAO.md).
+
 - `fun/engine.py`: salas, identidade, conexões, prazos e eventos idempotentes.
 - `fun/games/`: registro modular e política Sabe Essa?.
 - `fun/catalog.py`: validação editorial, normalização e seleção exata.

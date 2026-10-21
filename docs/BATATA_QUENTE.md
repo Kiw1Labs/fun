@@ -8,6 +8,8 @@ Revisão visual solicitada em 21/10/2026: manter o mesmo design dos outros jogos
 
 Revisão seguinte de 21/10/2026: removidos da partida a dica abaixo da sílaba, a explicação de manutenção da sílaba, a mensagem textual de perda de vida e o cronômetro visível, incluindo segundos e barra. O servidor continua controlando o tempo e publicando as queimas; vidas, turno, sons e animações continuam funcionando.
 
+Nova revisão de 21/10/2026: removidos o texto “Boa de palavra? Mostre na roda.” e o contador de voltas/dificuldade. O anfitrião abre a confirmação de remoção clicando no participante, ou usando Enter/Espaço com o foco nele. A roda não tem mais botões “×”; cancelar o popup mantém a pessoa na sala.
+
 ## Jogar e desenvolver
 
 Execute `npm.cmd run dev` e abra `http://127.0.0.1:5050`. Escolha **Batata Quente**, mantenha a sala privada, clique **Jogar** e informe seu apelido se ainda não houver um salvo. Compartilhe o link ou código. Outra pessoa deve entrar em um navegador ou perfil independente; abas do mesmo navegador retomam a mesma identidade.
@@ -19,7 +21,7 @@ Para acesso pela rede local, o processo precisa escutar na interface autorizada,
 ## Regras confirmadas
 
 - O servidor define ordem, trecho (sigla), vidas, prazo, volta, dificuldade e vencedor. Cada palavra válida avança ao próximo jogador elegível. O trecho muda na passagem, exceto durante a volta de manutenção após uma queima.
-- O ciclo automático é **3 voltas fáceis → 1 média → 2 fáceis → 1 difícil**, repetindo desde as 3 fáceis. A interface mostra a volta e a dificuldade atuais.
+- O ciclo automático é **3 voltas fáceis → 1 média → 2 fáceis → 1 difícil**, repetindo desde as 3 fáceis. A volta e a dificuldade são controladas pelo servidor, sem contador visível.
 - O prazo do aquecimento é compartilhado: passa junto com a batata. Se faltarem menos de 5 segundos, o padrão garante 5 segundos à próxima pessoa.
 - Palavra inválida informa o motivo e mantém o turno e o prazo. A palavra precisa existir nesta edição do dicionário e conter o trecho contínuo, em qualquer posição.
 - Letras maiúsculas, acentos e cedilha são equivalentes: `Braço` e `braco` contam como a mesma palavra. Não há correção aproximada. Uma palavra normalizada não pode se repetir na partida.
@@ -64,6 +66,6 @@ npm.cmd run test:batata
 npm.cmd run test:browser
 ```
 
-`tests/test_batata.py` cobre regras fixas, dois ciclos completos de dificuldade, manutenção da sigla após queima incluindo a vez da pessoa anterior em uma roda de quatro, mudança de referência após nova queima, eliminação/saída da pessoa de referência, dicionário real, relógio, repetição, mensagens concorrentes, isolamento, reconexão, permissões, abandono e reinício. `tests/batata.browser.mjs` abre dois contextos independentes de Chromium, desktop e celular; verifica o lobby sem ajustes, a mensagem que explicita a última pessoa a usar a sílaba e a revanche na primeira volta fácil. Usa HTTP e WebSocket reais e um relógio controlável exclusivo do servidor de fixtures para evitar dependência da duração dos screenshots. Evidências ficam em `artifacts/batata-browser-*`. O servidor de teste e suas rotas não entram no pacote.
+`tests/test_batata.py` cobre regras fixas, dois ciclos completos de dificuldade, manutenção da sigla após queima incluindo a vez da pessoa anterior em uma roda de quatro, mudança de referência após nova queima, eliminação/saída da pessoa de referência, dicionário real, relógio, repetição, mensagens concorrentes, isolamento, reconexão, permissões, abandono e reinício. `tests/batata.browser.mjs` abre dois contextos independentes de Chromium, desktop e celular; verifica o lobby sem ajustes, a manutenção da sílaba, a revanche, o popup de remoção por clique/teclado e seu cancelamento. Usa HTTP e WebSocket reais e um relógio controlável exclusivo do servidor de fixtures para evitar dependência da duração dos screenshots. Evidências ficam em `artifacts/batata-browser-*`. O servidor de teste e suas rotas não entram no pacote.
 
 O build inclui os assets próprios; o pacote e o preparador do atualizador incluem dicionário e licença. `FUN_DICTIONARY` pode apontar para outro diretório compilado; se ausente, usa o dicionário do release. Produção exige HTTP/HTTPS com upgrade WebSocket, um worker e backup/rollback conforme [DEPLOY.md](DEPLOY.md). A release `7b839a3` foi ativada pelo fluxo existente, com preservação dos serviços compartilhados e verificações públicas registradas em [BATATA_VALIDACAO.md](BATATA_VALIDACAO.md).

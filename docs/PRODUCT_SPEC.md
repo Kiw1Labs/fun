@@ -8,6 +8,8 @@ Simplificação da tela solicitada em 21/10/2026: remover os dois textos do lobb
 
 Nova simplificação solicitada em 21/10/2026: remover a dica “Use essas letras juntas, em qualquer parte da palavra.”, a explicação de manutenção da sílaba, a mensagem de perda de vida após queimar e todo o cronômetro visível de queima (rótulo, segundos e barra). O relógio autoritativo, a queima e as regras continuam ativos.
 
+Revisão seguinte de 21/10/2026: remover “Boa de palavra? Mostre na roda.” e o contador visível de voltas/dificuldade de Batata Quente. Para o anfitrião, clicar em outro participante ativo abre o popup de confirmação de remoção; retirar o botão “×” da roda. Manter a progressão automática de dificuldade no servidor.
+
 Regras de Batata Quente confirmadas em 21/10/2026: sem ajustes no lobby, com 3 vidas, aquecimento de 10–30 segundos e pelo menos 5 segundos ao passar. Começa fácil e repete **3 voltas fáceis, 1 média, 2 fáceis, 1 difícil**. Somente quando a batata queima, mantém a mesma sigla até a pessoa anterior à que queimou, **incluindo a vez dessa pessoa**; quem queimou recebe outra ao retornar. Esclarecimento confirmado: em Ana → Bia → Caio → Dani, se Ana queimar, Dani também usa a mesma sílaba e Ana recebe outra. Se Bia também queimar, a referência passa a ser Bia, e Ana é a última a usar a sílaba nesse novo ciclo. A definição técnica de volta e os casos de eliminação/saída estão separados em [BATATA_QUENTE.md](BATATA_QUENTE.md#decisões-técnicas-desta-versão).
 
 Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?” é provisório (antes PopSauce BR / Party Games BR). Não substituir essas decisões por suposições.

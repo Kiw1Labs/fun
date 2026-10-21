@@ -1,5 +1,13 @@
 # Batata Quente — validação local de 21/10/2026
 
+## Remoção pelo participante e simplificação da mesa
+
+Removidos o texto “Boa de palavra? Mostre na roda.”, o contador visível de voltas/dificuldade e o botão “×” de cada participante. O anfitrião clica na pessoa para abrir o popup de confirmação compartilhado com Sabe Essa?, também acessível por Enter/Espaço. O servidor mantém as mesmas permissões e a progressão de dificuldade.
+
+`npm.cmd run check`, `npm.cmd run build` e `npm.cmd run test:batata` passaram. O cenário verificou abertura por clique, cancelamento sem remoção, ausência do controle para convidados e remoção efetiva por teclado. Também passou a roda com oito pessoas em 1440/390/320 px. Build de 290.874 bytes; capturas de partida e popup desktop/celular em `artifacts/batata-browser-1792609514665/`, inspecionadas visualmente. Backup local em `artifacts/batata-player-popup-backup/`.
+
+O inventário remoto encontrou uma partida com quatro participantes e o backend PID 29047, nascimento 174937419, servindo `/root/fun/current/dist`. A publicação está preparada para trocar somente os assets após CI, backup e comparação integral dos arquivos de runtime, preservando o processo. Baselines em `artifacts/batata-player-popup-before-activation.json` e `artifacts/batata-player-popup-runtime-before.json`; o resultado público será registrado após a ativação.
+
 ## Partida sem mensagens auxiliares e sem cronômetro visível
 
 Removidos a dica abaixo da sílaba, o texto de manutenção da sílaba, o aviso textual de perda de vida e o cronômetro com segundos e barra, conforme solicitado. A apresentação deixa de consultar esses elementos; sons e animações continuam recebendo o tempo autoritativo. O relógio do servidor e as regras não foram alterados.
