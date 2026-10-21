@@ -1,5 +1,13 @@
 # Batata Quente — validação local de 21/10/2026
 
+## Roda circular e indicação junto ao avatar
+
+A roda usa um raio único nos dois eixos e se adapta à largura disponível. A batata permanece junto à sílaba no centro; a seta tem espaço ao lado do avatar da pessoa da vez, sem girar sobre o conteúdo. Removidos os textos centrais “Sua vez!” e “Vez de …”. O contorno e o estado textual do participante continuam indicando o turno.
+
+`npm.cmd run check`, `npm.cmd run build` e `npm.cmd run test:batata` passaram. A verificação percorreu todas as oito posições de turno em 1440/390/320 px, conferindo círculo, lugares dentro da mesa e ausência de sobreposição da seta com sílaba, batata, avatares, nomes, estados e vidas. A área das letras é medida pelo texto efetivo, sem contar o espaço vazio do título. Build de 289.293 bytes; capturas locais em `artifacts/batata-browser-1792610395637/`, com inspeção visual em desktop e celular. Backup anterior em `artifacts/batata-circle-backup/`.
+
+Inventário anterior à publicação em `artifacts/batata-circle-before-activation.json` e `artifacts/batata-circle-runtime-before.json`. A publicação segue o fluxo de assets com CI aprovado, comparação integral de runtime, backup e rollback, preservando o processo do Fun e os serviços compartilhados. O resultado público fica em `artifacts/batata-public-*/result.json` e a conferência de preservação em `artifacts/batata-circle-preservation.json`.
+
 ## Remoção pelo participante e simplificação da mesa
 
 Removidos o texto “Boa de palavra? Mostre na roda.”, o contador visível de voltas/dificuldade e o botão “×” de cada participante. O anfitrião clica na pessoa para abrir o popup de confirmação compartilhado com Sabe Essa?, também acessível por Enter/Espaço. O servidor mantém as mesmas permissões e a progressão de dificuldade.

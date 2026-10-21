@@ -61,7 +61,7 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
     await host.screenshot({path:resolve(folder,'lobby-desktop.png'),fullPage:true});
     await guest.screenshot({path:resolve(folder,'lobby-mobile.png'),fullPage:true});
     await host.getByRole('button',{name:/Começar a esquentar/}).click();
-    await host.getByText('Sua vez!',{exact:true}).waitFor();
+    await host.locator('#answer:not([disabled])').waitFor();
     await host.getByText('Em partida',{exact:true}).waitFor();
     await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill('zzqqww');
     await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
@@ -81,7 +81,7 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
     const word=wordFor(fragment);
     await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill(word);
     await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
-    await guest.getByText('Sua vez!',{exact:true}).waitFor();
+    await guest.locator('#answer:not([disabled])').waitFor();
     await guest.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill(word);
     await guest.getByRole('button',{name:'Enviar palavra',exact:true}).click();
     await guest.locator('#answer-feedback').filter({hasText:'já foi usada'}).waitFor();
@@ -105,14 +105,14 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
       await host.waitForFunction(before=>[...document.querySelectorAll('.seat-hearts')].reduce((sum,seat)=>sum+Number.parseInt(seat.getAttribute('aria-label')),0)===before-1,total);
     }
     await burn();
-    await host.getByText('Sua vez!',{exact:true}).waitFor();
+    await host.locator('#answer:not([disabled])').waitFor();
     assert.equal(await currentFragment(),heldFragment);
     await guest.evaluate(()=>scrollTo(0,0));
     await host.screenshot({path:resolve(folder,'held-desktop.png'),fullPage:true});
     await guest.screenshot({path:resolve(folder,'held-mobile.png'),fullPage:true});
     await host.getByRole('textbox',{name:'Qual é a palavra?',exact:true}).fill(wordFor(heldFragment.toLowerCase()));
     await host.getByRole('button',{name:'Enviar palavra',exact:true}).click();
-    await guest.getByText('Sua vez!',{exact:true}).waitFor();
+    await guest.locator('#answer:not([disabled])').waitFor();
     await host.waitForFunction(previous=>{
       const fragment=document.querySelector('.fragment');
       return fragment&&fragment.textContent!==previous;
@@ -123,7 +123,7 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
     await guest.getByRole('heading',{name:'Ana venceu!',exact:true}).waitFor();
     await host.screenshot({path:resolve(folder,'results-desktop.png'),fullPage:true});
     await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
-    await host.getByText('Sua vez!',{exact:true}).waitFor();
+    await host.locator('#answer:not([disabled])').waitFor();
     await host.getByText('0 palavras na roda',{exact:true}).waitFor();
     await host.getByText('Em partida',{exact:true}).waitFor();
     await host.getByRole('button',{name:'Sair da sala',exact:true}).click();
@@ -154,21 +154,36 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
       window.qaHeartbeat=setInterval(()=>{for(const socket of window.qaSockets)if(socket.readyState===WebSocket.OPEN)socket.send(JSON.stringify({type:'ping'}));},10000);
     },fullCode);
     await host.getByRole('button',{name:/Começar a esquentar/}).click();
-    await host.getByText('Sua vez!',{exact:true}).waitFor();
+    await host.locator('#answer:not([disabled])').waitFor();
     assert.equal(await host.locator('.potato-seat').count(),8);
     await guest.goto(origin);
     await guest.getByText('Batata Quente · Em partida · entre para acompanhar',{exact:true}).waitFor();
     await guest.screenshot({path:resolve(folder,'public-mobile.png'),fullPage:true});
-    for(const width of [1440,390,320]) {
-      await host.setViewportSize({width,height:900});
-      await host.waitForTimeout(150);
-      assert.equal(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
-      const inside=await host.locator('.potato-arena').evaluate(arena=>{
-        const bounds=arena.getBoundingClientRect();
-        return [...arena.querySelectorAll('.potato-seat')].every(seat=>{const r=seat.getBoundingClientRect();return r.left>=bounds.left-1&&r.right<=bounds.right+1;});
-      });
-      assert.ok(inside,`Lugares cortados em ${width}px`);
-      await host.screenshot({path:resolve(folder,`eight-${width}.png`),fullPage:true});
+    // A seta deve ficar livre em todas as oito posições, inclusive na roda estreita.
+    for(let turnIndex=0;turnIndex<8;turnIndex++) {
+      if(turnIndex)await burn();
+      for(const width of [1440,390,320]) {
+        await host.setViewportSize({width,height:900});
+        await host.waitForTimeout(150);
+        assert.equal(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+        const geometry=await host.locator('.potato-arena').evaluate(arena=>{
+          const bounds=arena.getBoundingClientRect();
+          const orbit=arena.querySelector('.potato-orbit').getBoundingClientRect();
+          const pointer=arena.querySelector('.turn-pointer').getBoundingClientRect();
+          const overlaps=r=>pointer.left<r.right&&pointer.right>r.left&&pointer.top<r.bottom&&pointer.bottom>r.top;
+          return {
+            circle:Math.abs(orbit.width-orbit.height)<1,
+            inside:[...arena.querySelectorAll('.potato-seat')].every(seat=>{const r=seat.getBoundingClientRect();return r.left>=bounds.left-1&&r.right<=bounds.right+1&&r.top>=bounds.top-1&&r.bottom<=bounds.bottom+1;}),
+            pointerClear:[...arena.querySelectorAll('.fragment,.potato-token,.seat-avatar,.potato-seat strong,.potato-seat small,.seat-hearts')].every(node=>{
+              const range=document.createRange();range.selectNodeContents(node);
+              return !overlaps(node.matches('.fragment')?range.getBoundingClientRect():node.getBoundingClientRect());
+            }),
+            centralTurnAbsent:!arena.querySelector('#potato-turn')
+          };
+        });
+        assert.deepEqual(geometry,{circle:true,inside:true,pointerClear:true,centralTurnAbsent:true},`Roda/indicação na posição ${turnIndex}, ${width}px`);
+        if(!turnIndex||width===320)await host.screenshot({path:resolve(folder,turnIndex?`turn-${turnIndex}-${width}.png`:`eight-${width}.png`),fullPage:true});
+      }
     }
     await host.getByRole('button',{name:'Abrir navegação',exact:true}).click();
     await host.getByRole('button',{name:'Alternar tema',exact:true}).click();

@@ -10,6 +10,8 @@ Revisão seguinte de 21/10/2026: removidos da partida a dica abaixo da sílaba, 
 
 Nova revisão de 21/10/2026: removidos o texto “Boa de palavra? Mostre na roda.” e o contador de voltas/dificuldade. O anfitrião abre a confirmação de remoção clicando no participante, ou usando Enter/Espaço com o foco nele. A roda não tem mais botões “×”; cancelar o popup mantém a pessoa na sala.
 
+Revisão da roda em 21/10/2026: círculo com raio único para os dois eixos, adaptado à largura disponível. A batata e a sílaba ficam no centro; a seta fica ao lado do avatar de quem está jogando, com espaço próprio. Removidos “Sua vez!” e “Vez de …” do centro. O contorno e o texto “Está com a batata” na pessoa continuam identificando o turno. O teste de navegador percorre as oito posições em 1440/390/320 px, verificando círculo, lugares dentro da mesa e seta sem sobreposição.
+
 ## Jogar e desenvolver
 
 Execute `npm.cmd run dev` e abra `http://127.0.0.1:5050`. Escolha **Batata Quente**, mantenha a sala privada, clique **Jogar** e informe seu apelido se ainda não houver um salvo. Compartilhe o link ou código. Outra pessoa deve entrar em um navegador ou perfil independente; abas do mesmo navegador retomam a mesma identidade.

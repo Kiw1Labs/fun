@@ -1,7 +1,7 @@
 /* Interface do Batata Quente. Regras, palavras e relógio pertencem ao servidor. */
 (() => {
   const mascot = `<svg class="potato-art" viewBox="0 0 160 180" aria-hidden="true"><defs><linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffdb92"/><stop offset="1" stop-color="#d58a3b"/></linearGradient></defs><path d="M40 36C48 10 100 10 118 34c19 25 8 35 20 61 17 38-9 68-43 69-40 2-74-11-76-43-2-28 14-50 21-85Z" fill="url(#skin)" stroke="#6a3c20" stroke-width="4"/><g fill="#ad6c32" opacity=".65"><ellipse cx="48" cy="55" rx="5" ry="3"/><ellipse cx="113" cy="63" rx="3" ry="5"/><ellipse cx="38" cy="120" rx="4" ry="3"/><ellipse cx="108" cy="142" rx="5" ry="3"/></g><g fill="#432c25"><ellipse cx="60" cy="87" rx="5" ry="7"/><ellipse cx="101" cy="84" rx="5" ry="7"/></g><g fill="#ff9772"><ellipse cx="48" cy="102" rx="10" ry="6"/><ellipse cx="113" cy="100" rx="10" ry="6"/></g><path d="M73 105q10 13 20-1" fill="none" stroke="#432c25" stroke-width="4" stroke-linecap="round"/><path d="M24 86 9 74m126 13 15-15M55 160l-5 11m51-10 5 10" stroke="#6a3c20" stroke-width="5" stroke-linecap="round"/></svg>`;
-  let muted = false, audio, previousTurn, previousPosition, previousPhase, lastEvent, seenState=false, currentCycle, lastAlert=0;
+  let muted = false, audio, previousTurn, previousPhase, lastEvent, seenState=false, currentCycle, lastAlert=0;
   try { muted=localStorage.getItem('fun:potato-muted')==='1'; } catch {}
   const reduced=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
   function unlock() {
@@ -40,26 +40,22 @@
   }
   function layoutArena(arena) {
     const seats=[...arena.querySelectorAll('[data-seat]')];
-    let position={x:0,y:-40};
+    const size=Math.min(arena.clientWidth,arena.clientHeight);
+    const halfSeat=Math.max(...seats.map(seat=>Math.max(seat.offsetWidth,seat.offsetHeight)/2),0);
+    const radius=Math.max(0,Math.min(size*.39,size/2-halfSeat-8));
+    arena.style.setProperty('--orbit-radius',`${radius}px`);
     for(const seat of seats) {
       const angle=Number(seat.dataset.seat)/Math.max(seats.length,2)*Math.PI*2-Math.PI/2;
-      const radius=Math.min(.41,.5-(seat.offsetWidth/2+8)/arena.clientWidth);
-      seat.style.left=`${50+Math.cos(angle)*radius*100}%`;seat.style.top=`${50+Math.sin(angle)*39}%`;
-      if(seat.classList.contains('current-seat')) {
-        position={x:Math.cos(angle)*arena.clientWidth*.18,y:Math.sin(angle)*arena.clientHeight*.06};
-        arena.querySelector('.potato-token').style.setProperty('--pointer-angle',`${angle}rad`);
-      }
+      seat.style.left=`${arena.clientWidth/2+Math.cos(angle)*radius}px`;
+      seat.style.top=`${arena.clientHeight/2+Math.sin(angle)*radius}px`;
     }
-    return position;
   }
   window.addEventListener('resize',()=>{
-    const arena=document.querySelector('.potato-arena');if(!arena)return;
-    previousPosition=layoutArena(arena);
-    arena.querySelector('.potato-token').style.transform=`translate(${previousPosition.x}px,${previousPosition.y}px)`;
+    const arena=document.querySelector('.potato-arena');if(arena)layoutArena(arena);
   });
   function render({main,state,online,feedback,esc,status}) {
     const p=state.potato, playing=state.phase==='playing', lobby=state.phase==='lobby', host=state.host===state.you;
-    const me=state.people.find(person=>person.id===state.you), turn=state.people.find(person=>person.id===p.turn);
+    const me=state.people.find(person=>person.id===state.you);
     const yourTurn=playing&&p.turn===state.you;
     const focus=document.activeElement?.id, input=main.querySelector('#answer'), value=input?.value || '', selection=input?.selectionStart;
     const winner=state.people.find(person=>person.id===state.winner);
@@ -69,7 +65,7 @@
       lead='<span class="potato-eyebrow">AQUEÇA AS IDEIAS</span><h2>Quem vai ficar com<br>a batata?</h2><p>Uma palavra certa. Um suspiro a mais.<br>Chame de 2 a 8 pessoas e descubra.</p>';
       controls=`${host ? `<button data-action="start" class="potato-start" ${!online || state.people.filter(x=>x.active&&x.online).length<2?'disabled':''}>Começar a esquentar <span aria-hidden="true">↗</span></button><p class="fine">São necessárias pelo menos 2 pessoas conectadas.</p>` : '<p>O anfitrião inicia quando a turma estiver pronta.</p>'}`;
     } else if(playing) {
-      lead=`<p id="potato-turn" class="turn-message" role="status">${yourTurn?'Sua vez!':`Vez de ${esc(turn?.name)}`}</p><h2 class="fragment" aria-label="Trecho de letras">${esc(p.fragment)}</h2>`;
+      lead=`<h2 class="fragment" aria-label="Trecho de letras">${esc(p.fragment)}</h2>`;
       controls=`<form id="answer-form" class="potato-answer"><label for="answer">${yourTurn?'Qual é a palavra?':me.spectator?'Você está acompanhando':me.lives===0?'Você foi eliminado. Continue acompanhando!':'Prepare sua próxima palavra'}</label><div class="answer-row"><input id="answer" name="answer" maxlength="32" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="send" placeholder="Pense rápido…" value="${esc(value)}" ${!yourTurn || !online?'disabled':''} required><button ${!yourTurn || !online?'disabled':''} aria-label="Enviar palavra">Enviar <span aria-hidden="true">↗</span></button></div><p id="answer-feedback" role="status">${esc(feedback)}</p></form>`;
     } else {
       lead=`<span class="potato-eyebrow">FIM DE JOGO</span><h2>${!state.winner?'Partida encerrada sem vencedor':state.you===state.winner?'Você venceu!':`${esc(winner?.name)} venceu!`}</h2><p>${state.result==='dictionary_exhausted'?'Todas as palavras disponíveis foram usadas. Comece outra partida.':state.result==='cancelled'?'A turma desconectou ou a partida foi interrompida.':'A última pessoa com vidas ficou com a vitória.'}</p>`;
@@ -78,14 +74,9 @@
     const event=p.event;
     const phaseLabel=lobby?'No lobby':playing?'Em partida':'Resultado';
 
-    main.innerHTML=`<section class="potato-room"><header class="room-header"><div><div class="potato-eyebrow">BATATA QUENTE <span>· SALA ${esc(state.code)}</span></div><div class="room-title-line"><h1>${esc(state.room_name)}</h1><button id="copy-room-link" class="quiet icon-button room-share" aria-label="Copiar link da sala"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 13 2.93l-1.72 1.71M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71"/></svg></button></div><p class="potato-room-meta">${state.visibility==='private'?'Só por convite':'Sala pública'} · ${state.people.filter(x=>x.active).length}/8 pessoas ${host&&lobby?'<button id="edit-room-name" class="quiet">Alterar nome</button>':''}</p></div><div class="potato-tools">${status()}<button id="potato-sound" class="quiet" aria-pressed="${!muted}">${muted?'Som desligado':'Som ligado'}</button></div></header>${state.warning?'<div class="presence" role="alert"><p>Confirme sua presença para manter a sala aberta.</p><button data-action="presence">Estou aqui</button></div>':''}<div class="potato-layout"><section class="potato-table" aria-label="Mesa de jogo"><div class="table-caption"><span><i aria-hidden="true"></i>${phaseLabel}</span><span>${p.used_count} palavras na roda</span></div><div class="potato-arena ${playing?'is-playing':''}"><div class="potato-orbit" aria-hidden="true"></div><div class="potato-token">${mascot}<span class="turn-pointer" aria-hidden="true">➤</span></div><div class="potato-center">${lead}</div><ol class="potato-seats" aria-label="Jogadores">${roster.map((person,index)=>`<li id="potato-seat-${esc(person.id)}" data-seat="${index}" ${host&&person.active&&person.id!==state.you?`data-kick-target="${esc(person.id)}" tabindex="0" role="button" aria-label="Abrir confirmação para remover ${esc(person.name)}"`:""} class="potato-seat ${person.id===p.turn&&playing?'current-seat':''} ${person.lives===0||!person.active?'out-seat':''}"><span class="seat-avatar" aria-hidden="true">${esc(person.name.slice(0,1).toUpperCase())}</span><strong>${esc(person.name)}${person.id===state.you?' (você)':''}</strong><small>${person.host?'♛ ':''}${!person.active?'Saiu':!person.online?'Reconectando':person.spectator?'Espectador':person.lives===0?'Eliminado':person.id===p.turn&&playing?'▶ Está com a batata':lobby?'Pronto pra jogar':'Na roda'}</small>${person.lives!=null?`<span class="seat-hearts" aria-label="${person.lives} vidas">${'♥'.repeat(person.lives)}${'♡'.repeat(Math.max(0,p.settings.lives-person.lives))}</span>`:''}</li>`).join('')}</ol></div><div class="potato-input-area">${controls}</div></section></div><footer class="room-footer"><div><button class="quiet" data-action="leave">Sair da sala</button>${host?'<button id="close-room" class="quiet danger-text">Encerrar sala</button>':''}</div></footer></section>`;
-    const arena=main.querySelector('.potato-arena'), token=main.querySelector('.potato-token');
-    const position=layoutArena(arena);
-    const transform=`translate(${position.x}px, ${position.y}px)`;
-    token.style.transform=transform;
-    if(playing && previousPosition && previousTurn!==p.turn && !reduced()) {
-      token.animate([{transform:`translate(${previousPosition.x}px,${previousPosition.y}px) rotate(-12deg)`},{transform:`${transform} rotate(10deg)`,offset:.7},{transform}],{duration:520,easing:'cubic-bezier(.2,.8,.2,1)'});
-    }
+    main.innerHTML=`<section class="potato-room"><header class="room-header"><div><div class="potato-eyebrow">BATATA QUENTE <span>· SALA ${esc(state.code)}</span></div><div class="room-title-line"><h1>${esc(state.room_name)}</h1><button id="copy-room-link" class="quiet icon-button room-share" aria-label="Copiar link da sala"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3A5 5 0 0 0 13 2.93l-1.72 1.71M14 11a5 5 0 0 0-7.07 0l-3 3A5 5 0 0 0 11 21.07l1.71-1.71"/></svg></button></div><p class="potato-room-meta">${state.visibility==='private'?'Só por convite':'Sala pública'} · ${state.people.filter(x=>x.active).length}/8 pessoas ${host&&lobby?'<button id="edit-room-name" class="quiet">Alterar nome</button>':''}</p></div><div class="potato-tools">${status()}<button id="potato-sound" class="quiet" aria-pressed="${!muted}">${muted?'Som desligado':'Som ligado'}</button></div></header>${state.warning?'<div class="presence" role="alert"><p>Confirme sua presença para manter a sala aberta.</p><button data-action="presence">Estou aqui</button></div>':''}<div class="potato-layout"><section class="potato-table" aria-label="Mesa de jogo"><div class="table-caption"><span><i aria-hidden="true"></i>${phaseLabel}</span><span>${p.used_count} palavras na roda</span></div><div class="potato-arena ${playing?'is-playing':''}"><div class="potato-orbit" aria-hidden="true"></div><div class="potato-center"><div class="potato-token">${mascot}</div>${lead}</div><ol class="potato-seats" aria-label="Jogadores">${roster.map((person,index)=>`<li id="potato-seat-${esc(person.id)}" data-seat="${index}" ${host&&person.active&&person.id!==state.you?`data-kick-target="${esc(person.id)}" tabindex="0" role="button" aria-label="Abrir confirmação para remover ${esc(person.name)}"`:""} class="potato-seat ${person.id===p.turn&&playing?'current-seat':''} ${person.lives===0||!person.active?'out-seat':''}">${person.id===p.turn&&playing?'<span class="turn-pointer" aria-hidden="true"></span>':''}<span class="seat-avatar" aria-hidden="true">${esc(person.name.slice(0,1).toUpperCase())}</span><strong>${esc(person.name)}${person.id===state.you?' (você)':''}</strong><small>${person.host?'♛ ':''}${!person.active?'Saiu':!person.online?'Reconectando':person.spectator?'Espectador':person.lives===0?'Eliminado':person.id===p.turn&&playing?'▶ Está com a batata':lobby?'Pronto pra jogar':'Na roda'}</small>${person.lives!=null?`<span class="seat-hearts" aria-label="${person.lives} vidas">${'♥'.repeat(person.lives)}${'♡'.repeat(Math.max(0,p.settings.lives-person.lives))}</span>`:''}</li>`).join('')}</ol></div><div class="potato-input-area">${controls}</div></section></div><footer class="room-footer"><div><button class="quiet" data-action="leave">Sair da sala</button>${host?'<button id="close-room" class="quiet danger-text">Encerrar sala</button>':''}</div></footer></section>`;
+    const arena=main.querySelector('.potato-arena');
+    layoutArena(arena);
     if(seenState&&event?.id!==lastEvent&&event) {
       tone(event.kind);
       if(event.kind==='burn'&&!reduced()) arena.animate([{filter:'brightness(1)'},{filter:'brightness(1.55)'},{filter:'brightness(1)'}],{duration:500});
@@ -97,7 +88,7 @@
       const target=main.querySelector(`#${CSS.escape(focus)}`);target.focus({preventScroll:true});
       if(target.type==='text'&&selection!=null) target.setSelectionRange(selection,selection);
     } else if(yourTurn&&previousTurn!==p.turn&&!matchMedia('(pointer: coarse)').matches) main.querySelector('#answer')?.focus({preventScroll:true});
-    previousTurn=p.turn; previousPosition=position;
+    previousTurn=p.turn;
     timer(state,state.server_now);
   }
   function timer(state,now) {
