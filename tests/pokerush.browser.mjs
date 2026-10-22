@@ -40,7 +40,7 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
       await page.setViewportSize(size);
       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       const geometry=await page.evaluate(()=>{
-        const nodes=[...document.querySelectorAll('.rush-center,.rush-seat,.rush-success:not([hidden]),#answer,.rush-timer,.rush-room > .room-footer,#rush-suggestions:not([hidden]),.rush-ranking,.rush-winners')].filter(node=>node.getClientRects().length);
+        const nodes=[...document.querySelectorAll('.rush-center,.rush-seat,.rush-success:not([hidden]),#answer,.rush-timer,.rush-room > .room-footer,#rush-suggestions:not([hidden]),.rush-ranking,.rush-winners,.rush-pokedex,.rush-dex-grid li')].filter(node=>node.getClientRects().length);
         return {pageWidth:document.documentElement.scrollWidth,pageHeight:document.documentElement.scrollHeight,width:innerWidth,height:innerHeight,outside:nodes.filter(node=>{const r=node.getBoundingClientRect();return r.left<-.5||r.top<-.5||r.right>innerWidth+.5||r.bottom>innerHeight+.5;}).map(node=>({class:node.className,id:node.id,rect:node.getBoundingClientRect().toJSON()}))};
       });
       assert.ok(geometry.pageHeight<=geometry.height&&geometry.pageWidth<=geometry.width,`${label} ${size.width}×${size.height}: ${JSON.stringify(geometry)}`);
@@ -69,6 +69,9 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await guest.getByText('O anfitrião inicia a partida.',{exact:true}).waitFor();
     await host.getByRole('button',{name:'Iniciar PokéRush',exact:true}).waitFor({state:'visible'});
     await until(()=>states.get(host)?.people.filter(p=>p.online).length===2,'Duas conexões esperadas');
+    assert.equal(await host.locator('.rush-dex-grid li').count(),151);
+    assert.deepEqual(await host.locator('.rush-dex-grid li').allTextContents(),Array.from({length:151},(_,i)=>String(i+1).padStart(3,'0')));
+    assert.equal(await host.locator('.rush-dex-grid img').count(),0);
     await host.screenshot({path:resolve(folder,'lobby-desktop.png'),fullPage:true});
     await desktopFits(host,'lobby-2');
     await guest.screenshot({path:resolve(folder,'lobby-mobile.png'),fullPage:true});
@@ -92,6 +95,13 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await host.locator('#answer').evaluate(node=>{window.qaInput=node;node.focus();node.setSelectionRange(5,8);});
     const first=await hit(guest);
     await host.locator('.rush-success').getByText(first.name,{exact:true}).waitFor();
+    for(const page of [host,guest]) {
+      const cell=page.locator(`.rush-dex-grid [data-pokemon-id="${first.id}"]`);
+      await cell.locator('img').waitFor();assert.equal(await cell.getAttribute('class'),'is-caught');
+      assert.equal(await cell.locator('img').getAttribute('src'),first.image);
+      assert.match(await cell.getAttribute('aria-label'),new RegExp(first.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+      assert.equal(await cell.locator('span:not(.rush-dex-check)').count(),0);
+    }
     assert.equal(await host.locator('#answer').inputValue(),'rascunho em edição');
     assert.deepEqual(await host.locator('#answer').evaluate(node=>[node===window.qaInput,node===document.activeElement,node.selectionStart,node.selectionEnd]),[true,true,5,8]);
     await guest.locator('#answer').fill(first.name.slice(0,2));
@@ -107,6 +117,7 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await guest.locator('#answer').press('Enter');
     await until(()=>states.get(guest).cooldown>states.get(guest).server_now,'Cooldown do servidor ausente');
     assert.equal(states.get(guest).round_id,wrongRound);assert.equal(states.get(guest).deadline,wrongDeadline);
+    assert.equal(await guest.locator('.rush-dex-grid .is-caught').count(),2);
     assert.equal(await guest.locator('#answer-feedback').count(),0);assert.equal(states.get(guest).people.find(p=>p.name==='Bia').streak,2);
     await host.screenshot({path:resolve(folder,'playing-desktop.png'),fullPage:true});
     await guest.screenshot({path:resolve(folder,'playing-mobile.png'),fullPage:true});
@@ -115,6 +126,8 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
       const c=center.getBoundingClientRect();return [...document.querySelectorAll('.rush-success:not([hidden])')].every(card=>{const r=card.getBoundingClientRect();return r.right<=c.left||c.right<=r.left||r.bottom<=c.top||c.bottom<=r.top;});
     }),true);
     await guest.reload();await guest.locator('#answer').waitFor();
+    await guest.locator(`.rush-dex-grid [data-pokemon-id="${first.id}"] img`).waitFor();
+    assert.equal(await guest.locator('.rush-dex-grid .is-caught').count(),3);
     assert.equal(states.get(guest).people.filter(p=>!p.spectator).length,2);
     assert.equal(states.get(guest).people.find(p=>p.id===states.get(guest).you).score,120);
     const watcherContext=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce'});
@@ -123,6 +136,7 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await watcher.getByRole('button',{name:'Entrar na sala',exact:true}).click();
     await watcher.getByText('Você está acompanhando. Jogue na próxima partida.',{exact:true}).waitFor();
     assert.equal(await watcher.locator('#answer').count(),0);
+    await watcher.locator(`.rush-dex-grid [data-pokemon-id="${first.id}"] img`).waitFor();
     for(const size of [{width:320,height:720},{width:390,height:430},{width:390,height:844}]) {
       await guest.setViewportSize(size);await guest.locator('#answer').fill('an');
       await guest.locator('#answer').scrollIntoViewIfNeeded();
@@ -140,6 +154,7 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await advance(host,31);await host.getByRole('heading',{name:'Bia venceu!',exact:true}).waitFor();
     await guest.getByRole('heading',{name:'Você venceu!',exact:true}).waitFor();
     assert.equal(await host.getByRole('table').locator('tbody tr').count(),2);
+    assert.equal(await host.locator('.rush-dex-grid .is-caught').count(),3);
     await host.screenshot({path:resolve(folder,'results-desktop.png'),fullPage:true});
     await desktopFits(host,'results-2');
     await guest.screenshot({path:resolve(folder,'results-mobile.png'),fullPage:true});
@@ -147,6 +162,8 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await watcher.locator('#answer').waitFor();used.clear();
     await until(()=>states.get(host)?.phase==='playing'&&states.get(host).pokerush.used_count===0,'O anfitrião ainda não recebeu o estado da revanche');
     assert.equal(states.get(host).pokerush.used_count,0);assert.ok(states.get(host).people.every(p=>p.score===0));
+    assert.equal(await host.locator('.rush-dex-grid .is-caught').count(),0);
+    assert.equal(await host.locator('.rush-dex-grid li').first().textContent(),'001');
     await advance(host,31);await host.getByRole('heading',{name:'Vitória compartilhada!',exact:true}).waitFor();
     assert.equal(await host.locator('.rush-winners > div').count(),3);
     await host.getByRole('button',{name:'Voltar à sala',exact:true}).click();

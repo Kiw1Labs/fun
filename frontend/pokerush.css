@@ -13,6 +13,15 @@
 .rush-rules summary { color: var(--accent); cursor: pointer; }
 .rush-rules a { color: inherit; }
 .rush-watchers { font-size: .75rem; }
+.rush-pokedex { min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.rush-dex-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.rush-dex-heading h2 { margin: 0; font-size: .75rem; font-weight: 550; }
+.rush-dex-count { color: var(--muted); font-size: .65rem; font-variant-numeric: tabular-nums; }
+.rush-dex-grid { display: grid; grid-template-columns: repeat(13,minmax(0,1fr)); grid-template-rows: repeat(12,minmax(0,1fr)); gap: 2px; list-style: none; margin: 0; padding: 0; }
+.rush-dex-grid li { position: relative; display: grid; place-items: center; min-width: 0; min-height: 0; aspect-ratio: 1; overflow: hidden; border-radius: 4px; background: var(--soft); color: var(--muted); font-size: .56rem; font-variant-numeric: tabular-nums; }
+.rush-dex-grid .is-caught { background: color-mix(in srgb,#6dce92 12%,var(--panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb,#6dce92 40%,var(--line)); }
+.rush-dex-grid img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transform: scale(1.75); }
+.rush-dex-check { position: absolute; top: 0; right: 0; font-size: .48rem; color: var(--accent); }
 .rush-arena { position: relative; width: 100%; max-width: 560px; min-height: 520px; aspect-ratio: 1 / 1; margin: 24px auto 100px; }
 .rush-orbit { position: absolute; inset: 12%; border: 1px dashed var(--line); border-radius: 50%; pointer-events: none; }
 .rush-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 36%; text-align: center; }
@@ -86,7 +95,7 @@
   .rush-presence:empty { display: none; }
   .rush-presence .presence { margin: 0; padding: 8px 12px; }
   .rush-presence .presence p { margin: 0; }
-  .rush-layout { flex: 1; min-height: 0; grid-template-columns: minmax(0,1fr) 200px; gap: 16px; align-items: stretch; }
+  .rush-layout { flex: 1; min-height: 0; grid-template-columns: minmax(0,1fr) clamp(220px,23vw,320px); gap: 16px; align-items: stretch; }
   .rush-table { display: flex; flex-direction: column; min-height: 0; width: auto; max-width: none; margin: 0; padding: 12px; }
   #rush-stage { display: flex; flex-direction: column; flex: 1; min-height: 0; }
   .rush-caption { flex-shrink: 0; }
@@ -111,7 +120,7 @@
   #rush-composer:empty { display: none; }
   .rush-compose-bar { padding-top: 0; }
   .rush-compose-bar .fine { margin: 6px 0 0; }
-  .rush-sidebar { display: flex; flex-direction: column; gap: 12px; padding: 0; min-height: 0; }
+  .rush-sidebar { display: flex; flex-direction: column; gap: 8px; padding: 0; min-height: 0; }
   .rush-sidebar header { flex-shrink: 0; }
   .rush-sidebar h1 { font-size: 1.2rem; margin: 10px 0; }
   .rush-sidebar .connection { margin: 10px 0 4px; }
@@ -119,10 +128,14 @@
   .rush-watchers { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 4px; min-height: 0; }
   .rush-watchers:empty { display: none; }
   .rush-watchers p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .6rem; }
-  .rush-rules { flex: 1; min-height: 0; margin: 0; overflow-y: auto; }
-  .rush-suggestion-slot { flex-shrink: 0; margin-top: auto; }
+  .rush-rules { flex-shrink: 0; max-height: 22dvh; margin: 0; overflow-y: auto; }
+  .rush-suggestion-slot { flex-shrink: 0; }
   .rush-suggestion-slot:empty { display: none; }
   .rush-suggestion-area { margin: 0; }
+  .rush-suggestion-slot #rush-suggestions { max-height: min(200px,18dvh); }
+  .rush-pokedex { display: flex; flex-direction: column; flex: 1; min-height: 160px; max-height: 355px; margin-top: auto; padding: 8px; }
+  .rush-dex-grid { flex: 1; min-height: 0; }
+  .rush-dex-grid li { aspect-ratio: auto; }
   #rush-catalog-status:empty { display: none; }
   .rush-room > .room-footer { flex-shrink: 0; margin: 0; min-height: 40px; }
   .rush-room > .room-footer button { padding: 8px 12px; min-height: 40px; }

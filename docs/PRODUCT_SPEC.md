@@ -1,5 +1,7 @@
 # Fun / Sabe Essa? — especificação funcional
 
+Pokédex de PokéRush solicitada em 22/10/2026: exibir ao lado da mesa os 151 números da primeira geração, em ordem. Quando qualquer pessoa acertar um Pokémon, marcar a posição correspondente e substituir seu número pela imagem. Somente acertos confirmados revelam a imagem. A marcação é compartilhada pela sala durante a partida, inclusive para reconexões e espectadores, e reinicia na próxima partida. Preservar a tela completa sem rolagem da página no computador.
+
 Revisão visual de PokéRush em 22/10/2026: no computador, a sala deve ocupar uma tela completa, sem rolagem da página. Mesa, jogadores, tipos, barra, campo de resposta e controles devem caber na área disponível. Preservar o comportamento móvel e a rolagem própria das sugestões.
 
 Atualização de escopo em 22/10/2026: o pedido de **PokéRush** autoriza o terceiro jogo, com catálogo local real dos 151 Pokémon da primeira geração obtido da PokéAPI. Suas regras confirmadas e decisões técnicas estão em [POKERUSH.md](POKERUSH.md). O novo jogo também aparece na escolha do lobby neutro. As regras específicas de Sabe Essa? e Batata Quente permanecem próprias de cada jogo.

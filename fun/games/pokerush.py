@@ -139,4 +139,5 @@ class PokeRush:
                     server_now=now, started=r['started'], deadline=r['deadline'], warning=r['warning'],
                     round_id=r['round_id'], cooldown=r['people'].get(pid, {}).get('cooldown', 0),
                     result=r['result'], winner=r['winner'], winners=winners, catalog_available=True,
-                    pokerush=dict(types=game.get('types'), used_count=len(game.get('used', {}))))
+                    pokerush=dict(types=game.get('types'), used_count=len(game.get('used', {})),
+                                  used_ids=sorted(int(i) for i in game.get('used', {}))))

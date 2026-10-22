@@ -25,7 +25,7 @@
       catalog=data.pokemon.map(p=>({...p,key:normalize(p.name),alias:normalize(p.slug)}));
       // As miniaturas leves são locais e ficam prontas antes dos acertos e das sugestões.
       for(const pokemon of catalog) {const image=new Image();image.src=pokemon.image;image.decode?.().catch(()=>{});}
-      if(current)suggestions(current.esc);
+      if(current) {suggestions(current.esc);pokedex(current.state,current.esc);}
     }).catch(()=>{loading=null;const message=document.querySelector('#rush-catalog-status');if(message)message.textContent='Sugestões indisponíveis. Você ainda pode escrever o nome completo.';});
     return loading;
   }
@@ -60,6 +60,21 @@
     list.innerHTML=matches.map(p=>`<li><img src="${esc(p.image)}" alt="" width="40" height="40"><span>${esc(p.name)}</span></li>`).join('');
     list.hidden=!matches.length;
     input.setAttribute('aria-describedby',`rush-answer-help${matches.length?' rush-suggestion-label':''}`);
+  }
+  function pokedex(state,esc) {
+    const panel=document.querySelector('.rush-pokedex');if(!panel)return;
+    const caught=new Set(state.pokerush.used_ids||[]),records=new Map(catalog.map(p=>[p.id,p]));
+    panel.querySelector('.rush-dex-count').textContent=`${caught.size} / 151`;
+    panel.querySelector('.rush-dex-count').setAttribute('aria-label',`${caught.size} de 151 Pokémon acertados`);
+    const grid=panel.querySelector('.rush-dex-grid');
+    if(!grid.children.length)grid.innerHTML=Array.from({length:151},(_,i)=>`<li data-pokemon-id="${i+1}"></li>`).join('');
+    for(const cell of grid.children) {
+      const id=Number(cell.dataset.pokemonId),number=String(id).padStart(3,'0'),pokemon=records.get(id),revealed=caught.has(id)&&pokemon;
+      const label=revealed?`Nº ${number}: ${pokemon.name}, acertado`:`Nº ${number}: ainda não acertado`;
+      if(cell.getAttribute('aria-label')===label)continue;
+      cell.classList.toggle('is-caught',Boolean(revealed));cell.setAttribute('aria-label',label);cell.title=label;
+      cell.innerHTML=revealed?`<img src="${esc(pokemon.image)}" alt="" width="32" height="32"><span class="rush-dex-check" aria-hidden="true">✓</span>`:`<span>${number}</span>`;
+    }
   }
   document.addEventListener('input',event=>{if(current&&document.querySelector('.rush-room')&&event.target.id==='answer')suggestions(current.esc);});
   // As sugestões não são opções selecionáveis. Toque/arrasto mantém o campo e o teclado ativos.
@@ -108,6 +123,7 @@
   }
   function render(context) {
     current=context;
+    const previousDex=document.querySelector('.rush-pokedex');
     const previousSuggestions=document.querySelector('.rush-room .rush-suggestion-area');
     if(previousSuggestions)document.querySelector('#rush-composer').append(previousSuggestions);
     const {main,state,online,esc,status}=context,host=state.host===state.you,me=state.people.find(p=>p.id===state.you);
@@ -127,6 +143,9 @@
     main.querySelector('.rush-sidebar').innerHTML=`<header><span class="eyebrow">POKÉRUSH · SALA ${esc(state.code)}</span><div class="room-title-line"><h1>${esc(state.room_name)}</h1><button id="copy-room-link" class="quiet icon-button" aria-label="Copiar link da sala">↗</button></div><p class="fine">${state.visibility==='public'?'Sala pública':'Só por convite'} · ${state.people.filter(p=>p.active).length}/16 pessoas</p>${host&&state.phase==='lobby'?'<button class="quiet" id="edit-room-name">Alterar nome</button>':''}${status()}<button id="rush-sound" class="quiet" aria-pressed="${!muted}">${muted?'Som desligado':'Som ligado'}</button></header><div class="rush-watchers">${state.people.filter(p=>p.spectator&&p.active).map(p=>`<p ${host&&p.id!==state.you?`data-kick-target="${esc(p.id)}" tabindex="0" role="button" aria-label="Abrir confirmação para remover ${esc(p.name)}"`:''}>${esc(p.name)} · Espectador</p>`).join('')}</div><details class="rush-rules"><summary>Como jogar</summary><p>Use um dos 151 Pokémon de Kanto com exatamente os tipos do centro. Cada Pokémon só vale uma vez na partida.</p><p>O primeiro acerto ganha 50 pontos. Cada acerto seguido da mesma pessoa soma mais 20. Erros não descontam pontos.</p><p>A barra recomeça a cada acerto. Se esvaziar, a partida termina.</p><a href="https://pokeapi.co/" target="_blank" rel="noopener noreferrer">Dados e sprites: PokéAPI</a></details>`;
     const suggestionSlot=document.createElement('div');suggestionSlot.className='rush-suggestion-slot';
     main.querySelector('.rush-sidebar').append(suggestionSlot);
+    const dex=previousDex||document.createElement('section');dex.className='rush-pokedex';dex.setAttribute('aria-labelledby','rush-dex-title');
+    if(!previousDex)dex.innerHTML='<div class="rush-dex-heading"><h2 id="rush-dex-title">Pokédex · Kanto</h2><span class="rush-dex-count"></span></div><ol class="rush-dex-grid" role="list" aria-label="Pokémon da primeira geração"></ol>';
+    main.querySelector('.rush-sidebar').append(dex);pokedex(state,esc);loadCatalog();
     main.querySelector('.rush-room').dataset.phase=state.phase;
     main.querySelector('#rush-close').innerHTML=host?'<button id="close-room" class="quiet danger-text">Encerrar sala</button>':'';
     main.querySelector('.rush-presence').innerHTML=state.warning?'<div class="presence" role="alert"><p>Confirme sua presença para manter a sala aberta.</p><button data-action="presence">Estou aqui</button></div>':'';

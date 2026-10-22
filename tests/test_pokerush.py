@@ -129,6 +129,34 @@ def test_global_used_error_cooldown_and_unchanged_challenge(rush):
     assert room['people'][guest['participant']]['score'] == 50
 
 
+def test_pokedex_shared_ids_only_after_correct_answer_and_reset(rush):
+    engine, now, host, guest, room = rush
+    def snapshot(player):
+        return engine.snapshot(room['code'], player['participant'])['pokerush']
+    assert snapshot(host)['used_ids'] == []
+    room['pokerush']['types'] = ['fire']
+    assert not submit(engine, host, room, 'Charizard')['correct']
+    assert snapshot(host)['used_ids'] == []
+    assert submit(engine, guest, room, 'Charmeleon')['correct']
+    now[0] += .5
+    room['pokerush']['types'] = ['fire']
+    assert submit(engine, host, room, 'Charmander')['correct']
+    now[0] += 3  # O histórico sobrevive à miniatura de acerto de dois segundos.
+    for player in (host, guest):
+        assert snapshot(player)['used_ids'] == [4, 5]
+        assert snapshot(player)['used_count'] == 2
+    spectator = engine.join(room['code'], 'Caio')
+    assert snapshot(spectator)['used_ids'] == [4, 5]
+    engine.disconnect(room['code'], guest['participant'], guest['participant'])
+    engine.connect(room['code'], guest['token'], 'pokedex-reconnected')
+    assert snapshot(guest)['used_ids'] == [4, 5]
+    now[0] = room['deadline']
+    engine.tick()
+    assert room['phase'] == 'results' and snapshot(host)['used_ids'] == [4, 5]
+    assert act(engine, host, 'start')['ok']
+    assert snapshot(host)['used_ids'] == []
+
+
 def test_streak_wrong_does_not_break_it_other_player_does(rush):
     engine, now, host, guest, room = rush
     for expected in (50, 70, 90, 110):
@@ -198,6 +226,7 @@ def test_use_all_151_and_restart_resets_everything(rush):
             assert room['phase'] == 'playing'
             assert engine.pokerush.catalog.eligible(room['pokerush']['used'])
     assert room['phase'] == 'results' and room['result'] == 'exhausted' and room['deadline'] is None
+    assert engine.snapshot(room['code'], host['participant'])['pokerush']['used_ids'] == list(range(1, 152))
     assert not act(engine, guest, 'start')['ok']
     assert act(engine, host, 'start')['ok']
     assert room['phase'] == 'playing' and not room['pokerush']['used']
