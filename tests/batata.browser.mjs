@@ -117,6 +117,19 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
     assert.equal(await guest.locator('[data-kick-target]').count(),0);
     assert.equal(await host.locator('.seat-kick').count(),0);
     assert.equal(await host.locator('#potato-settings').count(),0);
+    const roomDetails=host.getByRole('complementary',{name:'Sala e controles',exact:true});
+    await roomDetails.getByRole('button',{name:'Copiar link da sala',exact:true}).waitFor();
+    await roomDetails.getByRole('button',{name:'Alterar nome',exact:true}).waitFor();
+    assert.equal(await host.evaluate(()=>{
+      const table=document.querySelector('.potato-table').getBoundingClientRect();
+      const details=document.querySelector('.potato-sidebar').getBoundingClientRect();
+      return details.left>=table.right && Math.abs(details.top-table.top)<2;
+    }),true);
+    assert.equal(await guest.evaluate(()=>{
+      const table=document.querySelector('.potato-table').getBoundingClientRect();
+      const details=document.querySelector('.potato-sidebar').getBoundingClientRect();
+      return details.top>=table.bottom && document.documentElement.scrollWidth<=innerWidth;
+    }),true);
     await host.screenshot({path:resolve(folder,'lobby-desktop.png'),fullPage:true});
     await guest.screenshot({path:resolve(folder,'lobby-mobile.png'),fullPage:true});
     await host.getByRole('button',{name:/Começar a esquentar/}).click();

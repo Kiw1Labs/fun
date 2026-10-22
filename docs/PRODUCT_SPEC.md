@@ -4,6 +4,8 @@ Atualização de escopo em 21/10/2026: o pedido de **Batata Quente** autoriza o 
 
 Revisão visual solicitada em 21/10/2026: Batata Quente deve manter o mesmo design dos outros jogos do Fun, com paleta neutra, tipografia, cartões, campos, botões e temas claro/escuro compartilhados.
 
+Revisão de 22/10/2026: mover o cabeçalho de Batata Quente — nome/código da sala, link, visibilidade, ocupação, estado da conexão, pulos e som — para uma barra lateral à direita da mesa. Manter os controles existentes e adaptar a disposição a telas estreitas.
+
 Simplificação da tela solicitada em 21/10/2026: remover os dois textos do lobby que resumem vidas/tempos e o ciclo de dificuldade, além dos blocos completos “Como jogar” e “Passou pela roda”. A mesa ocupa o espaço da antiga coluna lateral. As regras de jogo continuam as confirmadas abaixo.
 
 Nova simplificação solicitada em 21/10/2026: remover a dica “Use essas letras juntas, em qualquer parte da palavra.”, a explicação de manutenção da sílaba, a mensagem de perda de vida após queimar e todo o cronômetro visível de queima (rótulo, segundos e barra). O relógio autoritativo, a queima e as regras continuam ativos.
