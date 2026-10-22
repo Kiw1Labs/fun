@@ -7,6 +7,12 @@
   try {muted=localStorage.getItem('fun:pokerush-muted')==='1';} catch {}
   const badges=(values,esc)=>values.map(type=>`<span class="rush-type" data-type="${esc(type)}">${esc(types[type])}</span>`).join('');
   const avatar=(person,esc)=>`<span class="rush-avatar" aria-hidden="true">${esc(person.name.slice(0,1).toUpperCase())}</span>`;
+  const desktop=matchMedia('(min-width: 761px) and (pointer: fine)');
+  function placeSuggestions() {
+    const area=document.querySelector('.rush-room .rush-suggestion-area');if(!area)return;
+    const target=document.querySelector(desktop.matches?'.rush-suggestion-slot':'#rush-composer');
+    if(target&&area.parentElement!==target)target.append(area);
+  }
   function card() {return `<span class="game-icon">${icon}</span><strong>PokéRush</strong><span class="game-tagline">Lembre o nome.<br>Acerte os tipos.</span>`;}
   function portal(main) {
     const tile=document.createElement('label');tile.className='game-tile rush-tile';
@@ -63,24 +69,35 @@
     const height=window.visualViewport?.height||innerHeight;
     room.classList.toggle('rush-compact',height<540||height<innerHeight*.75);
   }
-  window.addEventListener('resize',viewport);
+  window.addEventListener('resize',()=>{viewport();placeSuggestions();layout();});
   window.visualViewport?.addEventListener('resize',()=>{
     viewport();
     if(document.activeElement?.id==='answer'&&document.querySelector('.rush-room'))document.querySelector('#answer').scrollIntoView({block:'center'});
   });
   function layout() {
     const arena=document.querySelector('.rush-arena');if(!arena)return;
-    const seats=[...arena.querySelectorAll('.rush-seat')],compact=arena.clientWidth<400&&seats.length>4&&seats.length<=8,many=seats.length>8||compact;
+    const seats=[...arena.querySelectorAll('.rush-seat')],compact=!desktop.matches&&arena.clientWidth<400&&seats.length>4&&seats.length<=8,many=desktop.matches?seats.length>4:seats.length>8||compact;
     arena.classList.toggle('rush-many',many);
     arena.classList.toggle('rush-small-grid',compact);
+    arena.querySelector('.rush-center').style.top='';
     if(many) {
-      const slots=compact?[[1,1],[2,1],[3,1],[3,2],[3,3],[3,4],[2,4],[1,4],[1,3],[1,2]]:[[1,1],[2,1],[3,1],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[3,6],[2,6],[1,6],[1,5],[1,4],[1,3],[1,2]];
+      let slots=compact?[[1,1],[2,1],[3,1],[3,2],[3,3],[3,4],[2,4],[1,4],[1,3],[1,2]]:[[1,1],[2,1],[3,1],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[3,6],[2,6],[1,6],[1,5],[1,4],[1,3],[1,2]];
+      if(desktop.matches) {
+        const columns=Math.max(4,Math.ceil((seats.length-4)/2));
+        arena.style.setProperty('--rush-columns',String(columns));
+        slots=[...Array.from({length:columns},(_,i)=>[i+1,1]),[columns,2],[columns,3],...Array.from({length:columns},(_,i)=>[columns-i,4]),[1,3],[1,2]];
+      }
       for(const [i,seat]of seats.entries()) {const slot=slots[Math.round(i*slots.length/seats.length)];seat.style.left='';seat.style.top='';seat.style.gridColumn=String(slot[0]);seat.style.gridRow=String(slot[1]);}
     } else {
-      const width=arena.clientWidth,height=arena.clientHeight,radiusX=width/2-(width<400?42:54),radiusY=height/2-54;
+      const width=arena.clientWidth,height=arena.clientHeight;
+      const seatWidth=Math.max(...seats.map(seat=>seat.offsetWidth),0),seatHeight=Math.max(...seats.map(seat=>seat.offsetHeight),0);
+      const feedback=desktop.matches?40:0,centerY=(height-feedback)/2;
+      const radiusX=desktop.matches?Math.max(0,(width-seatWidth)/2-8):width/2-(width<400?42:54);
+      const radiusY=desktop.matches?Math.max(0,(height-seatHeight-feedback)/2-8):height/2-54;
+      if(desktop.matches)arena.querySelector('.rush-center').style.top=`${centerY}px`;
       for(const [i,seat]of seats.entries()) {
         const angle=2*Math.PI*i/Math.max(2,seats.length)-Math.PI/2;
-        seat.style.gridColumn='';seat.style.gridRow='';seat.style.left=`${width/2+Math.cos(angle)*radiusX}px`;seat.style.top=`${height/2+Math.sin(angle)*radiusY}px`;
+        seat.style.gridColumn='';seat.style.gridRow='';seat.style.left=`${width/2+Math.cos(angle)*radiusX}px`;seat.style.top=`${centerY+Math.sin(angle)*radiusY}px`;
       }
     }
   }
@@ -91,6 +108,8 @@
   }
   function render(context) {
     current=context;
+    const previousSuggestions=document.querySelector('.rush-room .rush-suggestion-area');
+    if(previousSuggestions)document.querySelector('#rush-composer').append(previousSuggestions);
     const {main,state,online,esc,status}=context,host=state.host===state.you,me=state.people.find(p=>p.id===state.you);
     const canStart=online&&state.people.filter(p=>p.active&&p.online).length>=2;
     const key=`${state.code}:${state.phase}:${Boolean(me.spectator)}`;
@@ -106,6 +125,9 @@
       }
     }
     main.querySelector('.rush-sidebar').innerHTML=`<header><span class="eyebrow">POKÉRUSH · SALA ${esc(state.code)}</span><div class="room-title-line"><h1>${esc(state.room_name)}</h1><button id="copy-room-link" class="quiet icon-button" aria-label="Copiar link da sala">↗</button></div><p class="fine">${state.visibility==='public'?'Sala pública':'Só por convite'} · ${state.people.filter(p=>p.active).length}/16 pessoas</p>${host&&state.phase==='lobby'?'<button class="quiet" id="edit-room-name">Alterar nome</button>':''}${status()}<button id="rush-sound" class="quiet" aria-pressed="${!muted}">${muted?'Som desligado':'Som ligado'}</button></header><div class="rush-watchers">${state.people.filter(p=>p.spectator&&p.active).map(p=>`<p ${host&&p.id!==state.you?`data-kick-target="${esc(p.id)}" tabindex="0" role="button" aria-label="Abrir confirmação para remover ${esc(p.name)}"`:''}>${esc(p.name)} · Espectador</p>`).join('')}</div><details class="rush-rules"><summary>Como jogar</summary><p>Use um dos 151 Pokémon de Kanto com exatamente os tipos do centro. Cada Pokémon só vale uma vez na partida.</p><p>O primeiro acerto ganha 50 pontos. Cada acerto seguido da mesma pessoa soma mais 20. Erros não descontam pontos.</p><p>A barra recomeça a cada acerto. Se esvaziar, a partida termina.</p><a href="https://pokeapi.co/" target="_blank" rel="noopener noreferrer">Dados e sprites: PokéAPI</a></details>`;
+    const suggestionSlot=document.createElement('div');suggestionSlot.className='rush-suggestion-slot';
+    main.querySelector('.rush-sidebar').append(suggestionSlot);
+    main.querySelector('.rush-room').dataset.phase=state.phase;
     main.querySelector('#rush-close').innerHTML=host?'<button id="close-room" class="quiet danger-text">Encerrar sala</button>':'';
     main.querySelector('.rush-presence').innerHTML=state.warning?'<div class="presence" role="alert"><p>Confirme sua presença para manter a sala aberta.</p><button data-action="presence">Estou aqui</button></div>':'';
     if(state.phase==='results') {
@@ -145,7 +167,7 @@
       const inputTypes=main.querySelector('.rush-input-types');
       if(inputTypes)inputTypes.innerHTML=badges(state.pokerush.types,esc);
     }
-    viewport();lastPhase=state.phase;timer(state,state.server_now);
+    placeSuggestions();layout();viewport();lastPhase=state.phase;timer(state,state.server_now);
   }
   function timer(state,now) {
     if(state.phase!=='playing')return;

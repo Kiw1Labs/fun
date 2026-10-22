@@ -21,6 +21,8 @@ A normalização ignora caixa, acentuação, espaços e pontuação, sem correç
 
 O próprio nó do campo, sua seleção, texto e foco sobrevivem às atualizações da partida, inclusive aos acertos de outros jogadores. Apenas a confirmação do envio correspondente limpa seu texto. Em telas estreitas com teclado/redução da área visível, tipos e barra também aparecem junto ao campo. Sugestões ocupam espaço no fluxo da página, sem popup sobre o desafio. Temas, navegação, cartões e controles seguem o Fun; movimento reduzido é respeitado. Sons de acerto, erro, fim e alerta são sintetizados localmente, com opção persistente de silêncio e somente um efeito por vez.
 
+Revisão de 22/10/2026: no computador (janela a partir de 761 px e ponteiro preciso), a sala ocupa a altura disponível, sem rolagem da página. As sugestões ficam na lateral, com até cinco nomes e rolagem interna. A mesa adapta sua altura e usa até seis colunas e quatro fileiras no perímetro para acomodar 16 pessoas; os acertos continuam abaixo de cada jogador. Os resultados distribuem vencedores e placar lado a lado. Campo, foco e seleção continuam preservados ao responder ou redimensionar. No celular permanece o fluxo móvel. Validação registrada em [POKERUSH_TELA_DESKTOP.md](POKERUSH_TELA_DESKTOP.md).
+
 ## Sala e resultados
 
 - Mínimo de dois conectados para iniciar; limite compartilhado de 16 pessoas, incluindo espectadores e sessões reservadas.

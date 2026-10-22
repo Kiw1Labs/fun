@@ -35,6 +35,20 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
   async function advance(page,seconds) {
     await page.evaluate(seconds=>fetch('/_fixture/advance',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seconds})}),seconds);
   }
+  async function desktopFits(page,label) {
+    for(const size of [{width:1024,height:600},{width:1024,height:768},{width:1280,height:720},{width:1366,height:768},{width:1440,height:900},{width:1920,height:1080}]) {
+      await page.setViewportSize(size);
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+      const geometry=await page.evaluate(()=>{
+        const nodes=[...document.querySelectorAll('.rush-center,.rush-seat,.rush-success:not([hidden]),#answer,.rush-timer,.rush-room > .room-footer,#rush-suggestions:not([hidden]),.rush-ranking,.rush-winners')].filter(node=>node.getClientRects().length);
+        return {pageWidth:document.documentElement.scrollWidth,pageHeight:document.documentElement.scrollHeight,width:innerWidth,height:innerHeight,outside:nodes.filter(node=>{const r=node.getBoundingClientRect();return r.left<-.5||r.top<-.5||r.right>innerWidth+.5||r.bottom>innerHeight+.5;}).map(node=>({class:node.className,id:node.id,rect:node.getBoundingClientRect().toJSON()}))};
+      });
+      assert.ok(geometry.pageHeight<=geometry.height&&geometry.pageWidth<=geometry.width,`${label} ${size.width}×${size.height}: ${JSON.stringify(geometry)}`);
+      assert.deepEqual(geometry.outside,[],`${label} ${size.width}×${size.height}: ${JSON.stringify(geometry)}`);
+      if(size.width===1366)await page.screenshot({path:resolve(folder,`desktop-fit-${label}.png`)});
+    }
+    await page.setViewportSize({width:1440,height:1000});
+  }
   try {
     await until(async()=>{if(child.exitCode!==null)throw Error(logs);try{return(await fetch(`${origin}/health`)).ok;}catch{return false;}},'Servidor indisponível');
     browser=await chromium.launch({headless:true});
@@ -56,9 +70,12 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await host.getByRole('button',{name:'Iniciar PokéRush',exact:true}).waitFor({state:'visible'});
     await until(()=>states.get(host)?.people.filter(p=>p.online).length===2,'Duas conexões esperadas');
     await host.screenshot({path:resolve(folder,'lobby-desktop.png'),fullPage:true});
+    await desktopFits(host,'lobby-2');
     await guest.screenshot({path:resolve(folder,'lobby-mobile.png'),fullPage:true});
     await host.getByRole('button',{name:'Iniciar PokéRush',exact:true}).click();
     await host.locator('#answer').waitFor();await guest.locator('#answer').waitFor();
+    await host.locator('#answer').fill('an');await host.locator('#rush-suggestions li').first().waitFor();
+    await desktopFits(host,'playing-2-suggestions');
     await guest.locator('#answer').fill('p');assert.equal(await guest.locator('#rush-suggestions li').count(),0);
     await guest.locator('#answer').fill('an');await guest.locator('#rush-suggestions li').first().waitFor();
     assert.ok(await guest.locator('#rush-suggestions li').count()>5);
@@ -124,6 +141,7 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await guest.getByRole('heading',{name:'Você venceu!',exact:true}).waitFor();
     assert.equal(await host.getByRole('table').locator('tbody tr').count(),2);
     await host.screenshot({path:resolve(folder,'results-desktop.png'),fullPage:true});
+    await desktopFits(host,'results-2');
     await guest.screenshot({path:resolve(folder,'results-mobile.png'),fullPage:true});
     await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
     await watcher.locator('#answer').waitFor();used.clear();
@@ -146,6 +164,7 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await host.getByRole('button',{name:'Iniciar PokéRush',exact:true}).click();
     await host.locator('#answer').waitFor();
     await hit(host);
+    await desktopFits(host,'playing-16');
     const seatSuccess=host.locator('.rush-seat').filter({hasText:'Ana'}).locator('.rush-success');
     await seatSuccess.waitFor();
     for(const width of [1440,390,320]) {
@@ -159,6 +178,17 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
       assert.deepEqual(successGeometry.overlaps,[],`Acerto sobre jogador em ${width}px: ${JSON.stringify(successGeometry)}`);
       await host.screenshot({path:resolve(folder,`sixteen-${width}.png`),fullPage:true});
     }
+    await host.setViewportSize({width:1440,height:1000});
+    await advance(host,31);await until(()=>states.get(host)?.phase==='results','Resultado de 16 pessoas pendente');
+    await desktopFits(host,'results-16');
+    await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
+    await until(()=>states.get(host)?.phase==='playing','Nova partida de 16 pessoas pendente');used.clear();
+    await advance(host,31);await host.getByRole('heading',{name:'Vitória compartilhada!',exact:true}).waitFor();
+    assert.equal(await host.locator('.rush-winners > div').count(),16);
+    await desktopFits(host,'tie-16');
+    await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
+    await until(()=>states.get(host)?.phase==='playing','Retomada de 16 pessoas pendente');used.clear();
+    await host.setViewportSize({width:320,height:1000});
     await host.getByRole('button',{name:'Abrir navegação',exact:true}).click();
     await host.getByRole('button',{name:'Alternar tema',exact:true}).click();
     await host.getByRole('button',{name:'Abrir navegação',exact:true}).click();

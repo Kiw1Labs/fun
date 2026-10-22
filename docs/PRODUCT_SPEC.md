@@ -1,5 +1,7 @@
 # Fun / Sabe Essa? — especificação funcional
 
+Revisão visual de PokéRush em 22/10/2026: no computador, a sala deve ocupar uma tela completa, sem rolagem da página. Mesa, jogadores, tipos, barra, campo de resposta e controles devem caber na área disponível. Preservar o comportamento móvel e a rolagem própria das sugestões.
+
 Atualização de escopo em 22/10/2026: o pedido de **PokéRush** autoriza o terceiro jogo, com catálogo local real dos 151 Pokémon da primeira geração obtido da PokéAPI. Suas regras confirmadas e decisões técnicas estão em [POKERUSH.md](POKERUSH.md). O novo jogo também aparece na escolha do lobby neutro. As regras específicas de Sabe Essa? e Batata Quente permanecem próprias de cada jogo.
 
 Atualização de escopo em 21/10/2026: o pedido de **Batata Quente** autoriza o segundo jogo no mesmo portal. As regras abaixo continuam específicas de Sabe Essa?. As regras do novo jogo e as decisões de implementação estão em [BATATA_QUENTE.md](BATATA_QUENTE.md); não se aplicam ao Sabe Essa?.
