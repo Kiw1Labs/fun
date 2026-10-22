@@ -86,7 +86,12 @@ for (const game of ['sabe-essa','batata-quente']) test(`lobby sem jogo: criaçã
     assert.equal(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
     await guest.screenshot({path:`artifacts/lobby-mobile-${game}.png`,fullPage:true});
     await host.screenshot({path:`artifacts/lobby-desktop-${game}.png`,fullPage:true});
-    await host.locator(`[data-select-game="${game}"]`).click();
+    await host.setViewportSize({width:320,height:820});
+    assert.equal(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await host.screenshot({path:`artifacts/lobby-game-cards-mobile-${game}.png`,fullPage:true});
+    await host.setViewportSize({width:1440,height:1000});
+    await host.locator(`[data-select-game="${game}"]`).focus();
+    await host.keyboard.press('Enter');
     await host.locator('[data-action="start"]').waitFor();
     await guest.getByText(game==='batata-quente' ? 'O anfitrião inicia quando a turma estiver pronta.' : 'O anfitrião inicia a partida.',{exact:true}).waitFor();
     assert.equal(host.url(),url); assert.equal(guest.url(),url);

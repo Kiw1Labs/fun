@@ -52,6 +52,7 @@ function requireStorage(message = 'Permita o armazenamento neste navegador para 
 const gameIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.5 1-1.5 1-1.5 2M12 16h.01"/></svg>';
 const lobbyIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2"/></svg>';
 const gameName = game => game==='batata-quente' ? 'Batata Quente' : game===null ? 'Lobby' : 'Sabe Essa?';
+const sabeEssaCard = `<span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span>`;
 const mobileLayout = matchMedia('(max-width: 760px)');
 function activeNav(id) {
   for (const button of document.querySelectorAll('.sidebar-body button')) {
@@ -272,7 +273,7 @@ function render() {
   const challenge = state.challenge;
   let center = '';
   if (state.game===null) {
-    center = `<div class="lobby-symbol">${lobbyIcon}</div><h2>Junte a turma</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${host ? `<h3>Qual vai ser o jogo?</h3><div class="lobby-games" aria-label="Escolher jogo"><button id="choose-sabe-essa" class="secondary" data-select-game="sabe-essa" ${!online ? 'disabled' : ''}>Sabe Essa?</button><button id="choose-batata-quente" class="secondary" data-select-game="batata-quente" ${!online || state.people.filter(p=>p.active).length>8 ? 'disabled' : ''}>Batata Quente</button></div>${state.people.filter(p=>p.active).length>8 ? '<p class="fine">Batata Quente permite até 8 pessoas.</p>' : ''}` : '<p>O anfitrião vai escolher o jogo.</p>'}`;
+    center = `<div class="lobby-symbol">${lobbyIcon}</div><h2>Junte a turma</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${host ? `<h3>Qual vai ser o jogo?</h3><div class="lobby-games game-picker" role="group" aria-label="Escolher jogo"><button id="choose-sabe-essa" class="game-tile" data-select-game="sabe-essa" ${!online ? 'disabled' : ''}>${sabeEssaCard}</button><button id="choose-batata-quente" class="game-tile potato-tile" data-select-game="batata-quente" ${!online || state.people.filter(p=>p.active).length>8 ? 'disabled' : ''}>${window.Batata.card()}</button></div>${state.people.filter(p=>p.active).length>8 ? '<p class="fine">Batata Quente permite até 8 pessoas.</p>' : ''}` : '<p>O anfitrião vai escolher o jogo.</p>'}`;
   } else if (state.phase === 'lobby') {
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>Todo mundo pronto?</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${!state.catalog_available ? '<div class="empty-catalog"><strong>O catálogo ainda está sendo preparado.</strong><p>Não há desafios suficientes para esta composição e o histórico da sala. A partida fica disponível após a publicação de conteúdo.</p></div>' : '<p>Imagens e textos intercalados. Sem dicas. Vale tentar até acertar.</p>'}${host ? `<button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar partida</button><p class="fine">É preciso ter pelo menos dois competidores conectados.</p>` : '<p class="fine">O anfitrião inicia a partida.</p>'}`;
   } else if (playing) {

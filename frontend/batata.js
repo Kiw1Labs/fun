@@ -62,13 +62,16 @@
     button.textContent=muted?'Som desligado':'Som ligado'; button.setAttribute('aria-pressed',String(!muted));
     if(!muted) {unlock();tone('pass');}
   });
+  function card() {
+    return `<span class="game-icon">${mascot}</span><strong>Batata Quente</strong><span class="game-tagline">Pense rápido.<br>Passe a palavra.</span>`;
+  }
   function portal(main) {
     const original=main.querySelector('.game-tile');
     const games=document.createElement('fieldset'); games.className='game-picker';
     games.innerHTML='<legend class="sr-only">Escolha o jogo</legend>';
     original.before(games); games.append(original);
     const tile=document.createElement('label'); tile.className='game-tile potato-tile';
-    tile.innerHTML=`<input type="radio" name="game" value="batata-quente"><span class="game-icon">${mascot}</span><strong>Batata Quente</strong><span class="game-tagline">Pense rápido.<br>Passe a palavra.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span>`;
+    tile.innerHTML=`<input type="radio" name="game" value="batata-quente">${card()}<span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span>`;
     games.append(tile);
   }
   function layoutArena(arena) {
@@ -170,5 +173,5 @@
     if(art)appearance(art,heatLevel);
     if(left>0&&left<=5&&Math.ceil(left)!==lastAlert) {lastAlert=Math.ceil(left);tone('alert');}
   }
-  window.Batata={render,timer,portal};
+  window.Batata={render,timer,portal,card};
 })();

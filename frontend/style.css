@@ -113,6 +113,7 @@ main { margin-left: var(--sidebar-width); padding: 56px 48px 64px; min-height: 1
 .game-tagline { margin-top: 4px; color: var(--muted); font-size: .6875rem; line-height: 1.35; text-align: center; }
 .selected-game { display: flex; gap: 6px; margin-top: 12px; color: var(--muted); font-size: .625rem; }
 .lobby-games { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.lobby-games .game-tile { gap: 0; font-weight: 400; }
 .create-controls { display: grid; grid-template-columns: minmax(130px, 1fr) auto auto; align-items: center; gap: 10px; margin-top: 24px; }
 .create-controls input { margin: 0; border-radius: 24px; }
 .create-controls button { min-height: 48px; padding: 11px 16px; }

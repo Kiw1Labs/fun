@@ -6,6 +6,10 @@ O portal oferece **Lobby** antes de **Sabe Essa?** e **Batata Quente**. Ao selec
 
 O anfitrião escolhe o jogo dentro do lobby, conservando código e participantes; depois inicia a partida pelo controle normal do jogo. Os convidados acompanham a escolha em tempo real. A sala sem jogo admite 16 pessoas. Batata Quente só pode ser escolhido com até 8 participantes ativos, incluindo vagas reservadas. A escolha não expulsa pessoas nem inicia a partida automaticamente.
 
+Revisão visual seguinte de 22/10/2026: a escolha dentro do lobby apresenta os cartões de **Sabe Essa?** e **Batata Quente**, com o mesmo ícone, nome, descrição e estilo da home. O cartão Lobby aparece somente no portal. Os cartões internos são botões acessíveis por teclado e conservam as mesmas permissões e o limite de Batata Quente. A alteração é somente de frontend; sua publicação deve preservar o processo do backend e as salas abertas.
+
+Validação local dessa revisão: sintaxe e build aprovados (298.681 bytes sem compressão); três cenários de lobby no Chromium aprovados, incluindo escolha dos dois jogos por Enter, entrada, F5 e início. Capturas desktop e celular de 320 px inspecionadas em `artifacts/lobby-desktop-sabe-essa.png` e `artifacts/lobby-game-cards-mobile-sabe-essa.png`. Backup local em `artifacts/lobby-cards-backup-20261022-104551/`; inventário remoto em `artifacts/lobby-cards-static-baseline.json`.
+
 ## Implementação e recuperação
 
 - `game: null` no snapshot/API; criação sem o campo conserva o padrão anterior, Sabe Essa?.
