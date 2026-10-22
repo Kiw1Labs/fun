@@ -190,7 +190,7 @@ def test_stale_messages_duplicates_and_cooldown_order(rush):
     assert act(engine, guest, 'answer', round_id=old_round, answer='inexistente')['ignored']
     assert room['people'][guest['participant']]['cooldown'] == now[0] + .5
     with pytest.raises(RuleError, match='reutilizado'):
-        engine.action(host['code'], host['participant'], dict(event, answer='Pikachu'))
+        engine.action(host['code'], host['participant'], dict(event, answer=pokemon['name'] + ' alterado'))
 
 
 def test_timer_restart_boundary_and_transient_success(rush):
