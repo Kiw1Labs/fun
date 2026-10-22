@@ -2,11 +2,11 @@
 
 ## Barra lateral da sala — 22/10/2026
 
-O cabeçalho de nome/código, link, visibilidade, ocupação, conexão, pulos e som passa para uma barra à direita da mesa em desktop. Em telas de até 1.100 px, esse painel fica abaixo da mesa para manter a roda e a resposta com espaço. Os elementos e seus identificadores são preservados; nome, copiar link, pulos, som e permissões continuam no fluxo existente. A seção tem o nome acessível “Sala e controles”. A publicação deve trocar somente assets, preservando backend e salas.
+O cabeçalho de nome/código, link, visibilidade, ocupação, conexão, pulos e som passa para uma barra à direita da mesa em desktop. Em telas de até 1.200 px, esse painel fica abaixo da mesa para manter a roda e a resposta com espaço. Os elementos e seus identificadores são preservados; nome, copiar link, pulos, som e permissões continuam no fluxo existente. A seção tem o nome acessível “Sala e controles”. A publicação deve trocar somente assets, preservando backend e salas.
 
 Inventário anterior à mudança em `artifacts/batata-sidebar-static-baseline.json`; backup local em `artifacts/batata-sidebar-backup-20261022-110741/`. Esta revisão não altera regras de Batata Quente nem adiciona conteúdo.
 
-Sintaxe e build aprovados (299.728 bytes sem compressão). O cenário completo de Batata Quente passou, incluindo conferência geométrica da barra à direita no desktop e abaixo da mesa no celular, acesso aos controles, partida, palavras, queima, revanche, F5, transferência e remoção. A roda com oito pessoas foi verificada em todas as posições em 1.440/390/320 px, mantendo círculo e ausência de sobreposição. Capturas de lobby desktop/celular e partida desktop inspecionadas visualmente; execução final em `artifacts/batata-browser-1792678149760/`.
+Sintaxe e build aprovados (299.728 bytes sem compressão). O cenário completo de Batata Quente passou, incluindo conferência geométrica da barra à direita no desktop e abaixo da mesa no celular, acesso aos controles, partida, palavras, queima, revanche, F5, transferência e remoção. Um ensaio adicional identificou espaço insuficiente no centro da roda de oito pessoas a 1.101 px; o limite de empilhamento foi ajustado para 1.200 px. A execução final verificou todas as posições em 1.440/1.201/1.101/390/320 px, mantendo círculo e ausência de sobreposição. Capturas de lobby desktop/celular e partida desktop inspecionadas visualmente; execução final em `artifacts/batata-browser-1792678424183/`.
 
 ## Correção dos pulos pouco visíveis ou desativados
 

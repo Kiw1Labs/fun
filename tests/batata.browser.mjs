@@ -251,7 +251,7 @@ test('Batata Quente real: desktop + celular, palavras, queima, revanche, F5, tra
     // A seta deve ficar livre em todas as oito posições, inclusive na roda estreita.
     for(let turnIndex=0;turnIndex<8;turnIndex++) {
       if(turnIndex)await burn();
-      for(const width of [1440,390,320]) {
+      for(const width of [1440,1201,1101,390,320]) {
         await host.setViewportSize({width,height:900});
         await host.waitForTimeout(150);
         assert.equal(await host.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);

@@ -93,7 +93,7 @@
   75% { transform: translate(9px, -48px) rotate(var(--hop-tilt, 8deg)); }
   90% { transform: translate(3px, -12px) rotate(3deg); }
 }
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
   .potato-layout { grid-template-columns: minmax(0, 1fr); }
   .potato-sidebar { position: static; padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--line); }
 }
