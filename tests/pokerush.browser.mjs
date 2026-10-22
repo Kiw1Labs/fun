@@ -127,6 +127,7 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     await guest.screenshot({path:resolve(folder,'results-mobile.png'),fullPage:true});
     await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();
     await watcher.locator('#answer').waitFor();used.clear();
+    await until(()=>states.get(host)?.phase==='playing'&&states.get(host).pokerush.used_count===0,'O anfitrião ainda não recebeu o estado da revanche');
     assert.equal(states.get(host).pokerush.used_count,0);assert.ok(states.get(host).people.every(p=>p.score===0));
     await advance(host,31);await host.getByRole('heading',{name:'Vitória compartilhada!',exact:true}).waitFor();
     assert.equal(await host.locator('.rush-winners > div').count(),3);
