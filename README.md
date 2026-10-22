@@ -1,5 +1,7 @@
 # Fun · Sabe Essa?, Batata Quente e PokéRush
 
+**PokéRush publicado em 22/10/2026:** disponível em [fun.kw1.com.br](https://fun.kw1.com.br/), com HTTPS e duas sessões WSS verificados, partida real, sequência, F5 e revanche. [Registro da publicação e preservação dos serviços](docs/POKERUSH_PUBLICACAO.md).
+
 **Novo no código: [PokéRush](docs/POKERUSH.md)** — disputa simultânea de nomes e tipos com os 151 Pokémon de Kanto, catálogo e sprites locais, barra compartilhada, sequência de pontos, sugestões visuais, espectadores, reconexão e revanche. Disponível na criação de sala e na seleção do lobby neutro. Para validar: `npm.cmd run test:pokerush` e `python -m pytest -q tests/test_pokerush.py`. [Evidências e situação de publicação](docs/POKERUSH_VALIDACAO.md).
 
 Portal de jogos multiplayer em pt-BR. Primeiro jogo: **Sabe Essa?**. O portal e a home do jogo usam `/`; salas usam exatamente quatro letras, por exemplo `/ABCD`.

@@ -1,5 +1,7 @@
 # Validação do PokéRush — 22/10/2026
 
+**Publicado em 22/10/2026, 16:56:18 (America/Sao_Paulo), na release `ea17594`.** HTTPS, duas sessões WSS e partida com tempo real verificados. Ver [registro da publicação](POKERUSH_PUBLICACAO.md). As seções iniciais abaixo documentam a validação local anterior.
+
 Implementação na branch `feat/pokerush`, a partir de `f54b55b`. Inventário: frontend estático e backend Python/Starlette com Engine síncrono e lock ASGI compartilhado. O arquivo preexistente `docs/INCIDENTE_2026-10-21.md` foi preservado. Backup do HEAD anterior em `artifacts/pokerush/before-pokerush.zip` (12.672.537 bytes).
 
 ## Resultados executados
@@ -39,8 +41,8 @@ Screenshots finais no mesmo diretório: `playing-desktop.png`, `playing-mobile.p
 
 ## Publicação e limites
 
-Nenhuma configuração ou serviço remoto foi alterado. Esta entrega não afirma publicação em HTTPS/WSS. O build e o pacote local incluem o catálogo e os sprites; a preparação do atualizador foi testada para preservar esses arquivos e recusar caminhos inesperados.
+Na etapa local inicial, nenhum serviço remoto havia sido alterado. A publicação posterior foi autorizada pelo pedido “publique” e concluída com verificação HTTPS/WSS. O build e o pacote incluem catálogo e sprites; a preparação do atualizador preserva esses arquivos e recusa caminhos inesperados.
 
-Para uma futura implantação, o auxiliar do Fun instalado no servidor também precisa receber a versão que conhece os assets do PokéRush, após inventário, backup e revisão de impacto conforme [DEPLOY.md](DEPLOY.md). Validar HTTPS/WSS e os demais serviços após ativação. Antes de um eventual rollback para código que não conhece `pokerush`, encerrar somente as salas desse jogo; não restaurar banco automaticamente nem modificar serviços compartilhados.
+O auxiliar exclusivo do Fun foi atualizado após inventário, backup e revisão de impacto conforme [DEPLOY.md](DEPLOY.md), e os demais serviços foram verificados após a ativação. Antes de um eventual rollback para código que não conhece `pokerush`, encerrar somente as salas desse jogo; não restaurar banco automaticamente nem modificar serviços compartilhados.
 
-Permanece pendente a verificação manual com teclado nativo em Android físico, além da publicação/verificação pública se solicitada. Os ensaios móveis desta entrega usaram Chromium com viewport, toque e contexto móvel emulados.
+Permanece pendente a verificação manual com teclado nativo em Android físico. Os ensaios móveis locais e públicos usaram Chromium com viewport, toque e contexto móvel emulados.
