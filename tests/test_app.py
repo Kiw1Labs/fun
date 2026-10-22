@@ -87,6 +87,32 @@ def test_room_metadata_validation_and_public_directory(tmp_path):
                 assert client.get('/api/rooms').json() == {'rooms': []}
 
 
+def test_http_and_websocket_unassigned_lobby(tmp_path):
+    with make_client(tmp_path) as client:
+        assert 'unassigned-lobby' in client.get('/health').json()['features']
+        host = client.post('/api/rooms', headers=ORIGIN, json={
+            'name': 'Ana', 'game': None, 'visibility': 'public'}).json()
+        guest = client.post(f"/api/rooms/{host['code']}/join", headers=ORIGIN, json={'name': 'Bia'}).json()
+        url = f"/ws/{host['code']}"
+        with client.websocket_connect(url, headers=ORIGIN) as a, client.websocket_connect(url, headers=ORIGIN) as b:
+            for socket, identity in ((a, host), (b, guest)):
+                socket.send_json({'token': identity['token']})
+                assert receive_type(socket, 'state')['game'] is None
+            assert client.get('/api/rooms').json()['rooms'][0]['game'] is None
+            b.send_json(dict(id='guest-cannot-choose', action='select_game', game='sabe-essa'))
+            assert not receive_type(b, 'ack')['ok']
+            a.send_json(dict(id='host-chooses-game', action='select_game', game='batata-quente'))
+            assert receive_type(a, 'ack')['ok']
+            for socket in (a, b):
+                for _ in range(30):
+                    state = receive_type(socket, 'state')
+                    if state['game'] == 'batata-quente':
+                        break
+                assert state['game'] == 'batata-quente' and state['phase'] == 'lobby'
+                assert len(state['people']) == 2
+            assert client.get('/api/rooms').json()['rooms'][0]['game'] == 'batata-quente'
+
+
 def test_godmode_requires_credentials_and_lists_rooms_and_all_questions(tmp_path, monkeypatch, catalog):
     monkeypatch.setenv('FUN_ADMIN_USERNAME', 'admin-test')
     monkeypatch.setenv('FUN_ADMIN_PASSWORD', 'local-test-secret')

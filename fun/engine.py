@@ -83,7 +83,7 @@ class Engine:
 
     def create(self, name, room_name='', visibility='private', game='sabe-essa'):
         name = self.name(name)
-        if game not in ('sabe-essa', 'batata-quente'):
+        if game not in (None, 'sabe-essa', 'batata-quente'):
             raise RuleError('Jogo inválido.')
         if not isinstance(room_name, str) or len(room_name.strip()) > 48 or any(ord(c) < 32 or ord(c) == 127 for c in room_name):
             raise RuleError('Use um nome de sala com até 48 caracteres.')
@@ -233,6 +233,8 @@ class Engine:
             r['people'][pid].update(answered=False, cooldown=0, last_wrong_answer=None)
 
     def start(self, r, now):
+        if r['game'] is None:
+            raise RuleError('Escolha um jogo antes de iniciar a partida.')
         online = [p for p in self.members(r) if self.online(r['code'], p['id'])]
         if len(online) < 2:
             raise RuleError('São necessários pelo menos dois competidores conectados.')
@@ -261,7 +263,7 @@ class Engine:
         p = r['people'].get(pid)
         if not p or not p['active'] or not self.online(code, pid):
             raise RuleError('Sua sessão não está ativa.')
-        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target', 'room_name', 'name', 'settings'}:
+        if not isinstance(event, dict) or set(event) - {'id', 'action', 'round_id', 'answer', 'target', 'room_name', 'name', 'settings', 'game'}:
             raise RuleError('Mensagem inválida.')
         eid = event.get('id')
         if not isinstance(eid, str) or not re.fullmatch(r'[A-Za-z0-9_-]{8,80}', eid):
@@ -275,9 +277,20 @@ class Engine:
         now, action = self.clock(), event.get('action')
         reply = dict(type='ack', id=eid, ok=True)
         try:
-            if action in ('start', 'lobby', 'kick', 'close', 'rename', 'configure') and r['host'] != pid:
+            if action in ('start', 'lobby', 'kick', 'close', 'rename', 'configure', 'select_game') and r['host'] != pid:
                 raise RuleError('Somente o anfitrião pode realizar esta ação.')
-            if action == 'configure':
+            if action == 'select_game':
+                if r['phase'] != 'lobby' or r['game'] is not None:
+                    raise RuleError('O jogo desta sala já foi escolhido.')
+                game = event.get('game')
+                if game not in ('sabe-essa', 'batata-quente'):
+                    raise RuleError('Jogo inválido.')
+                if game == 'batata-quente' and len(self.members(r)) > 8:
+                    raise RuleError('Batata Quente permite até 8 pessoas. Há mais participantes neste lobby.')
+                r['game'] = game
+                if game == 'batata-quente':
+                    r['settings'] = dict(DEFAULTS)
+            elif action == 'configure':
                 raise RuleError('As regras do jogo são fixas e a dificuldade muda automaticamente por volta.')
             elif action == 'rename_player':
                 if 'target' in event:
@@ -432,6 +445,8 @@ class Engine:
                     catalog_available=self.catalog_available(r))
 
     def catalog_available(self, r):
+        if r['game'] is None:
+            return False
         if r['game'] == 'batata-quente':
             return bool(len(self.potato.lexicon))
         key = (id(self.catalog), tuple(tuple(match) for match in r['history'][-3:]))

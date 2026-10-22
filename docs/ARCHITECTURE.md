@@ -18,6 +18,7 @@ Portas informadas anteriormente: Flask 5000, Django 8000, Nginx dashboard 8080 e
 - Tokens opacos de sessão no cliente e validações de recuperação no servidor; código de sala não é credencial de administração.
 
 ## Endpoints e roteamento
+- Lobby sem jogo (22/10/2026): `POST /api/rooms` aceita `game: null`; a ação WebSocket `select_game` permite ao anfitrião definir um dos jogos existentes. A escolha conserva código, sessões, visibilidade e participantes e mantém a fase `lobby`. O estado continua no mesmo snapshot SQLite, sem migração ou serviço adicional. Detalhes em [decisões técnicas](DECISIONS.md).
 - `/` portal; selecionando Sabe Essa? a home do jogo continua na mesma URL.
 - `/{codigo}` (quatro letras) mostra sala do jogo resolvida pelo servidor e sobrevive a F5; evitar conflito com rotas reservadas como `/api/`, `/assets/`, `/health` e `/ws`.
 - Backend expõe uma checagem de saúde privada ou sem segredos, APIs e canal em tempo real; implementar limites de taxa e validação de entrada.

@@ -40,3 +40,24 @@ def test_concurrent_last_slot_has_one_winner(tmp_path):
             results = list(executor.map(lambda i: client.post(f"/api/rooms/{a['code']}/join", headers=ORIGIN, json={'name': f'Concorrente {i}'}).status_code, range(2)))
         assert sorted(results) == [201, 400]
         assert len(app.state.engine.members(app.state.engine.rooms[a['code']])) == 16
+
+
+def test_concurrent_tabs_choose_only_one_game(tmp_path):
+    app = create_app(database=str(tmp_path / 'db'), catalog=[], origins=['http://testserver'])
+    with TestClient(app) as client:
+        host = client.post('/api/rooms', headers=ORIGIN, json={'name': 'Ana', 'game': None}).json()
+        url = f"/ws/{host['code']}"
+        with client.websocket_connect(url, headers=ORIGIN) as a, client.websocket_connect(url, headers=ORIGIN) as b:
+            for socket in (a, b):
+                socket.send_json({'token': host['token']})
+                receive_type(socket, 'state')
+            def choose(pair):
+                socket, game = pair
+                socket.send_json(dict(id='choose-' + game, action='select_game', game=game))
+            with ThreadPoolExecutor(2) as executor:
+                list(executor.map(choose, ((a, 'sabe-essa'), (b, 'batata-quente'))))
+            replies = [receive_type(socket, 'ack') for socket in (a, b)]
+            assert sum(reply['ok'] for reply in replies) == 1
+            state = app.state.engine.snapshot(host['code'], host['participant'])
+            assert state['game'] == ('sabe-essa' if replies[0]['ok'] else 'batata-quente')
+            assert state['phase'] == 'lobby' and len(state['people']) == 1

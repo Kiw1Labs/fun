@@ -47,6 +47,74 @@ before(async()=>{
   await mkdir('artifacts',{recursive:true});
 });
 
+for (const game of ['sabe-essa','batata-quente']) test(`lobby sem jogo: criação, convite, F5 e escolha de ${game}`,async()=>{
+  const hostContext=await browser.newContext({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+  const guestContext=await browser.newContext({viewport:{width:320,height:740},reducedMotion:'reduce'});
+  await guestContext.addInitScript(()=>localStorage.setItem('fun:player-name','Bia'));
+  const host=await hostContext.newPage(),guest=await guestContext.newPage();
+  try {
+    for(const page of [host,guest]) page.on('pageerror',error=>errors.push(error.message));
+    await host.goto(fixtureOrigin);
+    assert.deepEqual(await host.locator('input[name="game"]').evaluateAll(inputs=>inputs.map(input=>input.value)),['lobby','sabe-essa','batata-quente']);
+    await host.getByRole('radio',{name:/^Lobby/}).check();
+    await host.getByRole('radio',{name:'Público',exact:true}).check();
+    await host.getByLabel('Nome da sala',{exact:true}).fill(`Turma ${game}`);
+    await host.screenshot({path:`artifacts/lobby-home-${game}.png`,fullPage:true});
+    await host.getByRole('button',{name:'Criar lobby',exact:true}).click();
+    const identity=host.locator('#identity-dialog');
+    await identity.getByLabel('Seu nome',{exact:true}).fill('Ana');
+    await identity.getByRole('button',{name:'Criar lobby',exact:true}).click();
+    await host.waitForURL(/\/[A-Z]{4}$/);
+    await host.getByRole('heading',{name:'Qual vai ser o jogo?',exact:true}).waitFor();
+    assert.equal(await host.locator('[data-action="start"]').count(),0);
+    assert.equal(await host.locator('.empty-catalog').count(),0);
+    const url=host.url(),roomCode=new URL(url).pathname.slice(1);
+    const saved=await host.evaluate(key=>localStorage.getItem(key),`fun:${roomCode}`);
+    await host.reload();
+    await host.getByRole('heading',{name:'Qual vai ser o jogo?',exact:true}).waitFor();
+    await guest.goto(fixtureOrigin);
+    const listed=guest.locator('.directory-list li').filter({hasText:`Turma ${game}`});
+    await listed.getByText('Lobby · No lobby',{exact:true}).waitFor();
+    await listed.getByRole('button',{name:/Entrar na sala/}).click();
+    await guest.waitForURL(url);
+    await guest.getByText('O anfitrião vai escolher o jogo.',{exact:true}).waitFor();
+    await host.getByText('Bia',{exact:true}).waitFor();
+    assert.equal(await guest.locator('[data-select-game]').count(),0);
+    await guest.getByRole('button',{name:'Abrir navegação',exact:true}).click();
+    await guest.getByRole('button',{name:'Alternar tema',exact:true}).click();
+    await guest.getByRole('button',{name:'Abrir navegação',exact:true}).click();
+    assert.equal(await guest.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    await guest.screenshot({path:`artifacts/lobby-mobile-${game}.png`,fullPage:true});
+    await host.screenshot({path:`artifacts/lobby-desktop-${game}.png`,fullPage:true});
+    await host.locator(`[data-select-game="${game}"]`).click();
+    await host.locator('[data-action="start"]').waitFor();
+    await guest.getByText(game==='batata-quente' ? 'O anfitrião inicia quando a turma estiver pronta.' : 'O anfitrião inicia a partida.',{exact:true}).waitFor();
+    assert.equal(host.url(),url); assert.equal(guest.url(),url);
+    assert.equal(await host.evaluate(key=>localStorage.getItem(key),`fun:${roomCode}`),saved);
+    await host.locator('[data-action="start"]').click();
+    await host.locator('#answer').waitFor();
+    await guest.locator('#answer').waitFor();
+    await host.getByRole('button',{name:'Encerrar sala',exact:true}).click();
+    await host.locator('#close-dialog').getByRole('button',{name:'Encerrar sala',exact:true}).click();
+    await guest.getByRole('heading',{name:'Até a próxima.',exact:true}).waitFor();
+  } finally { await hostContext.close(); await guestContext.close(); }
+});
+
+test('lobby sem jogo exige suporte explícito do servidor',async()=>{
+  const context=await browser.newContext();
+  await context.addInitScript(()=>localStorage.setItem('fun:player-name','Ana'));
+  const page=await context.newPage(); let creations=0;
+  try {
+    await page.route('**/health',route=>route.fulfill({json:{status:'ok',api_version:2}}));
+    page.on('request',request=>{if(request.method()==='POST' && request.url().endsWith('/api/rooms'))creations++;});
+    await page.goto(origin);
+    await page.getByRole('radio',{name:/^Lobby/}).check();
+    await page.getByRole('button',{name:'Criar lobby',exact:true}).click();
+    await page.locator('#notice').filter({hasText:'Reinicie o servidor local'}).waitFor();
+    assert.equal(creations,0);
+  } finally {await context.close();}
+});
+
 test('perfil: popup no topo, validação, cancelamento e nome persistido na criação',async()=>{
   const context=await browser.newContext({viewport:{width:1366,height:900},reducedMotion:'reduce'});
   const page=await context.newPage();

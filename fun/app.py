@@ -150,7 +150,8 @@ def create_app(database=None, catalog=None, clock=None, static_dir=None, origins
             return JSONResponse({'error': str(exc)}, status_code=400)
 
     async def health(request):
-        return JSONResponse({'status': 'ok', 'game': 'sabe-essa', 'api_version': API_VERSION, 'catalog_count': len(engine.catalog)},
+        return JSONResponse({'status': 'ok', 'game': 'sabe-essa', 'api_version': API_VERSION,
+                             'features': ['unassigned-lobby'], 'catalog_count': len(engine.catalog)},
                             headers={'Cache-Control': 'no-store'})
 
     async def public_rooms(request):

@@ -23,6 +23,7 @@ Decisões recolhidas do planejamento anterior, 18/10/2026. O nome “Sabe Essa?�
 ## Plataforma e URLs
 - Portal em `https://fun.kw1.com.br/`, inicialmente com **Sabe Essa?** como único jogo. Revisão aprovada em 18/10/2026: título no topo, painel de criação à esquerda e painel de entrada por código à direita; no celular, painéis empilhados.
 - Criação na página principal com seleção do jogo, nome da sala e seletor **Público/Privado**, seguida da ação **Jogar**. O nome do jogador é solicitado antes de criar/entrar e é distinto do nome da sala.
+- Revisão solicitada em 22/10/2026: oferecer **Lobby** antes de **Sabe Essa?**, permitindo criar uma sala sem escolher o jogo ainda. A turma pode entrar pelo mesmo código/link; a escolha do jogo acontece depois, dentro do lobby.
 - Correção solicitada em 20/10/2026: quando o nickname já estiver salvo neste navegador, reutilizá-lo ao criar ou entrar em sala, sem pedir novamente. Solicitar identificação somente quando não houver nickname válido.
 - Se o nome da sala estiver vazio ou contiver apenas espaços, criar como **Sala do [nome do usuário]**, usando o nome informado pelo criador. Regra confirmada pelo usuário em 18/10/2026.
 - Salas públicas aparecem na página principal; salas privadas ficam acessíveis por código ou link, sem listagem pública. Comportamento confirmado pelo usuário em 18/10/2026.

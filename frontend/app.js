@@ -35,9 +35,9 @@ async function requestJSON(url, options = {}) {
   if (!response.ok) throw new ApiError(result.error || 'Não foi possível concluir o pedido. Tente novamente.');
   return result;
 }
-async function requireCurrentAPI() {
+async function requireCurrentAPI(feature) {
   const health = await requestJSON('/health', {cache:'no-store'});
-  if (health.api_version!==API_VERSION) throw new ApiError(versionMessage);
+  if (health.api_version!==API_VERSION || (feature && !health.features?.includes(feature))) throw new ApiError(versionMessage);
 }
 function sessionFor(roomCode) {
   try {
@@ -50,6 +50,8 @@ function requireStorage(message = 'Permita o armazenamento neste navegador para 
   catch { throw new ApiError(message); }
 }
 const gameIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.5 1-1.5 1-1.5 2M12 16h.01"/></svg>';
+const lobbyIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2"/></svg>';
+const gameName = game => game==='batata-quente' ? 'Batata Quente' : game===null ? 'Lobby' : 'Sabe Essa?';
 const mobileLayout = matchMedia('(max-width: 760px)');
 function activeNav(id) {
   for (const button of document.querySelectorAll('.sidebar-body button')) {
@@ -155,6 +157,11 @@ function portal() {
   activeNav('portal-nav');
   main.innerHTML = `<section class="portal workspace"><header class="portal-heading"><h1>Vamos jogar?</h1><p>Escolha um jogo e junte a turma.</p></header><div class="portal-panels"><section class="portal-panel create-panel" aria-labelledby="create-title"><h2 id="create-title">Criar uma nova sala</h2><form id="create-room-form"><label class="game-tile"><input type="radio" name="game" value="sabe-essa" checked><span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span></label><div class="create-controls"><div class="room-name-field"><label class="sr-only" for="room-name">Nome da sala</label><input id="room-name" name="room_name" maxlength="48" autocomplete="off" placeholder="Nome da sala"></div><fieldset class="visibility"><legend class="sr-only">Visibilidade da sala</legend><label><input type="radio" name="visibility" value="public"><span>Público</span></label><label><input type="radio" name="visibility" value="private" checked><span>Privado</span></label></fieldset><button type="submit">Jogar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><p class="panel-note"></p></form></section><section class="portal-panel join-panel" aria-labelledby="join-title"><h2 id="join-title">Entrar em sala privada</h2><p>Já tem um convite?</p><form id="join-code-form"><label for="join-code">Código da sala</label><div class="code-entry"><input id="join-code" name="code" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-describedby="join-help" required><button type="submit">Entrar</button></div><p id="join-help" class="panel-note">Use as quatro letras do código.</p></form></section></div><section class="public-rooms" aria-labelledby="public-title"><header><div><h2 id="public-title">Salas públicas</h2><p>Encontre uma turma para jogar.</p></div><button id="refresh-rooms" class="quiet" aria-label="Atualizar salas públicas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18A8 8 0 0 1 5 15"/></svg><span>Atualizar</span></button></header><div id="public-room-list" aria-live="polite"><p class="directory-message" role="status">Buscando salas…</p></div></section></section>`;
   window.Batata.portal(main);
+  const lobby = document.createElement('label'); lobby.className = 'game-tile';
+  lobby.innerHTML = `<input type="radio" name="game" value="lobby"><span class="game-icon">${lobbyIcon}</span><strong>Lobby</strong><span class="game-tagline">Junte a turma.<br>Escolha o jogo depois.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span>`;
+  main.querySelector('.game-picker').prepend(lobby);
+  main.querySelector('.game-picker legend').textContent = 'Escolha um jogo ou crie um lobby';
+  main.querySelector('.portal-heading p').textContent = 'Escolha um jogo ou junte a turma no lobby.';
   loadPublicRooms();
 }
 function home(joinCode = '') {
@@ -162,7 +169,7 @@ function home(joinCode = '') {
   activeNav(null);
   main.innerHTML = `<section class="welcome game-home"><span class="eyebrow">Sala ${esc(joinCode)}</span><h1>Sabe Essa?</h1><p>15 desafios. 20 segundos para cada resposta.</p><form id="room-form"><div id="join-name-field"><label for="name">Como podemos chamar você?</label><input id="name" name="name" maxlength="24" autocomplete="nickname" required placeholder="Seu nome"></div><p id="known-identity" hidden>Você vai entrar como <strong></strong>.</p><div class="join-fields"><label for="code">Código da sala</label><input id="code" name="code" maxlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" value="${esc(joinCode)}" required></div><div class="actions"><button type="submit" name="mode" value="join" class="secondary">Entrar na sala</button></div></form></section>`;
   const heading=main.querySelector('h1'); heading.textContent='Entre na turma';
-  heading.nextElementSibling.textContent='Sabe Essa? ou Batata Quente: o código leva você ao jogo.';
+  heading.nextElementSibling.textContent='Entre no lobby ou no jogo pelo código da sala.';
   document.querySelector('#name').value = playerName;
   syncJoinIdentity();
 }
@@ -185,7 +192,7 @@ async function loadPublicRooms() {
     list.innerHTML = result.rooms.length ? `<ul class="directory-list">${result.rooms.map(room => {
       const potato=room.game==='batata-quente', limit=potato?8:16;
       const phase=['question','reveal','playing'].includes(room.phase) ? 'Em partida · entre para acompanhar' : room.phase==='results' ? 'Nos resultados' : 'No lobby';
-      return `<li><span class="directory-icon">${gameIcon}</span><div><strong>${esc(room.room_name)}</strong><span>${potato?'Batata Quente':'Sabe Essa?'} · ${phase}</span></div><span class="room-count">${room.people}/${limit}</span><button class="secondary" data-join-code="${esc(room.code)}" aria-label="Entrar na sala ${esc(room.room_name)}" ${room.people>=limit?'disabled':''}>${room.people>=limit?'Lotada':'Entrar'}</button></li>`;
+      return `<li><span class="directory-icon">${room.game===null ? lobbyIcon : gameIcon}</span><div><strong>${esc(room.room_name)}</strong><span>${gameName(room.game)} · ${phase}</span></div><span class="room-count">${room.people}/${limit}</span><button class="secondary" data-join-code="${esc(room.code)}" aria-label="Entrar na sala ${esc(room.room_name)}" ${room.people>=limit?'disabled':''}>${room.people>=limit?'Lotada':'Entrar'}</button></li>`;
     }).join('')}</ul>` : '<p class="directory-message">Nenhuma sala pública por aqui ainda.<br>Crie uma e convide a turma.</p>';
   } catch (error) {
     const message = userError(error,'Não foi possível carregar as salas. Verifique sua conexão e tente atualizar.');
@@ -202,8 +209,8 @@ function requestIdentity(intent, button) {
   const name = knownPlayerName();
   if (name) { enterRoom(intent, name, button); return; }
   roomIntent = intent;
-  document.querySelector('#identity-description').textContent = intent.mode==='create' ? `Criar ${intent.room_name || (intent.game==='batata-quente' ? 'uma sala de Batata Quente' : 'uma sala de Sabe Essa?')} · ${intent.visibility==='public' ? 'Pública' : 'Privada'}` : `Entrar na sala ${intent.code}`;
-  document.querySelector('#identity-submit').textContent = intent.mode==='create' ? 'Jogar' : 'Entrar';
+  document.querySelector('#identity-description').textContent = intent.mode==='create' ? `Criar ${intent.room_name || (intent.game===null ? 'um lobby sem jogo escolhido' : `uma sala de ${gameName(intent.game)}`)} · ${intent.visibility==='public' ? 'Pública' : 'Privada'}` : `Entrar na sala ${intent.code}`;
+  document.querySelector('#identity-submit').textContent = intent.mode==='create' ? (intent.game===null ? 'Criar lobby' : 'Jogar') : 'Entrar';
   document.querySelector('#identity-error').textContent = '';
   document.querySelector('#player-name').value = playerName;
   identityDialog.showModal();
@@ -220,8 +227,8 @@ async function enterRoom(intent, name, button) {
   try {
     if (!name) throw new ApiError('Digite seu nome para continuar.');
     requireStorage();
-    await requireCurrentAPI();
-    const body = intent.mode==='create' ? {name,room_name:intent.room_name,visibility:intent.visibility,game:intent.game || 'sabe-essa'} : {name};
+    await requireCurrentAPI(intent.mode==='create' && intent.game===null ? 'unassigned-lobby' : undefined);
+    const body = intent.mode==='create' ? {name,room_name:intent.room_name,visibility:intent.visibility,game:intent.game===undefined ? 'sabe-essa' : intent.game} : {name};
     const result = await requestJSON(intent.mode==='create'?'/api/rooms':`/api/rooms/${intent.code}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if (!stored(`fun:${result.code}`,JSON.stringify(result))) throw new ApiError('Não foi possível salvar sua sessão. Libere espaço no armazenamento do navegador.');
     code = result.code;
@@ -264,7 +271,9 @@ function render() {
   const title = state.phase === 'lobby' ? esc(state.room_name || 'A turma está chegando.') : state.phase === 'results' ? 'Essa foi boa.' : `Desafio ${state.number}<span class="muted"> / 15</span>`;
   const challenge = state.challenge;
   let center = '';
-  if (state.phase === 'lobby') {
+  if (state.game===null) {
+    center = `<div class="lobby-symbol">${lobbyIcon}</div><h2>Junte a turma</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${host ? `<h3>Qual vai ser o jogo?</h3><div class="lobby-games" aria-label="Escolher jogo"><button id="choose-sabe-essa" class="secondary" data-select-game="sabe-essa" ${!online ? 'disabled' : ''}>Sabe Essa?</button><button id="choose-batata-quente" class="secondary" data-select-game="batata-quente" ${!online || state.people.filter(p=>p.active).length>8 ? 'disabled' : ''}>Batata Quente</button></div>${state.people.filter(p=>p.active).length>8 ? '<p class="fine">Batata Quente permite até 8 pessoas.</p>' : ''}` : '<p>O anfitrião vai escolher o jogo.</p>'}`;
+  } else if (state.phase === 'lobby') {
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>Todo mundo pronto?</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${!state.catalog_available ? '<div class="empty-catalog"><strong>O catálogo ainda está sendo preparado.</strong><p>Não há desafios suficientes para esta composição e o histórico da sala. A partida fica disponível após a publicação de conteúdo.</p></div>' : '<p>Imagens e textos intercalados. Sem dicas. Vale tentar até acertar.</p>'}${host ? `<button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar partida</button><p class="fine">É preciso ter pelo menos dois competidores conectados.</p>` : '<p class="fine">O anfitrião inicia a partida.</p>'}`;
   } else if (playing) {
     center = `<div class="round-heading"><span>${me.spectator ? 'Você está acompanhando' : 'Mostre que sabe'}</span><strong id="timer" aria-label="Tempo restante">20s</strong></div><div class="timer-track"><div id="timer-progress"></div></div><h2 class="prompt">${esc(challenge.prompt)}</h2>${challenge.image ? `<img class="challenge-image" src="${esc(challenge.image)}" alt="Imagem do desafio: ${esc(challenge.prompt)}">` : ''}${state.phase === 'reveal' ? `<div class="reveal"><span>A resposta é</span><strong>${esc(challenge.answer)}</strong></div><p class="fine">${state.number===15 ? 'Resultado a seguir.' : 'Próximo desafio em instantes.'}</p>` : me.spectator ? '<p>Você poderá competir na próxima partida.</p>' : me.answered ? '<div class="correct">Você acertou! Aguarde os demais.</div>' : `<form id="answer-form"><label for="answer">Sua resposta</label><div class="answer-row"><input id="answer" maxlength="200" autocomplete="off" required placeholder="Essa eu sei…" value="${esc(previousAnswer)}" ${!online ? 'disabled' : ''}><button ${!online ? 'disabled' : ''}>Responder</button></div></form><p id="answer-feedback" role="status">${esc(feedback)}</p>`}`;
@@ -278,6 +287,10 @@ function render() {
   if (playing && challenge?.reference) {
     const reference = document.createElement('blockquote'); reference.className = 'challenge-reference'; reference.textContent = challenge.reference;
     main.querySelector('.prompt').after(reference);
+  }
+  if (state.game===null) {
+    main.querySelector('.room-header .eyebrow').textContent = `LOBBY · SALA ${code} · ${state.visibility==='public' ? 'Pública' : 'Privada'}`;
+    for (const score of main.querySelectorAll('.score')) score.hidden = true;
   }
   const rows = main.querySelectorAll('.scoreboard li');
   rows.forEach((row, index) => {
@@ -442,7 +455,7 @@ document.addEventListener('submit', async event => {
   if(event.target.id==='create-room-form') {
     event.preventDefault();
     const form=event.target;
-    requestIdentity({mode:'create',game:form.elements.game.value,room_name:form.elements.room_name.value.trim(),visibility:form.elements.visibility.value},event.submitter || form.querySelector('button[type="submit"]'));
+    requestIdentity({mode:'create',game:form.elements.game.value==='lobby' ? null : form.elements.game.value,room_name:form.elements.room_name.value.trim(),visibility:form.elements.visibility.value},event.submitter || form.querySelector('button[type="submit"]'));
     return;
   }
   if(event.target.id==='join-code-form') {
@@ -466,6 +479,11 @@ document.addEventListener('submit', async event => {
   const name=knownPlayerName() || form.elements.name.value.trim(), inputCode=form.elements.code.value.trim().toUpperCase();
   if(mode==='join'&&!/^[A-Z]{4}$/.test(inputCode)) { toast('Digite as quatro letras da sala.'); return; }
   await enterRoom({mode,code:inputCode},name,event.submitter || form.querySelector('button[type="submit"]'));
+});
+document.addEventListener('change', event => {
+  if (event.target.matches('#create-room-form input[name="game"]')) {
+    document.querySelector('#create-room-form button[type="submit"]').firstChild.textContent = event.target.value==='lobby' ? 'Criar lobby' : 'Jogar';
+  }
 });
 document.addEventListener('click', event => {
   const row=event.target.closest('li[data-kick-target]');
@@ -499,6 +517,7 @@ document.addEventListener('click', event => {
   if(button.dataset.joinCode) requestIdentity({mode:'join',code:button.dataset.joinCode},button);
   if(button.id==='retry-session') { stopped=false; connect(); }
   if(button.id==='new-session') { stored(`fun:${code}`,null); state=null; openRoomEntry(code); }
+  if(button.dataset.selectGame) send('select_game',{game:button.dataset.selectGame});
   if(button.dataset.action) send(button.dataset.action,button.dataset.target?{target:button.dataset.target}:{});
 });
 dialog.addEventListener('close',()=>{ if(dialog.returnValue==='close') send('close'); });
