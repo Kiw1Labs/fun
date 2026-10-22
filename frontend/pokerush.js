@@ -95,6 +95,9 @@
     arena.classList.toggle('rush-many',many);
     arena.classList.toggle('rush-small-grid',compact);
     arena.querySelector('.rush-center').style.top='';
+    // Um único diâmetro impede que a mesa retangular estique a roda.
+    arena.style.setProperty('--rush-orbit-size',`${Math.min(arena.clientWidth,arena.clientHeight)*.76}px`);
+    arena.style.setProperty('--rush-orbit-y','50%');
     if(many) {
       let slots=compact?[[1,1],[2,1],[3,1],[3,2],[3,3],[3,4],[2,4],[1,4],[1,3],[1,2]]:[[1,1],[2,1],[3,1],[4,1],[4,2],[4,3],[4,4],[4,5],[4,6],[3,6],[2,6],[1,6],[1,5],[1,4],[1,3],[1,2]];
       if(desktop.matches) {
@@ -107,11 +110,15 @@
       const width=arena.clientWidth,height=arena.clientHeight;
       const seatWidth=Math.max(...seats.map(seat=>seat.offsetWidth),0),seatHeight=Math.max(...seats.map(seat=>seat.offsetHeight),0);
       const feedback=desktop.matches?40:0,centerY=(height-feedback)/2;
-      const radiusX=desktop.matches?Math.max(0,(width-seatWidth)/2-8):width/2-(width<400?42:54);
-      const radiusY=desktop.matches?Math.max(0,(height-seatHeight-feedback)/2-8):height/2-54;
-      if(desktop.matches)arena.querySelector('.rush-center').style.top=`${centerY}px`;
+      const radius=Math.max(0,Math.min((width-seatWidth)/2-8,(height-seatHeight-feedback)/2-8));
+      const radiusX=desktop.matches?radius:width/2-(width<400?42:54);
+      const radiusY=desktop.matches?radius:height/2-54;
+      if(desktop.matches) {
+        arena.querySelector('.rush-center').style.top=`${centerY}px`;
+        arena.style.setProperty('--rush-orbit-y',`${centerY}px`);
+      }
       for(const [i,seat]of seats.entries()) {
-        const angle=2*Math.PI*i/Math.max(2,seats.length)-Math.PI/2;
+        const angle=2*Math.PI*i/Math.max(2,seats.length)-(desktop.matches&&seats.length===4?3*Math.PI/4:Math.PI/2);
         seat.style.gridColumn='';seat.style.gridRow='';seat.style.left=`${width/2+Math.cos(angle)*radiusX}px`;seat.style.top=`${centerY+Math.sin(angle)*radiusY}px`;
       }
     }

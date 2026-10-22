@@ -40,11 +40,14 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
       await page.setViewportSize(size);
       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       const geometry=await page.evaluate(()=>{
-        const nodes=[...document.querySelectorAll('.rush-center,.rush-seat,.rush-success:not([hidden]),#answer,.rush-timer,.rush-room > .room-footer,#rush-suggestions:not([hidden]),.rush-ranking,.rush-winners,.rush-pokedex,.rush-dex-grid li')].filter(node=>node.getClientRects().length);
-        return {pageWidth:document.documentElement.scrollWidth,pageHeight:document.documentElement.scrollHeight,width:innerWidth,height:innerHeight,outside:nodes.filter(node=>{const r=node.getBoundingClientRect();return r.left<-.5||r.top<-.5||r.right>innerWidth+.5||r.bottom>innerHeight+.5;}).map(node=>({class:node.className,id:node.id,rect:node.getBoundingClientRect().toJSON()}))};
+        const nodes=[...document.querySelectorAll('.rush-center,.rush-orbit,.rush-seat,.rush-success:not([hidden]),#answer,.rush-timer,.rush-room > .room-footer,#rush-suggestions:not([hidden]),.rush-ranking,.rush-winners,.rush-pokedex,.rush-dex-grid li')].filter(node=>node.getClientRects().length);
+        const ring=document.querySelector('.rush-orbit')?.getBoundingClientRect(),seats=[...document.querySelectorAll('.rush-seat')];
+        const radii=ring&&seats.length<=4?seats.map(seat=>{const r=seat.getBoundingClientRect();return Math.hypot(r.x+r.width/2-ring.x-ring.width/2,r.y+r.height/2-ring.y-ring.height/2);}):[];
+        return {pageWidth:document.documentElement.scrollWidth,pageHeight:document.documentElement.scrollHeight,width:innerWidth,height:innerHeight,circle:!ring||Math.abs(ring.width-ring.height)<.5,radiusSpread:radii.length?Math.max(...radii)-Math.min(...radii):0,outside:nodes.filter(node=>{const r=node.getBoundingClientRect();return r.left<-.5||r.top<-.5||r.right>innerWidth+.5||r.bottom>innerHeight+.5;}).map(node=>({class:node.className,id:node.id,rect:node.getBoundingClientRect().toJSON()}))};
       });
       assert.ok(geometry.pageHeight<=geometry.height&&geometry.pageWidth<=geometry.width,`${label} ${size.width}×${size.height}: ${JSON.stringify(geometry)}`);
       assert.deepEqual(geometry.outside,[],`${label} ${size.width}×${size.height}: ${JSON.stringify(geometry)}`);
+      assert.ok(geometry.circle&&geometry.radiusSpread<.75,`Roda circular em ${label}: ${JSON.stringify(geometry)}`);
       if(size.width===1366)await page.screenshot({path:resolve(folder,`desktop-fit-${label}.png`)});
     }
     await page.setViewportSize({width:1440,height:1000});
@@ -164,8 +167,21 @@ test('PokéRush: multiplayer desktop/celular, foco estável, sugestões, sequên
     assert.equal(states.get(host).pokerush.used_count,0);assert.ok(states.get(host).people.every(p=>p.score===0));
     assert.equal(await host.locator('.rush-dex-grid .is-caught').count(),0);
     assert.equal(await host.locator('.rush-dex-grid li').first().textContent(),'001');
+    await desktopFits(host,'playing-3');
     await advance(host,31);await host.getByRole('heading',{name:'Vitória compartilhada!',exact:true}).waitFor();
     assert.equal(await host.locator('.rush-winners > div').count(),3);
+    // Quatro pessoas mantêm o mesmo raio e deixam livres os tipos centrais.
+    await host.evaluate(async()=>{
+      const code=location.pathname.slice(1),identity=await(await fetch(`/api/rooms/${code}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'Quarto treinador'})})).json();
+      await new Promise((resolve,reject)=>{const socket=new WebSocket(`ws://${location.host}/ws/${code}`);window.qaCircleSocket=socket;socket.onopen=()=>socket.send(JSON.stringify({token:identity.token}));socket.onmessage=()=>resolve();socket.onerror=reject;});
+    });
+    await until(()=>states.get(host)?.people.filter(p=>p.active&&p.online).length===4,'Quarta conexão pendente');
+    await host.getByRole('button',{name:'Jogar novamente',exact:true}).click();await host.locator('#answer').waitFor();
+    await desktopFits(host,'playing-4');
+    await advance(host,31);await host.getByRole('heading',{name:'Vitória compartilhada!',exact:true}).waitFor();
+    await host.evaluate(()=>window.qaCircleSocket.send(JSON.stringify({id:crypto.randomUUID(),action:'leave'})));
+    await until(()=>states.get(host)?.people.filter(p=>p.active).length===3,'Saída da quarta pessoa pendente');
+    await host.evaluate(()=>window.qaCircleSocket.close());
     await host.getByRole('button',{name:'Voltar à sala',exact:true}).click();
     await host.getByRole('heading',{name:'Prontos para o rush?',exact:true}).waitFor();
     // Dezesseis pessoas: os demais sockets são clientes reais do mesmo transporte.

@@ -23,7 +23,7 @@
 .rush-dex-grid img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; transform: scale(1.75); }
 .rush-dex-check { position: absolute; top: 0; right: 0; font-size: .48rem; color: var(--accent); }
 .rush-arena { position: relative; width: 100%; max-width: 560px; min-height: 520px; aspect-ratio: 1 / 1; margin: 24px auto 100px; }
-.rush-orbit { position: absolute; inset: 12%; border: 1px dashed var(--line); border-radius: 50%; pointer-events: none; }
+.rush-orbit { position: absolute; left: 50%; top: var(--rush-orbit-y,50%); width: var(--rush-orbit-size,0px); height: var(--rush-orbit-size,0px); transform: translate(-50%,-50%); border: 1px dashed var(--line); border-radius: 50%; pointer-events: none; }
 .rush-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 36%; text-align: center; }
 .rush-center h2 { font-size: 1.15rem; margin: 8px 0; }
 .rush-center p { font-size: .8rem; color: var(--muted); line-height: 1.5; }
@@ -78,7 +78,6 @@
 .rush-arena.rush-many { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); grid-template-rows: repeat(6,164px); aspect-ratio: auto; gap: 8px 0; margin-bottom: 80px; }
 .rush-many .rush-seats { display: contents; }.rush-many .rush-seat { position: relative; transform: none; width: 100%; align-self: start; }
 .rush-many .rush-center { position: relative; grid-column: 2 / 4; grid-row: 3 / 5; width: 100%; top: auto; left: auto; transform: none; align-self: center; padding: 4px; }
-.rush-many .rush-orbit { border-radius: 32px; inset: 15%; }
 .rush-many .rush-success img { width: 38px; height: 28px; }.rush-many .rush-success > strong { font-size: .58rem; }
 .rush-arena.rush-small-grid { grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: repeat(4,164px); }
 .rush-small-grid .rush-center { grid-column: 2 / 3; grid-row: 2 / 4; }

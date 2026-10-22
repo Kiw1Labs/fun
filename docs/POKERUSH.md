@@ -24,6 +24,8 @@ O próprio nó do campo, sua seleção, texto e foco sobrevivem às atualizaçõ
 
 Revisão de 22/10/2026: no computador (janela a partir de 761 px e ponteiro preciso), a sala ocupa a altura disponível, sem rolagem da página. As sugestões ficam na lateral, com até cinco nomes e rolagem interna. A mesa adapta sua altura e usa até seis colunas e quatro fileiras no perímetro para acomodar 16 pessoas; os acertos continuam abaixo de cada jogador. Os resultados distribuem vencedores e placar lado a lado. Campo, foco e seleção continuam preservados ao responder ou redimensionar. No celular permanece o fluxo móvel. Validação registrada em [POKERUSH_TELA_DESKTOP.md](POKERUSH_TELA_DESKTOP.md).
 
+Correção seguinte de 22/10/2026: o contorno da roda usa um único diâmetro calculado pelo menor lado da arena, formando um círculo em todas as proporções de tela. No computador, salas com até quatro pessoas também usam o mesmo raio horizontal e vertical para posicionar os jogadores. Grupos maiores preservam a disposição compacta no perímetro, com contorno circular ao centro. A mudança afeta somente a apresentação, sem reiniciar o backend na publicação.
+
 ## Sala e resultados
 
 - Mínimo de dois conectados para iniciar; limite compartilhado de 16 pessoas, incluindo espectadores e sessões reservadas.
