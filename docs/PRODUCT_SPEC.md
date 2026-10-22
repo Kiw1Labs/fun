@@ -1,5 +1,7 @@
 # Fun / Sabe Essa? — especificação funcional
 
+Posicionamento de PokéRush revisado em 22/10/2026 conforme a referência enviada: Pokédex ancorada na lateral direita, logo abaixo de “Como jogar”; sugestões abaixo do campo de resposta, em três colunas no computador, com rolagem apenas da própria lista. Preservar o círculo, o foco ao digitar e a página sem rolagem.
+
 Correção visual de PokéRush solicitada em 22/10/2026: a roda deve ser um círculo, sem esticar para uma elipse em telas largas. Preservar a Pokédex lateral, o campo de resposta e a página sem rolagem no computador.
 
 Pokédex de PokéRush solicitada em 22/10/2026: exibir ao lado da mesa os 151 números da primeira geração, em ordem. Quando qualquer pessoa acertar um Pokémon, marcar a posição correspondente e substituir seu número pela imagem. Somente acertos confirmados revelam a imagem. A marcação é compartilhada pela sala durante a partida, inclusive para reconexões e espectadores, e reinicia na próxima partida. Preservar a tela completa sem rolagem da página no computador.

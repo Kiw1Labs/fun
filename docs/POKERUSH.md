@@ -16,7 +16,7 @@ Regras confirmadas pelo pedido de implementação em **22/10/2026**. Jogo integr
 
 ## Entrada e respostas
 
-As sugestões começam com duas letras e pesquisam o catálogo completo, incluindo usados e todos os tipos. Cada linha mostra somente miniatura e nome. Até cinco linhas ficam visíveis, com rolagem para as demais. Tocar/clicar não preenche nem envia. O nome completo precisa ser digitado e enviado por Enter ou botão.
+As sugestões começam com duas letras e pesquisam o catálogo completo, incluindo usados e todos os tipos. Cada linha mostra somente miniatura e nome. No celular, até cinco linhas ficam visíveis, com rolagem para as demais; a disposição atual no computador está descrita na revisão de posicionamento abaixo. Tocar/clicar não preenche nem envia. O nome completo precisa ser digitado e enviado por Enter ou botão.
 
 A normalização ignora caixa, acentuação, espaços e pontuação, sem correção aproximada de grafia. `Mr Mime`, `Mr. Mime` e `mr-mime` são equivalentes. `Nidoran F`/`Nidoran ♀` e `Nidoran M`/`Nidoran ♂` identificam espécies distintas. `Nidoran` sem gênero é recusado.
 
@@ -25,6 +25,10 @@ O próprio nó do campo, sua seleção, texto e foco sobrevivem às atualizaçõ
 Revisão de 22/10/2026: no computador (janela a partir de 761 px e ponteiro preciso), a sala ocupa a altura disponível, sem rolagem da página. As sugestões ficam na lateral, com até cinco nomes e rolagem interna. A mesa adapta sua altura e usa até seis colunas e quatro fileiras no perímetro para acomodar 16 pessoas; os acertos continuam abaixo de cada jogador. Os resultados distribuem vencedores e placar lado a lado. Campo, foco e seleção continuam preservados ao responder ou redimensionar. No celular permanece o fluxo móvel. Validação registrada em [POKERUSH_TELA_DESKTOP.md](POKERUSH_TELA_DESKTOP.md).
 
 Correção seguinte de 22/10/2026: o contorno da roda usa um único diâmetro calculado pelo menor lado da arena, formando um círculo em todas as proporções de tela. No computador, salas com até quatro pessoas também usam o mesmo raio horizontal e vertical para posicionar os jogadores. Grupos maiores preservam a disposição compacta no perímetro, com contorno circular ao centro. A mudança afeta somente a apresentação, sem reiniciar o backend na publicação.
+
+Reposicionamento solicitado na mesma data, conforme nova captura de referência: a Pokédex fica ancorada logo abaixo de “Como jogar”, sem ser empurrada ao rodapé da lateral. No computador, as sugestões passam para baixo do campo de resposta, antes do texto de ajuda, em três colunas de miniatura e nome. A lista tem até duas linhas visíveis e rolagem interna; em janelas baixas, mostra uma linha para preservar a mesa e a página sem rolagem. No celular, mantém a lista vertical abaixo do formulário. Estas posições substituem a disposição lateral de sugestões descrita na revisão anterior.
+
+Validação local desta revisão: `npm.cmd run check`, `npm.cmd run build` e `npm.cmd run test:pokerush` passaram. O ensaio cobre as posições dos dois componentes, círculo, seis resoluções de computador, foco, teclado e sobreposição de jogadores/acertos, inclusive com 16 pessoas e sugestões abertas. Evidências em `artifacts/pokerush/browser-1792703506657/`; build de 519.325 bytes sem compressão.
 
 ## Sala e resultados
 
