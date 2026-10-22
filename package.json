@@ -7,11 +7,14 @@
     "dev": "node tools/dev.mjs",
     "admin:add": "node tools/add-admin.mjs",
     "build": "node tools/build.mjs",
-    "check": "node --check frontend/app.js && node --check frontend/batata.js && node --check frontend/godmode.js && node --check frontend/nova-questao.js && node --check tools/build.mjs && node --check tools/dev.mjs && node --check tools/local-env.mjs && node --check tools/add-admin.mjs",
+    "check": "node --check frontend/app.js && node --check frontend/batata.js && node --check frontend/pokerush.js && node --check frontend/godmode.js && node --check frontend/nova-questao.js && node --check tools/build.mjs && node --check tools/dev.mjs && node --check tools/local-env.mjs && node --check tools/add-admin.mjs",
     "test:batata": "node --test tests/batata.browser.mjs",
     "test:browser": "node --test tests/browser.test.mjs",
     "test:catalog": "node tests/catalog.browser.mjs",
-    "test:dev": "node --test tests/dev.test.mjs"
+    "test:dev": "node --test tests/dev.test.mjs",
+    "test:pokerush": "node --test tests/pokerush.browser.mjs"
   },
-  "devDependencies": {"@playwright/test": "1.56.1"}
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
 }

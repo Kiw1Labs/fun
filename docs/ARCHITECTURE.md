@@ -1,5 +1,7 @@
 # Fun — arquitetura e plano de implantação
 
+PokéRush (22/10/2026): política em `fun/games/pokerush.py`, chamada no mesmo Engine/lock/WebSocket dos outros jogos. Usa catálogo e sprites da PokéAPI previamente compilados no PC, incluídos no build estático e no release. Sem dependência de rede durante partidas, serviço adicional ou migração de banco. Escolha disponível no portal e no lobby neutro. Ver [regras e decisões](POKERUSH.md).
+
 Batata Quente (21/10/2026): usa o mesmo processo Python/Starlette e canal WebSocket, com política em `fun/games/batata_quente.py`, léxico local e interface própria. Códigos, sessões e limpeza continuam compartilhados no Engine. A partida interrompida é cancelada após reinício. O dicionário é compilado no PC e distribuído com o release; não exige dependências de runtime adicionais. Ver [regras, licença e limites](BATATA_QUENTE.md).
 
 ## Infraestrutura pré-existente (validar ao vivo)

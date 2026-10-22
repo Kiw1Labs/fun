@@ -11,6 +11,7 @@ from .games import GAMES
 from .games.sabe_essa import points as points
 from .games.batata_quente import BatataQuente, DEFAULTS
 from .games.lexicon import default_lexicon
+from .games.pokerush import PokeRush, default_catalog as pokemon_catalog
 
 
 class RuleError(ValueError):
@@ -53,6 +54,10 @@ class Engine:
     def save(self, r):
         self.store.save(r['code'], r)
 
+    @property
+    def pokerush(self):
+        return PokeRush(pokemon_catalog())
+
     def online(self, code, pid):
         return bool(self.connections.get((code, pid)))
 
@@ -83,7 +88,7 @@ class Engine:
 
     def create(self, name, room_name='', visibility='private', game='sabe-essa'):
         name = self.name(name)
-        if game not in (None, 'sabe-essa', 'batata-quente'):
+        if game not in (None, 'sabe-essa', 'batata-quente', 'pokerush'):
             raise RuleError('Jogo inválido.')
         if not isinstance(room_name, str) or len(room_name.strip()) > 48 or any(ord(c) < 32 or ord(c) == 127 for c in room_name):
             raise RuleError('Use um nome de sala com até 48 caracteres.')
@@ -199,6 +204,15 @@ class Engine:
         r.update(phase='results', result=result, winner=winner, activity=now, warning=None, deadline=None)
 
     def check_outcome(self, r, now):
+        if r['game'] == 'pokerush':
+            if r['phase'] != 'playing':
+                return
+            eligible = self.competitors(r)
+            if not any(self.online(r['code'], p['id']) for p in eligible):
+                self.finish(r, 'cancelled', None, now)
+            elif len(eligible) == 1:
+                self.finish(r, 'automatic', eligible[0]['id'], now)
+            return
         if r['game'] == 'batata-quente':
             if r['phase'] != 'playing':
                 return
@@ -238,6 +252,11 @@ class Engine:
         online = [p for p in self.members(r) if self.online(r['code'], p['id'])]
         if len(online) < 2:
             raise RuleError('São necessários pelo menos dois competidores conectados.')
+        if r['game'] == 'pokerush':
+            policy = self.pokerush
+            r['people'] = {p['id']: p for p in self.members(r)}
+            policy.start(r, now, online)
+            return
         if r['game'] == 'batata-quente':
             if not len(self.potato.lexicon):
                 raise RuleError('Dicionário indisponível.')
@@ -283,7 +302,7 @@ class Engine:
                 if r['phase'] != 'lobby' or r['game'] is not None:
                     raise RuleError('O jogo desta sala já foi escolhido.')
                 game = event.get('game')
-                if game not in ('sabe-essa', 'batata-quente'):
+                if game not in ('sabe-essa', 'batata-quente', 'pokerush'):
                     raise RuleError('Jogo inválido.')
                 if game == 'batata-quente' and len(self.members(r)) > 8:
                     raise RuleError('Batata Quente permite até 8 pessoas. Há mais participantes neste lobby.')
@@ -308,7 +327,9 @@ class Engine:
                     raise RuleError('Já existe uma partida em andamento.')
                 self.start(r, now)
             elif action == 'answer':
-                if r['game'] == 'batata-quente':
+                if r['game'] == 'pokerush':
+                    reply.update(self.pokerush.answer(r, pid, event, now))
+                elif r['game'] == 'batata-quente':
                     if r['phase'] != 'playing':
                         raise RuleError('A partida não está em andamento.')
                     reply.update(self.potato.answer(r, pid, event, now))
@@ -333,6 +354,11 @@ class Engine:
                 r.update(phase='lobby', activity=now, warning=None)
                 if r['game'] == 'batata-quente':
                     r.pop('potato', None)
+                if r['game'] == 'pokerush':
+                    r.pop('pokerush', None)
+                    r['roster'] = []
+                    for player in r['people'].values():
+                        player['score'] = 0
             elif action == 'presence':
                 if r['phase'] not in ('lobby', 'results'):
                     raise RuleError('A presença só é necessária no lobby e nos resultados.')
@@ -392,8 +418,11 @@ class Engine:
                 r.update(phase='closed', result='cancelled', winner=None, closed_at=now)
                 changed = True
             elif r['phase'] == 'playing' and now >= r['deadline']:
-                self.potato.expire(r, now)
-                self.check_outcome(r, now)
+                if r['game'] == 'pokerush':
+                    self.pokerush.finish(r, 'timeout', now)
+                else:
+                    self.potato.expire(r, now)
+                    self.check_outcome(r, now)
                 changed = True
             elif r['phase'] == 'question' and now >= r['deadline']:
                 self.reveal(r, now)
@@ -416,6 +445,8 @@ class Engine:
 
     def snapshot(self, code, pid):
         r = self.rooms[code]
+        if r['game'] == 'pokerush':
+            return self.pokerush.snapshot(r, pid, self.clock(), self.online)
         if r['game'] == 'batata-quente':
             return self.potato_snapshot(r, pid)
         now = self.clock()
@@ -449,6 +480,8 @@ class Engine:
             return False
         if r['game'] == 'batata-quente':
             return bool(len(self.potato.lexicon))
+        if r['game'] == 'pokerush':
+            return bool(self.pokerush.catalog.records)
         key = (id(self.catalog), tuple(tuple(match) for match in r['history'][-3:]))
         cached = self.catalog_cache.get(r['code'])
         if cached and cached[0] == key:

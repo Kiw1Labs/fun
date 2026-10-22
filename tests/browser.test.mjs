@@ -55,7 +55,7 @@ for (const game of ['sabe-essa','batata-quente']) test(`lobby sem jogo: criaçã
   try {
     for(const page of [host,guest]) page.on('pageerror',error=>errors.push(error.message));
     await host.goto(fixtureOrigin);
-    assert.deepEqual(await host.locator('input[name="game"]').evaluateAll(inputs=>inputs.map(input=>input.value)),['lobby','sabe-essa','batata-quente']);
+    assert.deepEqual(await host.locator('input[name="game"]').evaluateAll(inputs=>inputs.map(input=>input.value)),['lobby','sabe-essa','batata-quente','pokerush']);
     await host.getByRole('radio',{name:/^Lobby/}).check();
     await host.getByRole('radio',{name:'Público',exact:true}).check();
     await host.getByLabel('Nome da sala',{exact:true}).fill(`Turma ${game}`);

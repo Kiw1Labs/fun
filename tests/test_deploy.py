@@ -29,6 +29,8 @@ def test_bundle_never_contains_catalog_tokens_or_fixtures():
         assert 'MANIFEST.json' in names and 'dist/index.html' in names
         assert 'content/dictionary/words.tsv.gz' in names
         assert 'content/dictionary/COPYING.LESSER' in names
+        assert 'content/pokerush/catalog.json' in names
+        assert all(f'content/pokerush/{i}.png' in names and f'dist/assets/pokerush/{i}.png' in names for i in range(1, 152))
         assert not any(name.startswith(('tests/', 'data/', '.venv/', 'node_modules/')) or name.endswith(('.sqlite3', '.pyc')) or name == '.env' for name in names)
         manifest = json.load(bundle.extractfile('MANIFEST.json'))
         assert set(manifest) == set(names) - {'MANIFEST.json'}

@@ -34,7 +34,7 @@ def test_unassigned_lobby_is_persisted_and_cannot_start(lobby):
     assert len(restored.members(restored.room(host['code']))) == 2
 
 
-@pytest.mark.parametrize('game', ['sabe-essa', 'batata-quente'])
+@pytest.mark.parametrize('game', ['sabe-essa', 'batata-quente', 'pokerush'])
 def test_host_selects_game_without_replacing_room_or_sessions(lobby, game):
     engine, _, host, guest = lobby
     assert not act(engine, guest, 'select_game', game=game)['ok']
@@ -46,7 +46,7 @@ def test_host_selects_game_without_replacing_room_or_sessions(lobby, game):
         assert room['host'] == host['participant']
         assert engine.snapshot(identity['code'], identity['participant'])['game'] == game
     assert act(engine, host, 'start')['ok']
-    assert engine.room(host['code'])['phase'] == ('playing' if game == 'batata-quente' else 'question')
+    assert engine.room(host['code'])['phase'] == ('question' if game == 'sabe-essa' else 'playing')
     assert not act(engine, host, 'select_game', game='sabe-essa')['ok']
 
 

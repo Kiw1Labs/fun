@@ -20,6 +20,7 @@ test('dev: configuração privada, Godmode, recarga do Python e atualização se
   }
   try {
     for(const directory of ['fun','frontend','tools']) await cp(directory,join(temp,directory),{recursive:true,filter:source=>!source.includes('__pycache__')});
+    await cp('content/pokerush',join(temp,'content/pokerush'),{recursive:true});
     await writeFile(join(temp,'.env'),'FUN_PORT=15056\nFUN_ADMIN_USERNAME=base-admin\nFUN_ADMIN_PASSWORD=base-test-password\n');
     await writeFile(join(temp,'.env.local'),'FUN_PORT=15057\nFUN_ADMIN_USERNAME=file-admin\nFUN_ADMIN_PASSWORD="local-test-password # with spaces"\n');
     const env={...process.env,FUN_PORT:'15055',FUN_PYTHON:python,FUN_DATABASE:join(temp,'audit.sqlite3'),FUN_CATALOG:join(temp,'empty.json'),FUN_STATIC:join(temp,'dist'),FUN_LOG:'',FUN_ORIGINS:origin,FUN_ADMIN_USERNAME:'override-admin'};

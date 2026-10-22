@@ -10,6 +10,7 @@ files = [p for directory in ('fun', 'dist', 'deploy') for p in (root / directory
          if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc']
 files += [root / 'requirements.lock', root / '.env.example']
 files += [p for p in (root / 'content/dictionary').iterdir() if p.is_file()]
+files += [p for p in (root / 'content/pokerush').iterdir() if p.is_file()]
 files += [root / 'frontend' / name for name in ('godmode.html', 'godmode.css', 'godmode.js',
                                               'nova-questao.html', 'nova-questao.css', 'nova-questao.js')]
 files += [root / 'tools' / name for name in ('import_catalog.py','validate_catalog.py','backup.py','add_admin.py')]

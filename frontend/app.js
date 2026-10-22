@@ -51,7 +51,7 @@ function requireStorage(message = 'Permita o armazenamento neste navegador para 
 }
 const gameIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.5 1-1.5 1-1.5 2M12 16h.01"/></svg>';
 const lobbyIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 4v2"/></svg>';
-const gameName = game => game==='batata-quente' ? 'Batata Quente' : game===null ? 'Lobby' : 'Sabe Essa?';
+const gameName = game => game==='pokerush' ? 'PokéRush' : game==='batata-quente' ? 'Batata Quente' : game===null ? 'Lobby' : 'Sabe Essa?';
 const sabeEssaCard = `<span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span>`;
 const mobileLayout = matchMedia('(max-width: 760px)');
 function activeNav(id) {
@@ -158,6 +158,7 @@ function portal() {
   activeNav('portal-nav');
   main.innerHTML = `<section class="portal workspace"><header class="portal-heading"><h1>Vamos jogar?</h1><p>Escolha um jogo e junte a turma.</p></header><div class="portal-panels"><section class="portal-panel create-panel" aria-labelledby="create-title"><h2 id="create-title">Criar uma nova sala</h2><form id="create-room-form"><label class="game-tile"><input type="radio" name="game" value="sabe-essa" checked><span class="game-icon">${gameIcon}</span><strong>Sabe Essa?</strong><span class="game-tagline">Reconheça.<br>Responda.<br>Surpreenda.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span></label><div class="create-controls"><div class="room-name-field"><label class="sr-only" for="room-name">Nome da sala</label><input id="room-name" name="room_name" maxlength="48" autocomplete="off" placeholder="Nome da sala"></div><fieldset class="visibility"><legend class="sr-only">Visibilidade da sala</legend><label><input type="radio" name="visibility" value="public"><span>Público</span></label><label><input type="radio" name="visibility" value="private" checked><span>Privado</span></label></fieldset><button type="submit">Jogar<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><p class="panel-note"></p></form></section><section class="portal-panel join-panel" aria-labelledby="join-title"><h2 id="join-title">Entrar em sala privada</h2><p>Já tem um convite?</p><form id="join-code-form"><label for="join-code">Código da sala</label><div class="code-entry"><input id="join-code" name="code" maxlength="4" minlength="4" pattern="[A-Za-z]{4}" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="ABCD" aria-describedby="join-help" required><button type="submit">Entrar</button></div><p id="join-help" class="panel-note">Use as quatro letras do código.</p></form></section></div><section class="public-rooms" aria-labelledby="public-title"><header><div><h2 id="public-title">Salas públicas</h2><p>Encontre uma turma para jogar.</p></div><button id="refresh-rooms" class="quiet" aria-label="Atualizar salas públicas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5M6 6a8 8 0 0 1 13 3M18 18A8 8 0 0 1 5 15"/></svg><span>Atualizar</span></button></header><div id="public-room-list" aria-live="polite"><p class="directory-message" role="status">Buscando salas…</p></div></section></section>`;
   window.Batata.portal(main);
+  window.PokeRush.portal(main);
   const lobby = document.createElement('label'); lobby.className = 'game-tile';
   lobby.innerHTML = `<input type="radio" name="game" value="lobby"><span class="game-icon">${lobbyIcon}</span><strong>Lobby</strong><span class="game-tagline">Junte a turma.<br>Escolha o jogo depois.</span><span class="selected-game">Selecionado <span aria-hidden="true">✓</span></span>`;
   main.querySelector('.game-picker').prepend(lobby);
@@ -228,7 +229,7 @@ async function enterRoom(intent, name, button) {
   try {
     if (!name) throw new ApiError('Digite seu nome para continuar.');
     requireStorage();
-    await requireCurrentAPI(intent.mode==='create' && intent.game===null ? 'unassigned-lobby' : undefined);
+    await requireCurrentAPI(intent.mode==='create' ? (intent.game===null ? 'unassigned-lobby' : intent.game==='pokerush' ? 'pokerush' : undefined) : undefined);
     const body = intent.mode==='create' ? {name,room_name:intent.room_name,visibility:intent.visibility,game:intent.game===undefined ? 'sabe-essa' : intent.game} : {name};
     const result = await requestJSON(intent.mode==='create'?'/api/rooms':`/api/rooms/${intent.code}/join`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     if (!stored(`fun:${result.code}`,JSON.stringify(result))) throw new ApiError('Não foi possível salvar sua sessão. Libere espaço no armazenamento do navegador.');
@@ -262,6 +263,10 @@ function render() {
     main.innerHTML = `<section class="welcome"><span class="eyebrow">SALA ${esc(code)}</span><h1>${state.phase === 'closed' ? 'Até a próxima.' : 'Você saiu da sala.'}</h1><p>A sessão foi encerrada.</p><a class="button" href="/">Voltar ao início</a></section>`;
     return;
   }
+  if (state.game==='pokerush') {
+    window.PokeRush.render({main,state,online,send,status,esc});
+    return;
+  }
   if (state.game==='batata-quente') {
     window.Batata.render({main,state,online,feedback,send,status,esc});
     return;
@@ -273,7 +278,7 @@ function render() {
   const challenge = state.challenge;
   let center = '';
   if (state.game===null) {
-    center = `<div class="lobby-symbol">${lobbyIcon}</div><h2>Junte a turma</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${host ? `<h3>Qual vai ser o jogo?</h3><div class="lobby-games game-picker" role="group" aria-label="Escolher jogo"><button id="choose-sabe-essa" class="game-tile" data-select-game="sabe-essa" ${!online ? 'disabled' : ''}>${sabeEssaCard}</button><button id="choose-batata-quente" class="game-tile potato-tile" data-select-game="batata-quente" ${!online || state.people.filter(p=>p.active).length>8 ? 'disabled' : ''}>${window.Batata.card()}</button></div>${state.people.filter(p=>p.active).length>8 ? '<p class="fine">Batata Quente permite até 8 pessoas.</p>' : ''}` : '<p>O anfitrião vai escolher o jogo.</p>'}`;
+    center = `<div class="lobby-symbol">${lobbyIcon}</div><h2>Junte a turma</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${host ? `<h3>Qual vai ser o jogo?</h3><div class="lobby-games game-picker" role="group" aria-label="Escolher jogo"><button id="choose-sabe-essa" class="game-tile" data-select-game="sabe-essa" ${!online ? 'disabled' : ''}>${sabeEssaCard}</button><button id="choose-batata-quente" class="game-tile potato-tile" data-select-game="batata-quente" ${!online || state.people.filter(p=>p.active).length>8 ? 'disabled' : ''}>${window.Batata.card()}</button><button id="choose-pokerush" class="game-tile rush-tile" data-select-game="pokerush" ${!online ? 'disabled' : ''}>${window.PokeRush.card()}</button></div>${state.people.filter(p=>p.active).length>8 ? '<p class="fine">Batata Quente permite até 8 pessoas.</p>' : ''}` : '<p>O anfitrião vai escolher o jogo.</p>'}`;
   } else if (state.phase === 'lobby') {
     center = `<div class="lobby-symbol">${gameIcon}</div><h2>Todo mundo pronto?</h2><p>Compartilhe o código <strong>${esc(code)}</strong> ou o endereço desta sala.</p>${!state.catalog_available ? '<div class="empty-catalog"><strong>O catálogo ainda está sendo preparado.</strong><p>Não há desafios suficientes para esta composição e o histórico da sala. A partida fica disponível após a publicação de conteúdo.</p></div>' : '<p>Imagens e textos intercalados. Sem dicas. Vale tentar até acertar.</p>'}${host ? `<button data-action="start" ${!canStart ? 'disabled' : ''}>Iniciar partida</button><p class="fine">É preciso ter pelo menos dois competidores conectados.</p>` : '<p class="fine">O anfitrião inicia a partida.</p>'}`;
   } else if (playing) {
@@ -333,6 +338,10 @@ function render() {
   updateTimer();
 }
 function updateTimer() {
+  if (state?.game==='pokerush') {
+    window.PokeRush.timer(state, serverAt + (performance.now()-receivedAt)/1000);
+    return;
+  }
   if (state?.game==='batata-quente') {
     window.Batata.timer(state, serverAt + (performance.now()-receivedAt)/1000);
     return;
@@ -394,7 +403,7 @@ function connect() {
         feedback='';
         if(msg.game==='batata-quente') toast('');
         const input=document.querySelector('#answer');
-        if(input) input.value='';
+        if(input && msg.game!=='pokerush') input.value='';
       }
       state=msg; online=true; serverAt=msg.server_now; receivedAt=performance.now();
       if (!wasOnline) {
@@ -407,6 +416,9 @@ function connect() {
       if (event?.action==='rename_player') {
         if (msg.ok) setPlayerName(event.name.trim());
         finishProfileSave(msg.ok ? '' : msg.error || 'Não foi possível alterar seu nome. Tente novamente.');
+      }
+      else if(event?.action==='answer' && state?.game==='pokerush' && msg.ok) {
+        window.PokeRush.ack(msg,event);
       }
       else if (!msg.ok) {
         if(event?.action!=='answer' || state?.game!=='batata-quente') toast(msg.error);

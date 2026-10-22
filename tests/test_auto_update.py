@@ -87,10 +87,29 @@ def test_dictionary_and_potato_assets_survive_release_preparation(updater, tmp_p
     assert not (tmp_path/'candidate/content/dictionary/secrets.txt').exists()
     assert not (tmp_path/'candidate/content/dictionary/nested').exists()
     shutil.copytree(Path('frontend'), tmp_path/'assets/frontend')
+    shutil.copytree(Path('content/pokerush'), tmp_path/'assets/content/pokerush')
     updater.build_frontend(tmp_path/'assets')
     html = (tmp_path/'assets/dist/index.html').read_text(encoding='utf-8')
     assert '/assets/batata.js' not in html and '/assets/batata.css' not in html
     assert '/assets/batata.' in html
+    assert '/assets/pokerush.js' not in html and '/assets/pokerush.css' not in html
+    assert '/assets/pokerush.' in html
+    assert (tmp_path/'assets/dist/assets/pokerush/catalog.json').is_file()
+
+
+def test_pokerush_catalog_sprites_and_only_expected_files_survive_release(updater, tmp_path):
+    data = io.BytesIO()
+    files = {'content/pokerush/catalog.json': b'catalog', 'content/pokerush/151.png': b'sprite',
+             'content/pokerush/1.png': b'sprite', 'content/pokerush/README.md': b'source',
+             'content/pokerush/152.png': b'not kanto', 'content/pokerush/secrets.txt': b'private',
+             'content/pokerush/nested/1.png': b'unexpected'}
+    with tarfile.open(fileobj=data, mode='w') as archive:
+        for name, contents in files.items():
+            member = tarfile.TarInfo(name)
+            member.size = len(contents)
+            archive.addfile(member, io.BytesIO(contents))
+    updater.safe_extract(data.getvalue(), tmp_path/'candidate')
+    assert sorted(p.name for p in (tmp_path/'candidate/content/pokerush').iterdir()) == ['1.png', '151.png', 'README.md', 'catalog.json']
 
 
 def test_consistent_backup_and_modified_release_are_preserved(updater, tmp_path):
